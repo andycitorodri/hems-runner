@@ -72,7 +72,7 @@
   .hud-block--right { align-items: flex-end; }
   .hud-block--center {
     align-items: center;
-    min-width: 150px;
+    min-width: 200px;
   }
 
   .hud__label {
@@ -98,6 +98,49 @@
   .hud__value--gold { color: var(--gold); }
   .hud__value--red { color: var(--red); }
   .hud__value--small { font-size: 26px; }
+
+  /* Velocímetro (barra delgada bajo distancia·velocidad) */
+  .speedometer {
+    width: 100%;
+    margin-top: 6px;
+  }
+  .speedometer__bar {
+    width: 100%;
+    height: 3px;
+    background: rgba(244, 239, 230, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .speedometer__bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--bone);
+    transition: width 0.15s linear, background-color 0.5s ease, box-shadow 0.5s ease;
+    width: 0%;
+  }
+  /* Zonas de color por velocidad */
+  .speedometer__bar-fill[data-zone="low"] {
+    background: var(--bone);
+    box-shadow: 0 0 4px rgba(244, 239, 230, 0.3);
+  }
+  .speedometer__bar-fill[data-zone="mid"] {
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(245, 166, 35, 0.6);
+  }
+  .speedometer__bar-fill[data-zone="high"] {
+    background: var(--red);
+    box-shadow: 0 0 12px rgba(230, 57, 70, 0.8);
+  }
+  .speedometer__bar-fill[data-zone="max"] {
+    background: var(--red);
+    box-shadow: 0 0 16px rgba(230, 57, 70, 1);
+    animation: speedMaxPulse 0.6s ease-in-out infinite;
+  }
+  @keyframes speedMaxPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(230, 57, 70, 1); }
+    50% { box-shadow: 0 0 24px rgba(230, 57, 70, 1); }
+  }
 
   /* Barra de rango/progreso */
   .hud-rank {
@@ -344,6 +387,69 @@
     color: var(--bone-dim);
   }
 
+  /* =============== NEW DAY BANNER =============== */
+  .newday-banner {
+    margin-bottom: 18px;
+    padding: 12px 18px;
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid var(--green);
+    border-radius: 3px;
+    text-align: center;
+    max-width: 520px;
+    width: 100%;
+    display: none;
+  }
+  .newday-banner.active { display: block; animation: newdayPulse 2s ease-out; }
+  @keyframes newdayPulse {
+    0% { opacity: 0; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .newday-banner__title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: var(--green);
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .newday-banner__sub {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+  }
+
+  /* =============== HISTORY STATS (en menú) =============== */
+  .history-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(244, 239, 230, 0.08);
+  }
+  .history-stat {
+    text-align: center;
+  }
+  .history-stat__label {
+    font-size: 8px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    margin-bottom: 4px;
+  }
+  .history-stat__value {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--bone);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .history-stat__value--amber { color: var(--amber); }
+  .history-stat__value--green { color: var(--green); }
+
   @media (max-width: 640px) {
     .missions-hud { max-width: 210px; bottom: 88px; left: 10px; }
     .mission-hud-item { padding: 6px 9px; }
@@ -352,7 +458,524 @@
     .multiplier-badge__value { font-size: 24px; }
   }
 
-  /* =============== WORD HUNT =============== */
+  /* =============== MODOS ESPECIALES (banners fullscreen) =============== */
+  .mode-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .mode-banner.active { opacity: 1; }
+
+  /* BANNERS DE CÓDIGO (4 variantes: Trauma, Infarto, Sepsis, Ictus) */
+  .mode-banner--codigo-rojo {
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(230, 57, 70, 0.25) 100%);
+    box-shadow: inset 0 0 80px 20px rgba(230, 57, 70, 0.5);
+  }
+  .mode-banner--codigo-rojo.active {
+    animation: codigoPulse 0.6s ease-in-out infinite;
+  }
+  @keyframes codigoPulse {
+    0%, 100% { box-shadow: inset 0 0 80px 20px var(--codigo-glow-low, rgba(230, 57, 70, 0.4)); }
+    50% { box-shadow: inset 0 0 120px 30px var(--codigo-glow-high, rgba(230, 57, 70, 0.7)); }
+  }
+
+  /* Variante TRAUMA (rojo) — por defecto */
+  .mode-banner--codigo-rojo.cod-trauma {
+    --codigo-glow-low: rgba(230, 57, 70, 0.4);
+    --codigo-glow-high: rgba(230, 57, 70, 0.7);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(230, 57, 70, 0.25) 100%);
+  }
+  .mode-banner--codigo-rojo.cod-trauma .mode-banner__title {
+    color: #ff6b6b;
+  }
+
+  /* Variante INFARTO (ámbar) */
+  .mode-banner--codigo-rojo.cod-infarto {
+    --codigo-glow-low: rgba(255, 179, 71, 0.4);
+    --codigo-glow-high: rgba(255, 179, 71, 0.75);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(255, 179, 71, 0.28) 100%);
+  }
+  .mode-banner--codigo-rojo.cod-infarto .mode-banner__title {
+    color: #ffd166;
+  }
+
+  /* Variante SEPSIS (verde) */
+  .mode-banner--codigo-rojo.cod-sepsis {
+    --codigo-glow-low: rgba(74, 222, 128, 0.38);
+    --codigo-glow-high: rgba(74, 222, 128, 0.7);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(74, 222, 128, 0.25) 100%);
+  }
+  .mode-banner--codigo-rojo.cod-sepsis .mode-banner__title {
+    color: #86efac;
+  }
+
+  /* Variante ICTUS (púrpura) */
+  .mode-banner--codigo-rojo.cod-ictus {
+    --codigo-glow-low: rgba(168, 85, 247, 0.4);
+    --codigo-glow-high: rgba(168, 85, 247, 0.75);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(168, 85, 247, 0.28) 100%);
+  }
+  .mode-banner--codigo-rojo.cod-ictus .mode-banner__title {
+    color: #d8b4ff;
+  }
+
+  .mode-banner__title {
+    position: absolute;
+    top: 44%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 800;
+    font-style: italic;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px currentColor, 0 4px 20px rgba(0,0,0,0.9);
+    opacity: 0.88;
+    white-space: nowrap;
+    animation: flashText 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes flashText {
+    from { opacity: 0.65; }
+    to { opacity: 0.95; }
+  }
+
+  /* FEVER MODE: tinte naranja + vibración sutil */
+  .mode-banner--fever {
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(255, 107, 53, 0.35) 100%);
+    box-shadow:
+      inset 0 0 60px 15px rgba(255, 107, 53, 0.55),
+      inset 0 0 120px 60px rgba(245, 166, 35, 0.25);
+  }
+  .mode-banner--fever.active {
+    animation: feverShake 0.12s linear infinite, feverGlow 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes feverShake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(0, -1.5px); }
+    75% { transform: translate(2px, 1px); }
+  }
+  @keyframes feverGlow {
+    from { box-shadow: inset 0 0 60px 15px rgba(255, 107, 53, 0.45), inset 0 0 120px 60px rgba(245, 166, 35, 0.2); }
+    to { box-shadow: inset 0 0 100px 30px rgba(255, 107, 53, 0.85), inset 0 0 180px 80px rgba(245, 166, 35, 0.45); }
+  }
+  .mode-banner--fever .mode-banner__title {
+    color: #ffb347;
+    text-shadow: 0 0 20px #ff6b35, 0 0 40px #f5a623, 0 4px 20px rgba(0,0,0,0.9);
+    font-size: 42px;
+    animation: flashText 0.3s ease-in-out infinite alternate;
+  }
+
+  /* Llamas en los bordes laterales durante Fever */
+  .mode-banner--fever.active::before,
+  .mode-banner--fever.active::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 80px;
+    pointer-events: none;
+    background: linear-gradient(to right, rgba(255, 107, 53, 0.7), transparent);
+    animation: feverFlicker 0.15s ease-in-out infinite alternate;
+  }
+  .mode-banner--fever.active::before { left: 0; }
+  .mode-banner--fever.active::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(255, 107, 53, 0.7), transparent);
+  }
+  @keyframes feverFlicker {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+  }
+
+  /* JETPACK: tinte púrpura + estrellas flotantes sutiles */
+  .mode-banner--jetpack {
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(168, 85, 247, 0.22) 100%);
+    box-shadow: inset 0 0 70px 15px rgba(168, 85, 247, 0.45);
+  }
+  .mode-banner--jetpack.active {
+    animation: jetpackGlow 1s ease-in-out infinite alternate;
+  }
+  @keyframes jetpackGlow {
+    from { box-shadow: inset 0 0 70px 15px rgba(168, 85, 247, 0.3); }
+    to { box-shadow: inset 0 0 100px 25px rgba(168, 85, 247, 0.6); }
+  }
+  .mode-banner--jetpack .mode-banner__title {
+    color: #d8b4ff;
+  }
+
+  /* RELÁMPAGO: amarillo eléctrico intenso con glow pulsante muy rápido */
+  .mode-banner--rayo {
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(255, 224, 102, 0.3) 100%);
+    box-shadow: inset 0 0 80px 20px rgba(255, 224, 102, 0.6);
+  }
+  .mode-banner--rayo.active {
+    animation: rayoShake 0.08s linear infinite, rayoGlow 0.2s ease-in-out infinite alternate;
+  }
+  @keyframes rayoShake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(1px, -1px); }
+    75% { transform: translate(-1px, 2px); }
+  }
+  @keyframes rayoGlow {
+    from { box-shadow: inset 0 0 80px 20px rgba(255, 224, 102, 0.4); }
+    to { box-shadow: inset 0 0 140px 40px rgba(255, 224, 102, 0.85); }
+  }
+  .mode-banner--rayo .mode-banner__title {
+    color: #fff3b0;
+    text-shadow: 0 0 20px #ffe066, 0 0 40px #f5a623, 0 4px 20px rgba(0,0,0,0.9);
+    animation: flashText 0.2s ease-in-out infinite alternate;
+  }
+
+  /* ============== SVA ACTIVADO (caja sorpresa) ============== */
+  .mode-banner--sva {
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(59, 130, 246, 0.35) 100%);
+    box-shadow: inset 0 0 80px 20px rgba(59, 130, 246, 0.6);
+  }
+  .mode-banner--sva.active {
+    animation: svaPulse 0.8s ease-in-out infinite;
+    overflow: hidden;
+  }
+  @keyframes svaPulse {
+    0%, 100% { box-shadow: inset 0 0 80px 20px rgba(59, 130, 246, 0.5); }
+    50%      { box-shadow: inset 0 0 130px 35px rgba(6, 182, 212, 0.75); }
+  }
+  .mode-banner--sva .mode-banner__title {
+    color: #dbeafe;
+    text-shadow:
+      0 0 12px #3b82f6,
+      0 0 24px #60a5fa,
+      0 4px 16px rgba(0,0,0,0.9);
+    animation: svaFlash 0.45s ease-in-out infinite alternate;
+  }
+  @keyframes svaFlash {
+    from { color: #dbeafe; text-shadow: 0 0 12px #3b82f6, 0 4px 16px rgba(0,0,0,0.9); }
+    to   { color: #06b6d4; text-shadow: 0 0 24px #60a5fa, 0 0 40px #06b6d4, 0 4px 16px rgba(0,0,0,0.9); }
+  }
+  /* Barrido de luz que cruza el banner como una sirena real */
+  .mode-banner--sva.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -30%;
+    width: 30%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), transparent);
+    animation: svaSweep 0.8s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes svaSweep {
+    0%   { left: -30%; }
+    100% { left: 130%; }
+  }
+  .mode-banner--mastery {
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(16, 185, 129, 0.3) 100%);
+    box-shadow: inset 0 0 80px 20px rgba(16, 185, 129, 0.6);
+  }
+  .mode-banner--mastery.active {
+    animation: masteryPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes masteryPulse {
+    0%, 100% { box-shadow: inset 0 0 80px 20px rgba(16, 185, 129, 0.5); }
+    50% { box-shadow: inset 0 0 120px 35px rgba(6, 182, 212, 0.7); }
+  }
+  .mode-banner--mastery .mode-banner__title {
+    color: #d1fae5;
+    background: linear-gradient(90deg, #10b981, #06b6d4, #10b981);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: masteryGradientShift 3s linear infinite;
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 4px 20px rgba(0,0,0,0.9);
+    filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.6));
+  }
+  @keyframes masteryGradientShift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  /* Vignette verde en los bordes de la pantalla durante Mastery */
+  .mastery-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 18;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 40%,
+      rgba(16, 185, 129, 0.15) 75%,
+      rgba(6, 182, 212, 0.3) 100%
+    );
+    transition: opacity 0.5s ease;
+  }
+  .mastery-vignette.active {
+    opacity: 1;
+    animation: vignettePulse 2.5s ease-in-out infinite;
+  }
+  @keyframes vignettePulse {
+    0%, 100% { opacity: 0.75; }
+    50% { opacity: 1; }
+  }
+
+  /* Liquidación al terminar Mastery: notificación lateral, no bloquea la partida */
+  .mastery-liquidation {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%) translateX(-120%);
+    z-index: 22;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mastery-liquidation.visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+  .mastery-liquidation__inner {
+    background: linear-gradient(145deg, rgba(6, 30, 28, 0.92), rgba(8, 47, 73, 0.92));
+    border: 1px solid rgba(16, 185, 129, 0.7);
+    border-radius: 4px;
+    padding: 14px 18px;
+    min-width: 200px;
+    backdrop-filter: blur(8px);
+    box-shadow:
+      0 0 30px rgba(16, 185, 129, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  .mastery-liquidation__title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-align: left;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #10b981, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .mastery-liquidation__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mastery-liquidation__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--bone-dim);
+    min-width: 180px;
+    gap: 16px;
+  }
+  .mastery-liquidation__row--total {
+    font-size: 13px;
+    color: var(--bone);
+    font-weight: 700;
+  }
+  .mastery-liquidation__label {
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 9px;
+    opacity: 0.75;
+  }
+  .mastery-liquidation__row--total .mastery-liquidation__label {
+    font-size: 10px;
+    color: #10b981;
+    opacity: 1;
+  }
+  .mastery-liquidation__value {
+    font-weight: 600;
+    color: var(--bone);
+    font-variant-numeric: tabular-nums;
+  }
+  .mastery-liquidation__value--bonus {
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  }
+  .mastery-liquidation__row--total .mastery-liquidation__value {
+    color: #06b6d4;
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+    font-size: 15px;
+  }
+  .mastery-liquidation__divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+    margin: 3px 0;
+  }
+  @media (max-width: 560px) {
+    .mastery-liquidation {
+      top: auto;
+      bottom: 90px;
+      left: 12px;
+    }
+    .mastery-liquidation__inner {
+      padding: 10px 14px;
+      min-width: 170px;
+    }
+    .mastery-liquidation__row { font-size: 10px; min-width: 155px; gap: 12px; }
+    .mastery-liquidation__row--total .mastery-liquidation__value { font-size: 13px; }
+  }
+
+  /* Timer circular para los modos */
+  .mode-banner__timer {
+    position: absolute;
+    top: 54%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--bone);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+    opacity: 0.85;
+  }
+
+  /* CARD CÓDIGO DEL DÍA (menú) */
+  .codigo-card {
+    margin-bottom: 18px;
+    padding: 16px 20px;
+    background: rgba(10, 9, 8, 0.6);
+    border-left: 4px solid var(--codigo-color, #e63946);
+    border-radius: 3px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 0 24px -8px var(--codigo-color, #e63946);
+    transition: all 0.5s ease;
+  }
+  .codigo-card--trauma  { --codigo-color: #e63946; }
+  .codigo-card--infarto { --codigo-color: #ffb347; }
+  .codigo-card--sepsis  { --codigo-color: #4ade80; }
+  .codigo-card--ictus   { --codigo-color: #a855f7; }
+  .codigo-card__label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    margin-bottom: 6px;
+  }
+  .codigo-card__name {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--codigo-color, #e63946);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    text-shadow: 0 0 14px var(--codigo-color, #e63946);
+  }
+  .codigo-card__sub {
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--bone-dim);
+    font-style: italic;
+  }
+  @media (max-width: 640px) {
+    .codigo-card { padding: 12px 14px; }
+    .codigo-card__name { font-size: 18px; }
+  }
+
+  @media (max-width: 640px) {
+    .mode-banner__title { font-size: 24px; }
+    .mode-banner__timer { font-size: 10px; }
+  }
+
+  /* =============== DEBUG =============== */
+  /* Panel oculto para producción. Las teclas 1-7 siguen funcionando. */
+  .debug-panel {
+    display: none !important;
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    z-index: 25;
+    background: rgba(10, 9, 8, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px dashed rgba(245, 166, 35, 0.5);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    max-width: 240px;
+  }
+  .debug-panel.active { opacity: 0.85; }
+  .debug-panel__title {
+    color: var(--amber);
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 8px;
+  }
+  .debug-panel__list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 10px;
+  }
+  .debug-panel__list span {
+    white-space: nowrap;
+    font-size: 10px;
+  }
+  .debug-panel__list b {
+    color: var(--amber);
+    font-weight: 700;
+    margin-right: 3px;
+    font-size: 11px;
+  }
+
+  .debug-indicator {
+    display: none !important;
+    position: absolute;
+    top: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(10, 9, 8, 0.9);
+    border: 2px solid var(--amber);
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    text-shadow: 0 0 8px var(--amber);
+  }
+  .debug-indicator.active { opacity: 1; }
+
+  @media (max-width: 640px) {
+    .debug-panel {
+      bottom: 90px;
+      right: 10px;
+      font-size: 8px;
+      padding: 8px 10px;
+      max-width: 180px;
+    }
+    .debug-panel__list { grid-template-columns: 1fr; gap: 2px; }
+  }
   .word-hunt {
     position: absolute;
     top: 155px;
@@ -574,30 +1197,146 @@
     margin-top: 2px;
   }
 
-  /* Toast central: mensajes motivacionales ¡RACHA!, ¡PACIENTE!, etc */
+  /* ==================== CONTADOR HEMS ==================== */
+  /* Muestra "RESCATADOS: X / +Y pts" de forma muy visible durante Modo HEMS */
+  .hems-counter {
+    position: absolute;
+    top: 50%;
+    left: 22px;
+    transform: translateY(-50%) translateX(-150%);
+    z-index: 21;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hems-counter.visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+  .hems-counter__inner {
+    background: linear-gradient(135deg, rgba(245, 192, 0, 0.95), rgba(245, 166, 35, 0.95));
+    color: #0a0908;
+    padding: 16px 22px;
+    border-radius: 4px;
+    border: 2px solid #ffc940;
+    box-shadow:
+      0 0 40px rgba(245, 192, 0, 0.6),
+      0 8px 24px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    min-width: 150px;
+    animation: hems-counter-pulse 2s ease-in-out infinite;
+  }
+  @keyframes hems-counter-pulse {
+    0%, 100% { box-shadow: 0 0 40px rgba(245, 192, 0, 0.6), 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+    50% { box-shadow: 0 0 60px rgba(245, 192, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  }
+  .hems-counter__label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    opacity: 0.85;
+    margin-bottom: 4px;
+  }
+  .hems-counter__value {
+    font-family: 'Fraunces', serif;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #0a0908;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: transform 0.15s cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+  .hems-counter__value.bump {
+    transform: scale(1.25);
+  }
+  .hems-counter__points {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 2px;
+    opacity: 0.75;
+  }
+  .hems-counter__bar {
+    margin-top: 10px;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .hems-counter__bar-fill {
+    height: 100%;
+    background: #0a0908;
+    width: 100%;
+    transition: width 0.1s linear;
+  }
+
+  /* ==================== NÚMEROS VOLANTES DEL HEMS ==================== */
+  /* Capa donde van los +50, +100 que salen de items capturados */
+  .hems-flying-numbers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 22;
+    overflow: hidden;
+  }
+  .hems-flying-number {
+    position: absolute;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffc940;
+    text-shadow: 0 0 12px rgba(255, 201, 64, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  /* Responsive: en móvil, el contador se posiciona abajo y más pequeño */
+  @media (max-width: 720px) {
+    .hems-counter {
+      top: auto;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(150%);
+    }
+    .hems-counter.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+    .hems-counter__inner {
+      padding: 10px 16px;
+      min-width: 120px;
+    }
+    .hems-counter__value { font-size: 30px; }
+    .hems-counter__label { font-size: 9px; }
+    .hems-flying-number { font-size: 16px; }
+  }
+
+  /* Toast central: aparece debajo del HUD pero lejos del suelo de la carretera */
   .toast-central {
     position: absolute;
-    top: 22%;
+    top: 240px;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     z-index: 22;
     pointer-events: none;
     opacity: 0;
     text-align: center;
+    max-width: 85vw;
   }
   .toast-central.show {
     animation: toastIn 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   @keyframes toastIn {
-    0% { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
-    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    25% { transform: translate(-50%, -50%) scale(1); }
+    0% { opacity: 0; transform: translate(-50%, -10px) scale(0.85); }
+    15% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+    25% { transform: translate(-50%, 0) scale(1); }
     75% { opacity: 1; }
-    100% { opacity: 0; transform: translate(-50%, -55%) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -10px) scale(1.02); }
   }
   .toast-central__text {
     font-family: 'Fraunces', serif;
-    font-size: 44px;
+    font-size: 38px;
     font-weight: 700;
     font-style: italic;
     letter-spacing: -0.01em;
@@ -606,7 +1345,7 @@
   }
   .toast-central__sub {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
     margin-top: 6px;
@@ -1024,7 +1763,7 @@
     .hud__value { font-size: 24px; }
     .hud__value--small { font-size: 19px; }
     .hud__label { font-size: 7px; }
-    .hud-block--center { min-width: 100px; }
+    .hud-block--center { min-width: 130px; }
     .gameover-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
     .start-card { padding: 16px 18px; }
     .control-hint__key { font-size: 17px; }
@@ -1034,6 +1773,9 @@
     .combo-display { top: 130px; right: 14px; }
     .hud-rank { min-width: 180px; top: 98px; }
     .word-hunt { top: 138px; }
+    .toast-central { top: 210px; }
+    .toast-central__text { font-size: 28px; }
+    .toast-central__sub { font-size: 9px; }
   }
 </style>
 </head>
@@ -1093,8 +1835,18 @@
       <span class="hud__value hud__value--amber" id="hud-score">0</span>
     </div>
     <div class="hud-block hud-block--center">
-      <span class="hud__label">Distancia</span>
-      <span class="hud__value hud__value--small" id="hud-distance">0 m</span>
+      <span class="hud__label">Distancia · Velocidad</span>
+      <span class="hud__value hud__value--small">
+        <span id="hud-distance">0 m</span>
+        <span style="color:var(--bone-faint);margin:0 8px">·</span>
+        <span id="hud-speed" style="color:var(--amber)">79</span>
+        <span style="color:var(--bone-faint);font-size:0.7em;margin-left:3px">km/h</span>
+      </span>
+      <div class="speedometer">
+        <div class="speedometer__bar">
+          <div class="speedometer__bar-fill" id="hud-speed-bar" data-zone="low" style="width:0%"></div>
+        </div>
+      </div>
     </div>
     <div class="hud-block hud-block--right">
       <span class="hud__label">Monedas · Pacientes</span>
@@ -1120,14 +1872,95 @@
     <div id="word-hunt-letters" class="word-hunt__letters"></div>
   </div>
 
+  <!-- Banners de modos especiales (fullscreen overlay) -->
+  <div id="codigo-rojo-banner" class="mode-banner mode-banner--codigo-rojo">
+    <div class="mode-banner__title">CÓDIGO ROJO</div>
+    <div id="codigo-rojo-timer" class="mode-banner__timer">8s · Prioridad absoluta</div>
+  </div>
+  <div id="fever-banner" class="mode-banner mode-banner--fever">
+    <div class="mode-banner__title">FEVER MODE</div>
+    <div id="fever-timer" class="mode-banner__timer">10s · ×3 puntos</div>
+  </div>
+  <div id="jetpack-banner" class="mode-banner mode-banner--jetpack">
+    <div class="mode-banner__title">JETPACK</div>
+    <div id="jetpack-timer" class="mode-banner__timer">5s · Volando</div>
+  </div>
+  <div id="rayo-banner" class="mode-banner mode-banner--rayo">
+    <div class="mode-banner__title">⚡ RELÁMPAGO ⚡</div>
+    <div id="rayo-timer" class="mode-banner__timer">6s · Monedas ×5</div>
+  </div>
+  <div id="mastery-banner" class="mode-banner mode-banner--mastery">
+    <div class="mode-banner__title">⚡ MASTERY MODE ⚡</div>
+    <div id="mastery-timer" class="mode-banner__timer">15s · Monedas ×5 · Bonus ×2</div>
+  </div>
+  <div id="sva-banner" class="mode-banner mode-banner--sva">
+    <div class="mode-banner__title">🚨 SVA ACTIVADO 🚨</div>
+    <div id="sva-timer" class="mode-banner__timer">8s · Escudo · ×2 puntos</div>
+  </div>
+
+  <!-- Vignette verde para modo Mastery -->
+  <div id="mastery-vignette" class="mastery-vignette"></div>
+
+  <!-- Pantalla de liquidación al terminar Mastery (se muestra 3s) -->
+  <div id="mastery-liquidation" class="mastery-liquidation">
+    <div class="mastery-liquidation__inner">
+      <div class="mastery-liquidation__title">⚡ MASTERY COMPLETO</div>
+      <div class="mastery-liquidation__rows">
+        <div class="mastery-liquidation__row">
+          <span class="mastery-liquidation__label">Ganado:</span>
+          <span class="mastery-liquidation__value" id="mastery-liq-earned">0</span>
+        </div>
+        <div class="mastery-liquidation__row">
+          <span class="mastery-liquidation__label">Bonus ×2:</span>
+          <span class="mastery-liquidation__value mastery-liquidation__value--bonus" id="mastery-liq-bonus">+0</span>
+        </div>
+        <div class="mastery-liquidation__divider"></div>
+        <div class="mastery-liquidation__row mastery-liquidation__row--total">
+          <span class="mastery-liquidation__label">TOTAL</span>
+          <span class="mastery-liquidation__value" id="mastery-liq-total">+0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Misiones activas HUD (abajo izquierda durante juego) -->
   <div id="missions-hud" class="missions-hud"></div>
+
+  <!-- DEBUG: panel de testing con atajos de teclado -->
+  <div id="debug-panel" class="debug-panel">
+    <div class="debug-panel__title">DEBUG · Teclas de prueba</div>
+    <div class="debug-panel__list">
+      <span><b>1</b> 🚁 HEMS</span>
+      <span><b>2</b> 💰 Monedas</span>
+      <span><b>3</b> 🏥 Pacientes</span>
+      <span><b>4</b> ⚡ Relámpago</span>
+      <span><b>5</b> 🌀 Wormhole</span>
+      <span><b>6</b> 📜 Palabra</span>
+      <span><b>7</b> 🔥 Fever</span>
+    </div>
+  </div>
+
+  <!-- Indicador de efecto debug recién activado -->
+  <div id="debug-indicator" class="debug-indicator"></div>
 
   <!-- Combo display -->
   <div id="combo-display" class="combo-display">
     <div class="combo-display__value" id="combo-value">×2</div>
     <div class="combo-display__label">Combo</div>
   </div>
+
+  <!-- Contador HEMS (solo visible durante modo HEMS) -->
+  <div id="hems-counter" class="hems-counter">
+    <div class="hems-counter__inner">
+      <div class="hems-counter__label">⌬ RESCATADOS</div>
+      <div class="hems-counter__value" id="hems-counter-value">0</div>
+      <div class="hems-counter__points">+<span id="hems-counter-points">0</span> pts</div>
+      <div class="hems-counter__bar"><div class="hems-counter__bar-fill" id="hems-counter-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- Capa para números volantes del HEMS (+50, +100, etc.) -->
+  <div id="hems-flying-numbers" class="hems-flying-numbers"></div>
 
   <!-- Toast central para mensajes motivacionales -->
   <div id="toast-central" class="toast-central">
@@ -1175,11 +2008,11 @@
       <span class="overlay__eyebrow-text">Jornada de Trauma · Edició 01</span>
     </div>
     <h1 class="overlay__title">HEMS <em>Runner</em></h1>
-    <p class="overlay__subtitle">Conduce la ambulancia del SEM. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.</p>
+    <p class="overlay__subtitle">Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.</p>
 
     <div class="fomo-banner">
       <span class="fomo-dot"></span>
-      <span class="fomo-text">Top del ranking · Inscripción gratuita el 14·10·2026</span>
+      <span class="fomo-text">Premios a los Top del Ranking · 14 · 10 · 2026</span>
     </div>
 
     <div class="start-card">
@@ -1200,18 +2033,46 @@
       </div>
     </div>
 
+    <!-- Banner nuevo día (aparece solo si es un día nuevo) -->
+    <div id="newday-banner" class="newday-banner">
+      <div class="newday-banner__title">¡Nuevo día!</div>
+      <div class="newday-banner__sub">Multiplicador reseteado · Nuevas misiones</div>
+    </div>
+
+    <!-- Código destacado del día -->
+    <div id="menu-codigo-card" class="codigo-card">
+      <div class="codigo-card__label">Código destacado de hoy</div>
+      <div id="menu-codigo-name" class="codigo-card__name">CÓDIGO TRAUMA</div>
+      <div id="menu-codigo-sub" class="codigo-card__sub">Paciente politraumatizado</div>
+    </div>
+
     <!-- Panel de misiones (meta-juego) -->
     <div id="menu-missions-panel" class="missions-panel">
       <div class="missions-panel__header">
-        <span class="missions-panel__label">Misiones activas</span>
+        <span class="missions-panel__label">Misiones de hoy</span>
         <div class="multiplier-badge">
-          <span class="multiplier-badge__label">Multiplicador</span>
+          <span class="multiplier-badge__label">Mult. hoy</span>
           <span class="multiplier-badge__value" id="menu-multiplier">×1</span>
         </div>
       </div>
       <div id="menu-missions-list" class="mission-list"></div>
       <div class="missions-footer">
         <span id="menu-missions-footer">Completa <span class="missions-footer__highlight">3 misiones</span> para subir el multiplicador</span>
+      </div>
+      <!-- Stats históricos -->
+      <div class="history-stats">
+        <div class="history-stat">
+          <div class="history-stat__label">Racha</div>
+          <div class="history-stat__value history-stat__value--green" id="history-streak">1</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat__label">Mult. récord</div>
+          <div class="history-stat__value history-stat__value--amber" id="history-max-mult">×1</div>
+        </div>
+        <div class="history-stat">
+          <div class="history-stat__label">Misiones totales</div>
+          <div class="history-stat__value" id="history-total-missions">0</div>
+        </div>
       </div>
     </div>
 
@@ -1268,9 +2129,9 @@
     <!-- Panel misiones en game over -->
     <div id="go-missions-panel" class="missions-panel">
       <div class="missions-panel__header">
-        <span class="missions-panel__label">Progreso de misiones</span>
+        <span class="missions-panel__label">Progreso de hoy</span>
         <div class="multiplier-badge">
-          <span class="multiplier-badge__label">Multiplicador</span>
+          <span class="multiplier-badge__label">Mult. hoy</span>
           <span class="multiplier-badge__value" id="go-multiplier">×1</span>
         </div>
       </div>
@@ -1299,7 +2160,7 @@
       <span class="overlay__eyebrow-text">Top jugadores</span>
     </div>
     <h1 class="overlay__title">Ranking <em>global</em></h1>
-    <p class="overlay__subtitle">El Top del ranking tendrá inscripción gratuita a la I Jornada de Trauma el 14 de octubre de 2026.</p>
+    <p class="overlay__subtitle">Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 14 de octubre de 2026.</p>
 
     <div id="leaderboard-content" class="leaderboard"></div>
 
@@ -1333,14 +2194,20 @@ const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerH
 camera.position.set(0, 5, 9);
 camera.lookAt(0, 1, -10);
 
+// Detección de móvil para optimización de rendimiento
+const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || (window.matchMedia && window.matchMedia('(max-width: 768px)').matches)
+  || ('ontouchstart' in window && navigator.maxTouchPoints > 1);
+
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-3d'),
-  antialias: true,
+  antialias: !IS_MOBILE,  // desactivar antialiasing en móvil (imperceptible en pantalla pequeña, ahorra GPU)
   powerPreference: 'high-performance'
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Pixel ratio adaptativo: móviles a 1.5 máx, desktop a 2 máx
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !IS_MOBILE;  // sombras solo en desktop
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 window.addEventListener('resize', () => {
@@ -1378,26 +2245,29 @@ const LANES = [-LANE_WIDTH, 0, LANE_WIDTH];
 const ROAD_LENGTH = 220;
 const TILE_LENGTH = 30;
 
-// Velocidad continua: curva logarítmica suave desde 18 m/s
+// Velocidad continua: curva logarítmica suave para jugar cómodo
 // speed = BASE_SPEED + log(1 + distance/SPEED_SCALE) * SPEED_FACTOR
-const BASE_SPEED = 18;
-const SPEED_SCALE = 220;
-const SPEED_FACTOR = 4.2;
-const MAX_SPEED = 42;
+// Diseño: ~22s para 500m (90km/h), ~75s para 2km (113km/h), ~3min para 5500m (133km/h)
+// Tope teórico de 194 km/h muy lejos (no es alcanzable normalmente)
+const BASE_SPEED = 20;
+const SPEED_SCALE = 350;
+const SPEED_FACTOR = 6.0;
+const MAX_SPEED = 54;
 
 function computeSpeedAt(distance) {
   return Math.min(BASE_SPEED + Math.log(1 + distance / SPEED_SCALE) * SPEED_FACTOR, MAX_SPEED);
 }
 
-// Hitos narrativos (solo para notificación cuando los cruzas)
+// Hitos narrativos (notificación cuando los cruzas)
+// Alineados con los nuevos thresholds de dificultad
 const SPEED_MILESTONES = [
-  { threshold: 250, label: 'Urgencia' },
-  { threshold: 500, label: 'Prioridad 1' },
-  { threshold: 1000, label: 'Código Rojo' },
-  { threshold: 1800, label: 'Golden Hour' },
-  { threshold: 2800, label: 'Extremo' },
-  { threshold: 4000, label: 'Leyenda' },
-  { threshold: 6000, label: 'Sobrehumano' },
+  { threshold: 250,  label: 'Urgencia activada' },
+  { threshold: 800,  label: 'Prioridad 1' },
+  { threshold: 2000, label: 'Código Rojo' },
+  { threshold: 3500, label: 'Golden Hour' },
+  { threshold: 5500, label: 'Zona extrema' },
+  { threshold: 8000, label: 'Leyenda' },
+  { threshold: 12000, label: 'Sobrehumano' },
 ];
 
 // ========== ESTADO ==========
@@ -1427,17 +2297,74 @@ const MISSION_POOL = [
 
 const META_KEY = 'hems_runner_meta';
 
+// Devuelve fecha local como string YYYY-MM-DD
+function getTodayString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Flag global para el UI: true si el multiplicador se acaba de resetear por cambio de día
+let DAY_JUST_RESET = false;
+
 function loadMeta() {
+  const today = getTodayString();
+  let m;
   try {
-    const m = JSON.parse(localStorage.getItem(META_KEY) || '{}');
-    return {
-      multiplier: m.multiplier || 1,
-      missionsCompleted: m.missionsCompleted || 0,
-      activeMissionIds: m.activeMissionIds || null,
-    };
+    m = JSON.parse(localStorage.getItem(META_KEY) || '{}');
   } catch {
-    return { multiplier: 1, missionsCompleted: 0, activeMissionIds: null };
+    m = {};
   }
+
+  // Stats históricos (nunca se resetean)
+  const history = m.history || {
+    maxMultiplierEver: 1,
+    daysPlayed: 0,
+    totalMissionsCompleted: 0,
+    streak: 0,       // días seguidos jugando
+    lastStreakDate: null,
+  };
+
+  // Si cambió el día, resetear multiplicador y misiones
+  const lastDay = m.lastDay;
+  const isNewDay = lastDay !== today;
+
+  if (isNewDay) {
+    DAY_JUST_RESET = !!lastDay; // solo mostrar "reset" si ya había jugado antes
+    // Guardar récord antes de resetear
+    if ((m.multiplier || 1) > history.maxMultiplierEver) {
+      history.maxMultiplierEver = m.multiplier || 1;
+    }
+    // Racha: +1 si jugó ayer, si no reset a 1
+    if (lastDay) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      history.streak = (lastDay === yStr) ? (history.streak || 0) + 1 : 1;
+    } else {
+      history.streak = 1;
+    }
+    history.daysPlayed = (history.daysPlayed || 0) + 1;
+    history.lastStreakDate = today;
+
+    return {
+      multiplier: 1,
+      missionsCompleted: 0,   // contador diario
+      activeMissionIds: null, // se generarán al init
+      lastDay: today,
+      history,
+    };
+  }
+
+  return {
+    multiplier: m.multiplier || 1,
+    missionsCompleted: m.missionsCompleted || 0,
+    activeMissionIds: m.activeMissionIds || null,
+    lastDay: today,
+    history,
+  };
 }
 
 function saveMeta(meta) {
@@ -1445,7 +2372,7 @@ function saveMeta(meta) {
 }
 
 const META = loadMeta();
-// Inicializar misiones si es la primera vez
+// Inicializar misiones si es la primera vez o tras reset diario
 if (!META.activeMissionIds || META.activeMissionIds.length !== 3) {
   META.activeMissionIds = pickRandomMissions(3);
   saveMeta(META);
@@ -1487,11 +2414,23 @@ function isMissionComplete(mission) {
 }
 
 // Helper único que suma al score aplicando multiplicadores
-// base: puntos base sin modificar. Aplica x2Score (run) y META.multiplier (persistente)
+// base: puntos base. Aplica x2Score, Código Rojo x3, Fever x3, Modo HEMS x3, Rayo x5, META.multiplier
 function addScore(base) {
   const x2 = STATE.x2Score ? 2 : 1;
-  const final = Math.round(base * x2 * META.multiplier);
+  const rojo = STATE.codigoRojo ? 3 : 1;
+  const fever = STATE.fever ? 3 : 1;
+  const hems = STATE.jetpack ? 3 : 1;
+  const rayo = STATE.rayo ? 5 : 1;          // Relámpago: x5 puntos
+  const mastery = STATE.mastery ? 5 : 1;    // Mastery: x5 puntos (igual que rayo)
+  const sva = STATE.sva ? 2 : 1;            // SVA: x2 puntos (más modesto)
+  // Los multiplicadores no apilan todos: el mayor bonus efímero manda
+  const efimero = Math.max(x2, rojo, fever, hems, rayo, mastery, sva);
+  const final = Math.round(base * efimero * META.multiplier);
   STATE.score += final;
+  // Si estamos en Mastery, registrar los puntos para el bonus final x2
+  if (STATE.mastery) {
+    STATE.masteryPointsEarned += final;
+  }
   return final;
 }
 
@@ -1519,10 +2458,16 @@ function commitRunMissions() {
   }
 
   META.missionsCompleted += completedIds.length;
+  META.history.totalMissionsCompleted = (META.history.totalMissionsCompleted || 0) + completedIds.length;
 
   // Cada 3 misiones completadas -> +1 multiplicador
   const prevMult = META.multiplier;
   META.multiplier = 1 + Math.floor(META.missionsCompleted / 3);
+
+  // Actualizar récord histórico si aplica
+  if (META.multiplier > META.history.maxMultiplierEver) {
+    META.history.maxMultiplierEver = META.multiplier;
+  }
 
   // Reemplazar las completadas por nuevas aleatorias
   META.activeMissionIds = META.activeMissionIds
@@ -1571,13 +2516,35 @@ function renderMissionsHud() {
 
 // Render en menú principal
 function renderMenuMissions() {
+  // Chequeo de nuevo día: si el jugador dejó la pestaña abierta y pasó la medianoche
+  const today = getTodayString();
+  if (META.lastDay && META.lastDay !== today) {
+    // Guardar récord multi y reset
+    if (META.multiplier > META.history.maxMultiplierEver) {
+      META.history.maxMultiplierEver = META.multiplier;
+    }
+    // Racha
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    META.history.streak = (META.lastDay === yStr) ? (META.history.streak || 0) + 1 : 1;
+    META.history.daysPlayed = (META.history.daysPlayed || 0) + 1;
+
+    META.multiplier = 1;
+    META.missionsCompleted = 0;
+    META.activeMissionIds = pickRandomMissions(3);
+    META.lastDay = today;
+    saveMeta(META);
+    DAY_JUST_RESET = true;
+  }
+
   const missions = getActiveMissions();
   document.getElementById('menu-multiplier').textContent = '×' + META.multiplier;
 
   const progress = META.missionsCompleted % 3;
   const footer = document.getElementById('menu-missions-footer');
   const remaining = 3 - progress;
-  footer.innerHTML = `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1}`;
+  footer.innerHTML = `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1} · Caduca a medianoche`;
 
   const list = document.getElementById('menu-missions-list');
   let html = '';
@@ -1589,6 +2556,34 @@ function renderMenuMissions() {
     </div>`;
   }
   list.innerHTML = html;
+
+  // Stats históricos
+  const h = META.history || {};
+  document.getElementById('history-streak').textContent = (h.streak || 1) + (h.streak > 1 ? ' días' : ' día');
+  document.getElementById('history-max-mult').textContent = '×' + (h.maxMultiplierEver || 1);
+  document.getElementById('history-total-missions').textContent = h.totalMissionsCompleted || 0;
+
+  // Banner de "nuevo día" si aplica (solo primera vez que se muestra el menú ese día)
+  const banner = document.getElementById('newday-banner');
+  if (DAY_JUST_RESET) {
+    banner.classList.add('active');
+    DAY_JUST_RESET = false; // solo una vez
+  } else {
+    banner.classList.remove('active');
+  }
+
+  // Código destacado del día
+  const codDia = getCodigoDelDia();
+  const card = document.getElementById('menu-codigo-card');
+  if (card) {
+    // Limpiar clases previas de código
+    card.classList.remove('codigo-card--trauma', 'codigo-card--infarto', 'codigo-card--sepsis', 'codigo-card--ictus');
+    card.classList.add('codigo-card--' + codDia.id.toLowerCase());
+    const nameEl = document.getElementById('menu-codigo-name');
+    const subEl = document.getElementById('menu-codigo-sub');
+    if (nameEl) nameEl.textContent = codDia.name;
+    if (subEl) subEl.textContent = codDia.subtitle;
+  }
 }
 
 // Render en game over (con misiones completadas y banner si sube mult)
@@ -1611,7 +2606,7 @@ function renderGameOverMissions(commitResult) {
   const progress = META.missionsCompleted % 3;
   const remaining = 3 - progress;
   document.getElementById('go-missions-footer').innerHTML =
-    `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1}`;
+    `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1} · Caduca a medianoche`;
 
   // Lista: las misiones ACTUALES (ya reemplazadas las completadas). Las completadas este run se muestran con animación newly-done si están en el set "completedThisRun" antes del commit... mejor mostramos las activas + un pequeño summary
   const list = document.getElementById('go-missions-list');
@@ -1646,7 +2641,7 @@ function renderGameOverMissions(commitResult) {
 const STATE = {
   mode: 'menu',
   score: 0, coins: 0, patients: 0, distance: 0,
-  speed: 18,
+  speed: 20,
   lastSpeedMilestone: -1,  // índice del último hito narrativo mostrado
   combo: 0, comboScore: 0, comboTimer: 0,
   startTime: 0,
@@ -1658,6 +2653,35 @@ const STATE = {
   magnetTimer: 0,
   x2Score: false,
   x2Timer: 0,
+  // CÓDIGO ROJO: al completar palabra, invencible + velocidad + x3 puntos
+  codigoRojo: false,
+  codigoRojoTimer: 0,
+  codigoActivo: null,  // qué código está activo: 'TRAUMA' / 'INFARTO' / 'SEPSIS' / 'ICTUS'
+  // FEVER MODE: al combo x20, x3 puntos + vibración
+  fever: false,
+  feverTimer: 0,
+  feverComboAtStart: 0,
+  // MASTERY MODE: al combo x120, mecánica propia (distinta de fever)
+  // Monedas x5, imán permanente 10m, velocidad +20%, 15s, bonus x2 al final
+  mastery: false,
+  masteryTimer: 0,
+  masteryPointsEarned: 0,      // puntos ganados durante el modo (para bonus ×2)
+  masteryPointsAtStart: 0,     // snapshot del score al activar
+  // SVA ACTIVADO (caja sorpresa): rotativos azules, escudo, imán, x2 puntos, +35% velocidad, 8s
+  sva: false,
+  svaTimer: 0,
+  // JETPACK (de caja sorpresa): vuelas sobre obstáculos
+  jetpack: false,
+  jetpackTimer: 0,
+  // CONTADOR HEMS: items rescatados durante modo HEMS (para mostrar jackpot)
+  hemsRescuedCount: 0,     // cantidad en esta activación
+  hemsRescuedPoints: 0,    // puntos en esta activación
+  // VORTEX (aspirador de wormhole): atrae TODO durante unos segundos
+  vortex: false,
+  vortexTimer: 0,
+  // RELÁMPAGO (aura eléctrica sostenida con chispas)
+  rayo: false,
+  rayoTimer: 0,
   revivesUsed: 0,
   maxRevives: 1,
   lastMilestone: 0,
@@ -1684,24 +2708,303 @@ const STATE = {
   comboBreakShown: false,
 };
 
-// Palabras temáticas médicas
-const WORD_HUNT_WORDS = [
-  'TRAUMA', 'SEM', 'HEMS', 'SEPSIS', 'SHOCK',
-  'REBOA', 'GOLDEN', 'ABCDE', 'UCI', 'PARC'
+// ========== SISTEMA DE CÓDIGOS CLÍNICOS ==========
+// Cada palabra activa su código correspondiente al completarse
+const CODIGOS = {
+  TRAUMA: {
+    id: 'TRAUMA',
+    name: 'CÓDIGO TRAUMA',
+    subtitle: 'Paciente politraumatizado',
+    color: 0xe63946,           // Rojo profundo (sangre)
+    colorHex: '#e63946',
+    words: ['TRAUMA', 'ATLS', 'ABCDE', 'REBOA', 'DAMAGE', 'GOLDEN', 'FAST'],
+    messages: {
+      'TRAUMA':  'Politraumatizado estabilizado',
+      'ATLS':    'Primary survey completado',
+      'ABCDE':   'Evaluación sistemática',
+      'REBOA':   'Oclusión aórtica endovascular',
+      'DAMAGE':  'Damage Control Surgery',
+      'GOLDEN':  'Golden Hour dominada',
+      'FAST':    'Ecografía de trauma positiva',
+    },
+  },
+  INFARTO: {
+    id: 'INFARTO',
+    name: 'CÓDIGO INFARTO',
+    subtitle: 'Síndrome coronario agudo',
+    color: 0xffb347,           // Ámbar/amarillo (alarma cardiaca)
+    colorHex: '#ffb347',
+    words: ['IAM', 'STEMI', 'TROPO', 'ANGIO', 'STENT', 'KILLIP'],
+    messages: {
+      'IAM':     'Infarto Agudo de Miocardio',
+      'STEMI':   'ST-elevation MI · hemodinámica',
+      'TROPO':   'Troponina elevada',
+      'ANGIO':   'Angioplastia primaria',
+      'STENT':   'Stent coronario colocado',
+      'KILLIP':  'Clasificación Killip aplicada',
+    },
+  },
+  SEPSIS: {
+    id: 'SEPSIS',
+    name: 'CÓDIGO SEPSIS',
+    subtitle: 'Paciente séptico',
+    color: 0x4ade80,           // Verde (reanimación)
+    colorHex: '#4ade80',
+    words: ['SEPSIS', 'LACTATO', 'QSOFA', 'SHOCK', 'NORA', 'FOCO'],
+    messages: {
+      'SEPSIS':  'Bundle primera hora cumplido',
+      'LACTATO': 'Hiperlactatemia detectada',
+      'QSOFA':   'Quick SOFA positivo',
+      'SHOCK':   'Shock séptico resuelto',
+      'NORA':    'Noradrenalina iniciada',
+      'FOCO':    'Control del foco infeccioso',
+    },
+  },
+  ICTUS: {
+    id: 'ICTUS',
+    name: 'CÓDIGO ICTUS',
+    subtitle: 'Accidente cerebrovascular',
+    color: 0xa855f7,           // Púrpura (vascular/cerebro)
+    colorHex: '#a855f7',
+    words: ['ICTUS', 'TROMBO', 'NIHSS', 'RTPA', 'TICI', 'ASPECTS'],
+    messages: {
+      'ICTUS':   'Código ictus activado',
+      'TROMBO':  'Trombectomía mecánica',
+      'NIHSS':   'Escala NIHSS valorada',
+      'RTPA':    'Trombolisis iv administrada',
+      'TICI':    'Recanalización TICI 3',
+      'ASPECTS': 'ASPECTS >7 · ventana terapéutica',
+    },
+  },
+};
+
+// Lookup inverso: palabra → código al que pertenece
+const WORD_TO_CODIGO = {};
+for (const [codKey, cod] of Object.entries(CODIGOS)) {
+  for (const w of cod.words) WORD_TO_CODIGO[w] = codKey;
+}
+
+/* ================================================================
+   CATÁLOGO DE ITEMS DE TRAUMA
+   Material real usado en emergencias prehospitalarias HEMS/SEM.
+   Se utilizan en la caja sorpresa "CÓDIGO TRAUMA · Lluvia de material".
+================================================================ */
+const TRAUMA_ITEMS = [
+  {
+    id: 'blood',
+    name: 'Sangre O-',
+    points: 500,
+    color: 0x991b1b,   // rojo oscuro (sangre venosa)
+    glow: 0xe63946,
+    weight: 1,          // raro (5%)
+    shape: 'bag',       // bolsa cilíndrica
+  },
+  {
+    id: 'sam_sling',
+    name: 'Faja pélvica SAM',
+    points: 400,
+    color: 0xf97316,   // naranja SAM
+    glow: 0xffa940,
+    weight: 2,          // poco común (10%)
+    shape: 'belt',
+  },
+  {
+    id: 'cat_tourniquet',
+    name: 'Torniquete CAT',
+    points: 350,
+    color: 0xdc2626,   // rojo CAT
+    glow: 0xff6b6b,
+    weight: 3,          // poco común (15%)
+    shape: 'strap',
+  },
+  {
+    id: 'txa',
+    name: 'TXA',
+    points: 300,
+    color: 0x10b981,   // verde farmacia (vial)
+    glow: 0x6ee7b7,
+    weight: 3,
+    shape: 'vial',
+  },
+  {
+    id: 'cervical',
+    name: 'Collarín Philadelphia',
+    points: 250,
+    color: 0xf4efe6,   // blanco hueso
+    glow: 0xffffff,
+    weight: 4,          // común (20%)
+    shape: 'collar',
+  },
+  {
+    id: 'ezio',
+    name: 'EZ-IO',
+    points: 200,
+    color: 0x2563eb,   // azul EZ-IO
+    glow: 0x60a5fa,
+    weight: 4,
+    shape: 'drill',
+  },
+  {
+    id: 'chest_needle',
+    name: 'Aguja 14G',
+    points: 200,
+    color: 0xa8a29e,   // plateado metálico
+    glow: 0xd6d3d1,
+    weight: 5,          // frecuente (25%)
+    shape: 'needle',
+  },
+  {
+    id: 'bandage',
+    name: 'Vendaje israelí',
+    points: 150,
+    color: 0xd4c4a0,   // beige clínico
+    glow: 0xefe4c7,
+    weight: 8,          // muy frecuente (40%)
+    shape: 'roll',
+  },
 ];
 
-const WORD_HUNT_MESSAGES = {
-  'TRAUMA': 'Protocolo ABCDE dominado',
-  'SEM': 'Sistema de Emergencias',
-  'HEMS': 'Helicóptero medicalizado',
-  'SEPSIS': 'Hora dorada cumplida',
-  'SHOCK': 'Estabilización conseguida',
-  'REBOA': 'Control hemostático',
-  'GOLDEN': 'Golden Hour dominada',
-  'ABCDE': 'Protocolo completo',
-  'UCI': 'Cuidados críticos',
-  'PARC': 'Parc Taulí te llama',
-};
+// Pool para elegir items por peso
+function pickRandomTraumaItem() {
+  const totalWeight = TRAUMA_ITEMS.reduce((s, i) => s + i.weight, 0);
+  let roll = Math.random() * totalWeight;
+  for (const item of TRAUMA_ITEMS) {
+    roll -= item.weight;
+    if (roll <= 0) return item;
+  }
+  return TRAUMA_ITEMS[TRAUMA_ITEMS.length - 1];
+}
+
+// Crear mesh 3D de un item de trauma según su shape
+function createTraumaItemMesh(item) {
+  const group = new THREE.Group();
+  let body;
+
+  switch (item.shape) {
+    case 'bag': {  // Bolsa de sangre: cápsula roja oscura
+      body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.35, 0.6, 4, 8),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.3, roughness: 0.4 })
+      );
+      body.rotation.z = Math.PI / 2;
+      break;
+    }
+    case 'belt': {  // Faja SAM: cinturón plano naranja/negro
+      body = new THREE.Mesh(
+        new THREE.BoxGeometry(1.1, 0.15, 0.5),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.3 })
+      );
+      // Hebilla negra central
+      const buckle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, 0.22, 0.55),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a1a })
+      );
+      group.add(buckle);
+      break;
+    }
+    case 'strap': {  // Torniquete CAT: correa con hebilla
+      body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.1, 0.35),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.4 })
+      );
+      // Windlass (varilla cruzada)
+      const stick = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 0.5),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a1a })
+      );
+      stick.rotation.z = Math.PI / 2;
+      stick.position.set(0, 0.15, 0);
+      group.add(stick);
+      break;
+    }
+    case 'vial': {  // Vial TXA: cilindro verde con tapón
+      body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.25, 0.7, 12),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.4, transparent: true, opacity: 0.85 })
+      );
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.27, 0.27, 0.15, 12),
+        new THREE.MeshStandardMaterial({ color: 0x1a1a1a })
+      );
+      cap.position.y = 0.42;
+      group.add(cap);
+      break;
+    }
+    case 'collar': {  // Collarín Philadelphia: anillo/herradura blanca
+      body = new THREE.Mesh(
+        new THREE.TorusGeometry(0.4, 0.12, 8, 16, Math.PI * 1.3),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.3, roughness: 0.6 })
+      );
+      body.rotation.x = Math.PI / 2;
+      break;
+    }
+    case 'drill': {  // EZ-IO: pistola intraósea (caja + aguja)
+      body = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.5, 0.3),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.3 })
+      );
+      const needle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.35),
+        new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8 })
+      );
+      needle.position.y = -0.35;
+      group.add(needle);
+      break;
+    }
+    case 'needle': {  // Aguja 14G: cilindro plateado fino y largo
+      body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.2, metalness: 0.9, roughness: 0.2 })
+      );
+      const hub = new THREE.Mesh(
+        new THREE.BoxGeometry(0.18, 0.18, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24 })  // hub ámbar 14G
+      );
+      hub.position.y = 0.35;
+      group.add(hub);
+      break;
+    }
+    case 'roll':
+    default: {  // Vendaje israelí: rodillo beige
+      body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.3, 0.3, 0.35, 12),
+        new THREE.MeshStandardMaterial({ color: item.color, emissive: item.glow, emissiveIntensity: 0.2, roughness: 0.8 })
+      );
+      body.rotation.z = Math.PI / 2;
+      break;
+    }
+  }
+
+  if (body) group.add(body);
+  return group;
+}
+
+// Obtener código destacado del día (rota diariamente)
+function getCodigoDelDia() {
+  const codKeys = Object.keys(CODIGOS);
+  // Usar la fecha como seed determinista (mismo día = mismo código)
+  const today = getTodayString();
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) hash = ((hash << 5) - hash) + today.charCodeAt(i);
+  const idx = Math.abs(hash) % codKeys.length;
+  return CODIGOS[codKeys[idx]];
+}
+
+// Elegir palabra siguiendo lógica híbrida 60/40
+function pickNextWord() {
+  const codDia = getCodigoDelDia();
+  const useCodigoDelDia = Math.random() < 0.6;
+  let pool;
+  if (useCodigoDelDia) {
+    pool = codDia.words;
+  } else {
+    // De cualquier otro código
+    const others = Object.values(CODIGOS).filter(c => c.id !== codDia.id);
+    const otherCod = others[Math.floor(Math.random() * others.length)];
+    pool = otherCod.words;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 const SCENARIOS = [
   { name: 'Ciudad', buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878], ground: 0x2a3a2a, sky: 0x7a9ac0 },
@@ -1712,7 +3015,7 @@ const SCENARIOS = [
 
 // ========== WORD HUNT ==========
 function initWordHunt() {
-  const w = WORD_HUNT_WORDS[Math.floor(Math.random() * WORD_HUNT_WORDS.length)];
+  const w = pickNextWord();
   STATE.wordHunt.word = w;
   STATE.wordHunt.collected = new Array(w.length).fill(false);
   STATE.wordHunt.nextLetterIdx = 0;
@@ -1761,25 +3064,746 @@ function completeWordHunt() {
   const bonus = 500;
   const earned = addScore(bonus);
   STATE.runStats.wordsCompleted++;
-  const msg = WORD_HUNT_MESSAGES[word] || 'Palabra completada';
-  showToast(`¡${word} COMPLETADO!`, `+${earned} · ${msg}`, 0x4ade80);
+  // Identificar qué código activa esta palabra
+  const codKey = WORD_TO_CODIGO[word];
+  const cod = CODIGOS[codKey] || CODIGOS.TRAUMA;
+  const msg = cod.messages[word] || 'Palabra completada';
+  showToast(`¡${word} COMPLETADO!`, `+${earned} · ${msg}`, cod.color);
   // Animación de celebración en UI
   const panel = document.getElementById('word-hunt');
   panel.classList.add('completed');
   setTimeout(() => panel.classList.remove('completed'), 800);
-  // Explosión verde-dorada
+  // Explosión del color del código
   spawnCollectParticles(
     { x: ambulance.position.x, y: ambulance.position.y + 1.5, z: ambulance.position.z - 3 },
-    0x4ade80, 50
+    cod.color, 50
   );
   spawnCollectParticles(
     { x: ambulance.position.x, y: ambulance.position.y + 1.5, z: ambulance.position.z - 3 },
     0xffd54f, 40
   );
+  // ¡ACTIVAR CÓDIGO según la palabra!
+  activateCodigo(codKey);
   // Reiniciar con nueva palabra después de 2s
   setTimeout(() => {
     if (STATE.running) initWordHunt();
   }, 2000);
+}
+
+// Activa cualquiera de los 4 códigos. La mecánica es la misma (invencible + velocidad + x3),
+// solo cambia el color y el nombre del banner
+function activateCodigo(codKey) {
+  const cod = CODIGOS[codKey] || CODIGOS.TRAUMA;
+  STATE.codigoRojo = true;
+  STATE.codigoActivo = codKey;  // trackeamos qué código está activo
+  STATE.codigoRojoTimer = 8 * 60;
+  STATE.invincible = true;
+  STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 8 * 60);
+  setTimeout(() => {
+    showToast('¡' + cod.name + '!', cod.subtitle + ' · 8s', cod.color);
+  }, 700);
+  // Activar banner visual con el código correspondiente
+  updateCodigoBanner(codKey, true);
+  // Explosión grande con el color del código
+  setTimeout(() => {
+    spawnCollectParticles({ x: 0, y: 2, z: -5 }, cod.color, 80);
+  }, 200);
+}
+
+// Alias retrocompatible (el Relámpago de la caja sorpresa aún llama a activateCodigoRojo)
+function activateCodigoRojo() {
+  activateCodigo('TRAUMA');
+}
+
+// Actualiza el banner visual: aplica clase con color del código
+function updateCodigoBanner(codKey, active) {
+  const banner = document.getElementById('codigo-rojo-banner');
+  const titleEl = banner ? banner.querySelector('.mode-banner__title') : null;
+  if (!banner) return;
+  // Quitar clases previas de código
+  banner.classList.remove('cod-trauma', 'cod-infarto', 'cod-sepsis', 'cod-ictus');
+  if (active && codKey) {
+    const cod = CODIGOS[codKey];
+    banner.classList.add('cod-' + codKey.toLowerCase());
+    if (titleEl) titleEl.textContent = cod.name;
+    banner.classList.add('active');
+  } else {
+    banner.classList.remove('active');
+  }
+}
+
+function deactivateCodigoRojo() {
+  STATE.codigoRojo = false;
+  STATE.codigoRojoTimer = 0;
+  STATE.codigoActivo = null;
+  updateCodigoBanner(null, false);
+}
+
+// activateFever(fromBox): si fromBox=true (caja sorpresa o debug), 10s fijos sin condición de combo.
+// Si es fever "natural" (por combo x20), usa la lógica original de extensión/corte por combo.
+function activateFever(fromBox) {
+  STATE.fever = true;
+  STATE.feverTimer = 10 * 60; // 10 segundos
+  STATE.feverFromBox = !!fromBox;
+  STATE.feverComboAtStart = fromBox ? 0 : STATE.combo;
+
+  // Toast contextual: detectar si hay otros modos activos en este momento
+  const otherModes = [];
+  if (STATE.codigoRojo) otherModes.push('CÓDIGO');
+  if (STATE.rayo) otherModes.push('RELÁMPAGO');
+  if (STATE.jetpack) otherModes.push('HEMS');
+  if (STATE.vortex) otherModes.push('VÓRTICE');
+
+  let title, subtitle;
+  if (otherModes.length > 0) {
+    // Fever activada en medio de otro modo → dejar claro que es COMBO
+    title = '🔥 ¡FEVER ENCADENADO!';
+    subtitle = `Combo ×120 + ${otherModes.join(' + ')} · 10s`;
+  } else if (fromBox) {
+    title = '🔥 ¡FEVER MODE!';
+    subtitle = '10s · Monedas ×3 · duración fija';
+  } else {
+    title = '🔥 ¡FEVER MODE!';
+    subtitle = '10s · Monedas ×3 · por combo ×120';
+  }
+  showToast(title, subtitle, 0xff6b35);
+
+  const banner = document.getElementById('fever-banner');
+  if (banner) banner.classList.add('active');
+  // Estela de fuego detrás de la ambulancia
+  createFeverTrail();
+  // Flash naranja + shake
+  flashScreen(0xff6b35, 0.5, 450);
+  shakeCamera(1.0);
+  // Partículas de celebración
+  const pos = { x: ambulance.position.x, y: ambulance.position.y + 1.5, z: ambulance.position.z - 2 };
+  spawnCollectParticles(pos, 0xff6b35, 70);
+  spawnCollectParticles(pos, 0xf5a623, 50);
+  spawnCollectParticles(pos, 0xffdd33, 40);
+  addTemporaryLight(pos, 0xff6b35, 6, 1200);
+}
+
+function deactivateFever() {
+  STATE.fever = false;
+  STATE.feverTimer = 0;
+  STATE.feverFromBox = false;
+  const banner = document.getElementById('fever-banner');
+  if (banner) banner.classList.remove('active');
+  destroyFeverTrail();
+}
+
+/* ================================================================
+   MASTERY MODE — premio por combo 120 (mecánica única, NO es fever)
+   ================================================================
+   - 15 segundos de duración
+   - Monedas valen ×5 (ver aplicación en addScore)
+   - Imán permanente 10m
+   - +20% velocidad
+   - Invencible
+   - Al terminar naturalmente: BONUS x2 sobre puntos ganados durante el modo
+   - Si muere durante mastery: NO se aplica bonus (penalización)
+================================================================ */
+function activateMasteryMode() {
+  // Si ya está activo, extender timer (no reiniciar puntos ganados)
+  if (STATE.mastery) {
+    STATE.masteryTimer = Math.max(STATE.masteryTimer, 15 * 60);
+    return;
+  }
+  // Si había fever activo, apagarlo (mastery tiene prioridad)
+  if (STATE.fever) deactivateFever();
+
+  STATE.mastery = true;
+  STATE.masteryTimer = 15 * 60;  // 15 segundos
+  STATE.masteryPointsEarned = 0;
+  STATE.masteryPointsAtStart = STATE.score;
+  // Imán permanente 10m (radio especial para mastery, se gestiona en el loop de magnet)
+  STATE.magnet = true;
+  STATE.magnetTimer = Math.max(STATE.magnetTimer, 15 * 60);
+  // Invencibilidad
+  STATE.invincible = true;
+  STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 15 * 60);
+
+  // Toast + banner + visuales
+  showToast('⚡ ¡MASTERY MODE!', '15s · Monedas ×5 · Bonus final ×2', 0x10b981);
+  const banner = document.getElementById('mastery-banner');
+  if (banner) banner.classList.add('active');
+  // Vignette verde en los bordes
+  const vignette = document.getElementById('mastery-vignette');
+  if (vignette) vignette.classList.add('active');
+  // Aura 3D de cristales girando
+  createMasteryAura();
+  // Flash inicial verde + luz + partículas
+  flashScreen('#10b981', 0.4, 500);
+  addTemporaryLight(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 3 },
+    0x10b981, 6.0, 1200
+  );
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 3 },
+    0x10b981, 80
+  );
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 3 },
+    0x06b6d4, 50
+  );
+  shakeCamera(1.2);
+}
+
+// Se llama cuando se acaba el timer (naturalmente) → aplicar bonus
+function deactivateMasteryMode(died) {
+  if (!STATE.mastery) return;
+  STATE.mastery = false;
+  STATE.masteryTimer = 0;
+  // Banner + vignette off
+  const banner = document.getElementById('mastery-banner');
+  if (banner) banner.classList.remove('active');
+  const vignette = document.getElementById('mastery-vignette');
+  if (vignette) vignette.classList.remove('active');
+  destroyMasteryAura();
+  // Bonus: solo si NO murió
+  if (!died && STATE.masteryPointsEarned > 0) {
+    showMasteryLiquidation(STATE.masteryPointsEarned);
+  }
+}
+
+/* ================================================================
+   SVA ACTIVADO — caja sorpresa (8s)
+   ================================================================
+   - Rotativos azules girando en el techo de la ambulancia
+   - 4 haces de luz rotando 120 rpm que "capturan" items al tocarlos
+   - Burbuja de escudo azul translúcido (invencible)
+   - Imán 15m (entre magnet normal 12m y HEMS 20m)
+   - Velocidad +35%
+   - Puntos ×2
+================================================================ */
+function activateSVA() {
+  STATE.sva = true;
+  STATE.svaTimer = 8 * 60;  // 8 segundos
+  // Invencibilidad durante el modo
+  STATE.invincible = true;
+  STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 8 * 60);
+  // Imán (radio se gestiona en el loop según STATE.sva)
+  STATE.magnet = true;
+  STATE.magnetTimer = Math.max(STATE.magnetTimer, 8 * 60);
+
+  // Banner + visuales
+  const banner = document.getElementById('sva-banner');
+  if (banner) banner.classList.add('active');
+  createSVAAura();
+
+  // Toast + efectos iniciales
+  showToast('🚨 ¡SVA ACTIVADO!', '8s · Escudo · Imán · Puntos ×2', 0x3b82f6);
+  flashScreen('#3b82f6', 0.35, 450);
+  addTemporaryLight(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 2 },
+    0x3b82f6, 6.0, 1200
+  );
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 2 },
+    0x3b82f6, 70
+  );
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 2 },
+    0x06b6d4, 40
+  );
+  shakeCamera(0.8);
+}
+
+function deactivateSVA() {
+  if (!STATE.sva) return;
+  STATE.sva = false;
+  STATE.svaTimer = 0;
+  const banner = document.getElementById('sva-banner');
+  if (banner) banner.classList.remove('active');
+  destroySVAAura();
+}
+
+/* ================================================================
+   AURA 3D DEL SVA: rotativos + haces giratorios + burbuja escudo
+   ================================================================ */
+let svaAura = null;
+// Línea-destello temporal (cuando un haz "captura" un item)
+const svaCaptureLines = [];
+
+function createSVAAura() {
+  if (svaAura) return;
+  const group = new THREE.Group();
+
+  // 2 ROTATIVOS sobre el techo (esferas semitransparentes azules)
+  const lightBars = [];
+  for (let i = 0; i < 2; i++) {
+    const barGroup = new THREE.Group();
+    const sideX = (i === 0) ? -0.5 : 0.5;
+    barGroup.position.set(sideX, 1.95, 0);
+
+    // Domo del rotativo (esfera translúcida)
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshBasicMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.65,
+        side: THREE.DoubleSide
+      })
+    );
+    barGroup.add(dome);
+
+    // Bombilla interna brillante
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0x60a5fa })
+    );
+    bulb.position.y = 0.05;
+    barGroup.add(bulb);
+
+    // 4 HACES giratorios (conos horizontales saliendo del rotativo)
+    const beamsContainer = new THREE.Group();
+    for (let j = 0; j < 4; j++) {
+      const beam = new THREE.Mesh(
+        new THREE.ConeGeometry(0.7, 7, 6, 1, true),
+        new THREE.MeshBasicMaterial({
+          color: 0x3b82f6,
+          transparent: true,
+          opacity: 0.25,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        })
+      );
+      // Cono apunta en +X por defecto → rotamos para que sea horizontal en la dirección j
+      beam.rotation.z = -Math.PI / 2;  // convierte cono vertical en horizontal (en +X)
+      beam.position.x = 3.5;
+      const pivot = new THREE.Group();
+      pivot.rotation.y = (j / 4) * Math.PI * 2;  // 4 haces a 90°
+      pivot.add(beam);
+      beamsContainer.add(pivot);
+    }
+    beamsContainer.userData.rotSpeed = 4.0;  // 2 vueltas/seg aprox
+    barGroup.add(beamsContainer);
+    barGroup.userData.beams = beamsContainer;
+    barGroup.userData.bulb = bulb;
+
+    // Luz puntual azul parpadeante
+    const light = new THREE.PointLight(0x3b82f6, 2.5, 10);
+    light.position.y = 0.1;
+    barGroup.add(light);
+    barGroup.userData.light = light;
+    // Desfase inicial entre los dos rotativos (uno alterna con el otro)
+    barGroup.userData.phase = i * Math.PI;
+
+    group.add(barGroup);
+    lightBars.push(barGroup);
+  }
+  group.userData.lightBars = lightBars;
+
+  // BURBUJA DE ESCUDO (esfera azul translúcida con efecto de rejilla)
+  const shield = new THREE.Mesh(
+    new THREE.SphereGeometry(2.8, 20, 16),
+    new THREE.MeshBasicMaterial({
+      color: 0x3b82f6,
+      transparent: true,
+      opacity: 0.12,
+      side: THREE.FrontSide,
+      wireframe: false
+    })
+  );
+  shield.position.y = 1.0;
+  group.add(shield);
+  group.userData.shield = shield;
+
+  // Wireframe del escudo (da el efecto "rejilla energética")
+  const shieldWire = new THREE.Mesh(
+    new THREE.SphereGeometry(2.82, 12, 8),
+    new THREE.MeshBasicMaterial({
+      color: 0x60a5fa,
+      transparent: true,
+      opacity: 0.25,
+      wireframe: true
+    })
+  );
+  shieldWire.position.y = 1.0;
+  group.add(shieldWire);
+  group.userData.shieldWire = shieldWire;
+
+  svaAura = group;
+  scene.add(svaAura);
+}
+
+function destroySVAAura() {
+  if (!svaAura) return;
+  scene.remove(svaAura);
+  svaAura.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  svaAura = null;
+  // Limpiar líneas de captura pendientes
+  for (const line of svaCaptureLines) {
+    scene.remove(line);
+    if (line.geometry) line.geometry.dispose();
+    if (line.material) line.material.dispose();
+  }
+  svaCaptureLines.length = 0;
+}
+
+function updateSVAAura(dt) {
+  if (!svaAura || !STATE.sva) return;
+  // Seguir a la ambulancia
+  svaAura.position.x = ambulance.position.x;
+  svaAura.position.z = ambulance.position.z;
+  svaAura.position.y = ambulance.position.y;
+
+  const now = Date.now();
+
+  // Rotativos + haces giratorios + parpadeo bulb/luz alternado
+  if (svaAura.userData.lightBars) {
+    for (const bar of svaAura.userData.lightBars) {
+      // Rotar haces
+      if (bar.userData.beams) {
+        bar.userData.beams.rotation.y += dt * bar.userData.beams.userData.rotSpeed;
+      }
+      // Parpadeo alternado (como sirenas reales: un lado sí, otro no)
+      const t = (now / 180) + bar.userData.phase;
+      const blink = Math.max(0, Math.sin(t));
+      if (bar.userData.bulb) {
+        bar.userData.bulb.material.opacity = 0.4 + blink * 0.6;
+      }
+      if (bar.userData.light) {
+        bar.userData.light.intensity = 0.5 + blink * 3.5;
+      }
+    }
+  }
+
+  // Escudo pulsante
+  if (svaAura.userData.shield) {
+    const pulse = 0.08 + Math.abs(Math.sin(now / 400)) * 0.08;
+    svaAura.userData.shield.material.opacity = pulse;
+  }
+  if (svaAura.userData.shieldWire) {
+    svaAura.userData.shieldWire.rotation.y += dt * 0.4;
+    svaAura.userData.shieldWire.rotation.x += dt * 0.25;
+  }
+
+  // Actualizar líneas de captura (se desvanecen rápido)
+  for (let i = svaCaptureLines.length - 1; i >= 0; i--) {
+    const line = svaCaptureLines[i];
+    line.userData.life -= dt;
+    if (line.userData.life <= 0) {
+      scene.remove(line);
+      if (line.geometry) line.geometry.dispose();
+      if (line.material) line.material.dispose();
+      svaCaptureLines.splice(i, 1);
+    } else {
+      line.material.opacity = line.userData.life / line.userData.maxLife * 0.8;
+    }
+  }
+}
+
+// Dispara una línea azul del item al rotativo (feedback visual de "captado por el haz")
+function spawnSVACaptureLine(itemPos) {
+  if (!svaAura) return;
+  const rotativoWorldPos = new THREE.Vector3(
+    ambulance.position.x,
+    ambulance.position.y + 1.95,
+    ambulance.position.z
+  );
+  const geom = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(itemPos.x, itemPos.y, itemPos.z),
+    rotativoWorldPos
+  ]);
+  const mat = new THREE.LineBasicMaterial({
+    color: 0x60a5fa,
+    transparent: true,
+    opacity: 0.8
+  });
+  const line = new THREE.Line(geom, mat);
+  line.userData.life = 0.18;
+  line.userData.maxLife = 0.18;
+  scene.add(line);
+  svaCaptureLines.push(line);
+}
+
+// MODO HEMS: helicóptero amarillo + imán gigante + invencible + x3 puntos + 1.5x velocidad
+function activateModoHEMS() {
+  STATE.jetpack = true;                       // reutiliza la lógica del jetpack (vuelo)
+  STATE.jetpackTimer = 8 * 60;                // 8 segundos (premio gordo)
+  STATE.magnet = true;                        // imán gigante
+  STATE.magnetTimer = Math.max(STATE.magnetTimer, 8 * 60);
+  STATE.invincible = true;
+  STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 8 * 60);
+  // Reset del contador de rescatados (nueva activación, nueva cuenta)
+  STATE.hemsRescuedCount = 0;
+  STATE.hemsRescuedPoints = 0;
+  // Ocultar ambulancia, mostrar helicóptero
+  ambulance.visible = false;
+  helicopter.visible = true;
+  helicopterShadow.visible = true;
+  player.jumpY = 3.5;
+  showToast('¡MODO HEMS!', '8s · Rescate aéreo activado', 0xf5c000);
+  const banner = document.getElementById('jetpack-banner');
+  if (banner) {
+    banner.classList.add('active');
+    const titleEl = banner.querySelector('.mode-banner__title');
+    if (titleEl) titleEl.textContent = 'MODO HEMS';
+  }
+  // Mostrar contador "RESCATADOS"
+  showHemsCounter();
+  // Crear visuales 3D: halo + anillos en suelo
+  createHemsAura();
+  // Explosión dorada
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 3 },
+    0xf5c000, 60
+  );
+  spawnCollectParticles(
+    { x: ambulance.position.x, y: 2, z: ambulance.position.z - 3 },
+    0xffffff, 40
+  );
+}
+
+function deactivateModoHEMS() {
+  // Restaurar ambulancia
+  helicopter.visible = false;
+  helicopterShadow.visible = false;
+  ambulance.visible = true;
+  // Imán se apaga solo si venía del Modo HEMS (no de powerup regular)
+  // Lo desactivamos explícitamente aquí, es el comportamiento esperado
+  if (STATE.magnet && STATE.magnetTimer <= 0) {
+    STATE.magnet = false;
+  }
+  const banner = document.getElementById('jetpack-banner');
+  if (banner) banner.classList.remove('active');
+  // Ocultar contador HEMS
+  hideHemsCounter();
+  // Destruir visuales 3D
+  destroyHemsAura();
+}
+
+/* ================================================================
+   FEEDBACK DEL MODO HEMS (contador + halo + trails + números volantes)
+   ================================================================ */
+
+// Mostrar/ocultar contador grande "RESCATADOS"
+function showHemsCounter() {
+  const el = document.getElementById('hems-counter');
+  if (el) {
+    document.getElementById('hems-counter-value').textContent = '0';
+    document.getElementById('hems-counter-points').textContent = '0';
+    document.getElementById('hems-counter-bar').style.width = '100%';
+    el.classList.add('visible');
+  }
+}
+function hideHemsCounter() {
+  const el = document.getElementById('hems-counter');
+  if (el) el.classList.remove('visible');
+}
+// Llamado cada vez que se captura un item durante modo HEMS
+function bumpHemsCounter(pts, worldPosOfItem) {
+  STATE.hemsRescuedCount++;
+  STATE.hemsRescuedPoints += pts;
+  const valEl = document.getElementById('hems-counter-value');
+  const ptsEl = document.getElementById('hems-counter-points');
+  if (valEl) {
+    valEl.textContent = STATE.hemsRescuedCount;
+    valEl.classList.remove('bump');
+    void valEl.offsetWidth; // forzar reflow
+    valEl.classList.add('bump');
+  }
+  if (ptsEl) ptsEl.textContent = STATE.hemsRescuedPoints.toLocaleString('es-ES');
+  // Número volante desde el item hacia el contador
+  spawnFlyingNumber(pts, worldPosOfItem);
+}
+// Número "+50" que sale disparado desde un item 3D hacia el contador 2D
+function spawnFlyingNumber(pts, worldPos) {
+  const container = document.getElementById('hems-flying-numbers');
+  if (!container) return;
+  // Proyectar posición 3D a pantalla 2D
+  const v = new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z);
+  v.project(camera);
+  const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+  // Destino: donde esté el contador HEMS
+  const counter = document.getElementById('hems-counter');
+  if (!counter) return;
+  const rect = counter.getBoundingClientRect();
+  const targetX = rect.left + rect.width / 2;
+  const targetY = rect.top + rect.height / 2;
+
+  const num = document.createElement('div');
+  num.className = 'hems-flying-number';
+  num.textContent = `+${pts}`;
+  num.style.left = `${x}px`;
+  num.style.top = `${y}px`;
+  container.appendChild(num);
+
+  // Animar hacia el contador
+  const duration = 800;
+  const start = performance.now();
+  function animate(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    const curX = x + (targetX - x) * ease;
+    const curY = y + (targetY - y) * ease;
+    num.style.transform = `translate(${curX - x}px, ${curY - y}px) scale(${1 + (1 - t) * 0.5})`;
+    num.style.opacity = t < 0.85 ? 1 : (1 - t) / 0.15;
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      num.remove();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// Número "+500" que aparece en el item, sube y se desvanece (sin destino)
+// Usado para items de trauma, para mostrar puntos sin nombre textual
+function spawnFloatingPointsNumber(text, worldPos, colorHex) {
+  const container = document.getElementById('hems-flying-numbers');
+  if (!container) return;
+  const v = new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z);
+  v.project(camera);
+  const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+
+  const num = document.createElement('div');
+  num.className = 'hems-flying-number';
+  num.textContent = text;
+  num.style.left = `${x}px`;
+  num.style.top = `${y}px`;
+  // Color del item recogido
+  const hex = '#' + colorHex.toString(16).padStart(6, '0');
+  num.style.color = hex;
+  num.style.textShadow = `0 0 12px ${hex}, 0 2px 4px rgba(0,0,0,0.6)`;
+  container.appendChild(num);
+
+  const duration = 900;
+  const start = performance.now();
+  function animate(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 2);
+    // Sube verticalmente ~60px
+    const dy = -60 * ease;
+    num.style.transform = `translate(0px, ${dy}px) scale(${1 + (1 - t) * 0.3})`;
+    num.style.opacity = t < 0.7 ? 1 : (1 - t) / 0.3;
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      num.remove();
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+let hemsAura = null;
+function createHemsAura() {
+  if (hemsAura) return;
+  const group = new THREE.Group();
+
+  // Halo amarillo grande alrededor del helicóptero (esfera translúcida pulsante)
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(4.5, 24, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0xffc940,
+      transparent: true,
+      opacity: 0.08,
+      side: THREE.BackSide  // solo cara interior para no ocultar el heli
+    })
+  );
+  group.add(halo);
+  group.userData.halo = halo;
+
+  // Anillos de succión en el suelo (3 anillos expansivos que se repiten)
+  const rings = [];
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(1.5, 2.0, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffc940,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide
+      })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.05;
+    ring.userData.phase = i / 3; // espaciar el inicio
+    group.add(ring);
+    rings.push(ring);
+  }
+  group.userData.rings = rings;
+
+  hemsAura = group;
+  scene.add(hemsAura);
+}
+function destroyHemsAura() {
+  if (!hemsAura) return;
+  scene.remove(hemsAura);
+  hemsAura.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  hemsAura = null;
+}
+function updateHemsAura(dt) {
+  if (!hemsAura || !STATE.jetpack) return;
+  // Seguir al helicóptero
+  hemsAura.position.x = ambulance.position.x;
+  hemsAura.position.z = ambulance.position.z;
+  hemsAura.position.y = (helicopter.visible ? helicopter.position.y : ambulance.position.y) - 2;
+
+  const now = Date.now();
+  // Halo: pulsar opacidad suavemente
+  if (hemsAura.userData.halo) {
+    const pulse = 0.08 + Math.abs(Math.sin(now / 400)) * 0.12;
+    hemsAura.userData.halo.material.opacity = pulse;
+  }
+  // Anillos expansivos (se van agrandando + desvaneciendo, se repiten)
+  if (hemsAura.userData.rings) {
+    for (const ring of hemsAura.userData.rings) {
+      ring.userData.phase += dt * 0.5; // velocidad de expansión
+      if (ring.userData.phase >= 1) ring.userData.phase = 0;
+      const t = ring.userData.phase;
+      const scale = 0.5 + t * 6;
+      ring.scale.set(scale, scale, scale);
+      ring.material.opacity = (1 - t) * 0.55;
+    }
+  }
+}
+
+/* ================================================================
+   TRAILS DE ATRACCIÓN: partículas que dejan los items atraídos al heli
+   ================================================================ */
+// Se llama desde el loop de imán, una vez cada ~6 frames para no saturar
+const hemsTrailParticles = [];
+function spawnHemsTrailParticle(worldPos) {
+  const p = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 6, 4),
+    new THREE.MeshBasicMaterial({
+      color: 0xffc940,
+      transparent: true,
+      opacity: 0.9
+    })
+  );
+  p.position.set(worldPos.x, worldPos.y, worldPos.z);
+  p.userData.life = 0.6; // segundos de vida
+  p.userData.maxLife = 0.6;
+  scene.add(p);
+  hemsTrailParticles.push(p);
+}
+function updateHemsTrailParticles(dt) {
+  for (let i = hemsTrailParticles.length - 1; i >= 0; i--) {
+    const p = hemsTrailParticles[i];
+    p.userData.life -= dt;
+    if (p.userData.life <= 0) {
+      scene.remove(p);
+      p.geometry.dispose();
+      p.material.dispose();
+      hemsTrailParticles.splice(i, 1);
+    } else {
+      const t = p.userData.life / p.userData.maxLife;
+      p.material.opacity = t * 0.9;
+      p.scale.setScalar(t);
+    }
+  }
 }
 
 // Función que devuelve el siguiente char que necesitamos spawnear
@@ -1808,6 +3832,44 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') INPUT.pauseOnce = true;
 });
 document.addEventListener('keyup', (e) => KEYS.delete(e.key));
+
+// ========== DEBUG TESTING (teclas 1-7) ==========
+// Atajos para probar cada efecto sin depender del azar
+// Solo funcionan durante la partida. Borrar antes de producción si se quiere.
+const DEBUG_EFFECT_KEYS = {
+  '1': { label: '🚁 Modo HEMS', fn: () => activateModoHEMS() },
+  '2': { label: '💰 Lluvia monedas', fn: () => triggerDebugEffect('coin_rain') },
+  '3': { label: '🏥 3 pacientes', fn: () => triggerDebugEffect('mega_patients') },
+  '4': { label: '⚡ Relámpago', fn: () => triggerDebugEffect('lightning') },
+  '5': { label: '🌀 Wormhole', fn: () => triggerDebugEffect('wormhole') },
+  '6': { label: '🚨 SVA Activado', fn: () => triggerDebugEffect('sva') },
+  '7': { label: '🔥 Fever Mode', fn: () => { if (!STATE.fever) activateFever(true); } },
+};
+
+// Función auxiliar: dispara cualquier efecto de caja por nombre sin pasar por el RNG
+// Las teclas de debug 2-6 ahora llaman directamente a la misma función que usa openSurpriseBox
+// así cualquier cambio en los efectos se refleja en ambos lugares
+function triggerDebugEffect(effectName) {
+  applySurpriseBoxEffect(effectName, null);
+}
+
+document.addEventListener('keydown', (e) => {
+  // Solo durante partida activa
+  if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
+  const entry = DEBUG_EFFECT_KEYS[e.key];
+  if (entry) {
+    e.preventDefault();
+    entry.fn();
+    // Mini notificación debug
+    const dbg = document.getElementById('debug-indicator');
+    if (dbg) {
+      dbg.textContent = 'DEBUG: ' + entry.label;
+      dbg.classList.add('active');
+      clearTimeout(dbg._timeout);
+      dbg._timeout = setTimeout(() => dbg.classList.remove('active'), 1500);
+    }
+  }
+});
 
 let touchStart = null;
 const canvas3d = document.getElementById('canvas-3d');
@@ -2522,6 +4584,410 @@ function makePowerUp(kind) {
   return group;
 }
 
+// CAJA SORPRESA - modelo 3D (grande y muy visible)
+// HELICÓPTERO HEMS estilo Airbus H145 del SEM
+// Silueta reconocible: cabina ovoide + boom largo + fenestron característico
+function makeHelicopter() {
+  const group = new THREE.Group();
+
+  // Material principal amarillo SEM (lima fluorescente como en las fotos reales)
+  const bodyMat = new THREE.MeshLambertMaterial({
+    color: 0xdfee2a,                 // amarillo-verde lima SEM
+    emissive: 0x4a5a0c,
+    emissiveIntensity: 0.35
+  });
+  const glassMat = new THREE.MeshLambertMaterial({
+    color: 0x1a2838,
+    emissive: 0x0a1520,
+    emissiveIntensity: 0.5
+  });
+  const darkMat = new THREE.MeshLambertMaterial({ color: 0x1a1a20 });
+  const skidMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2e });
+
+  // ========== CABINA (cuerpo alargado, orientado al movimiento) ==========
+  // Más larga que ancha para que la silueta sea más de "helicóptero" y menos pelota
+  const cabin = new THREE.Mesh(
+    new THREE.SphereGeometry(1.25, 18, 14),
+    bodyMat
+  );
+  cabin.scale.set(0.95, 0.75, 1.7);  // MÁS LARGA en Z, más plana en Y, más fina en X
+  cabin.position.set(0, 0.1, -0.2);
+  group.add(cabin);
+
+  // Frente inclinado de la cabina (morro caído, destacado)
+  const nose = new THREE.Mesh(
+    new THREE.SphereGeometry(0.9, 14, 12),
+    bodyMat
+  );
+  nose.scale.set(0.95, 0.65, 1.15);   // más estrecho y más alargado
+  nose.position.set(0, -0.15, -1.65); // más adelante y más abajo (nose-down típico)
+  group.add(nose);
+
+  // Parabrisas frontal (cristal grande inclinado)
+  const windshield = new THREE.Mesh(
+    new THREE.SphereGeometry(0.85, 14, 10, 0, Math.PI * 2, 0, Math.PI / 1.7),
+    glassMat
+  );
+  windshield.scale.set(1.1, 0.95, 1.1);
+  windshield.rotation.x = -0.35;
+  windshield.position.set(0, 0.3, -1.2);
+  group.add(windshield);
+
+  // Ventanas laterales (paneles rectangulares oscuros)
+  for (const side of [-1, 1]) {
+    // Ventana grande de cabina
+    const sideWin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.5, 1.5),
+      glassMat
+    );
+    sideWin.position.set(side * 1.15, 0.25, -0.3);
+    group.add(sideWin);
+    // Ventana pequeña trasera
+    const sideWinBack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.35, 0.55),
+      glassMat
+    );
+    sideWinBack.position.set(side * 1.1, 0.15, 0.85);
+    group.add(sideWinBack);
+  }
+
+  // ========== FRANJAS ROJAS decorativas laterales ==========
+  const stripeMat = new THREE.MeshBasicMaterial({ color: 0xe63946 });
+  for (const side of [-1, 1]) {
+    // Serie de dameros pequeños en el costado (típico SEM)
+    for (let i = 0; i < 5; i++) {
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 0.16, 0.32),
+        stripeMat
+      );
+      stripe.position.set(side * 1.17, -0.15, 0.1 + i * 0.4);
+      group.add(stripe);
+    }
+  }
+
+  // ========== CRUZ DE LA VIDA lateral ==========
+  for (const side of [-1, 1]) {
+    const emblemBg = new THREE.Mesh(
+      new THREE.CircleGeometry(0.35, 20),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    emblemBg.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+    emblemBg.position.set(side * 1.18, -0.1, -0.5);
+    group.add(emblemBg);
+    // Cruz roja
+    const crossV = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 0.42, 0.12),
+      new THREE.MeshBasicMaterial({ color: 0xe63946 })
+    );
+    crossV.position.set(side * 1.19, -0.1, -0.5);
+    group.add(crossV);
+    const crossH = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 0.12, 0.42),
+      new THREE.MeshBasicMaterial({ color: 0xe63946 })
+    );
+    crossH.position.set(side * 1.19, -0.1, -0.5);
+    group.add(crossH);
+  }
+
+  // ========== BOOM DE COLA (cilindro cónico largo) ==========
+  const boom = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.35, 2.8, 12),
+    bodyMat
+  );
+  boom.rotation.x = Math.PI / 2;
+  boom.position.set(0, 0.2, 2.2);
+  group.add(boom);
+
+  // ========== ESTABILIZADOR HORIZONTAL (cola tipo ala) ==========
+  const hStab = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.08, 0.35),
+    bodyMat
+  );
+  hStab.position.set(0, 0.3, 3.3);
+  group.add(hStab);
+  // Winglets en los extremos
+  for (const side of [-1, 1]) {
+    const winglet = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.3, 0.28),
+      bodyMat
+    );
+    winglet.position.set(side * 0.8, 0.45, 3.3);
+    group.add(winglet);
+  }
+
+  // ========== FENESTRON (rotor de cola dentro de anillo — característico H145) ==========
+  // Anillo exterior grande
+  const fenestronRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.55, 0.08, 10, 24),
+    bodyMat
+  );
+  fenestronRing.rotation.y = Math.PI / 2;
+  fenestronRing.position.set(0, 0.5, 3.55);
+  group.add(fenestronRing);
+
+  // Disco interior oscuro (visible a través del anillo)
+  const fenestronDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(0.48, 20),
+    new THREE.MeshBasicMaterial({ color: 0x0a0a0f, side: THREE.DoubleSide })
+  );
+  fenestronDisc.rotation.y = Math.PI / 2;
+  fenestronDisc.position.set(0.01, 0.5, 3.55);
+  group.add(fenestronDisc);
+
+  // Aspas del fenestron (pequeñas, dentro del anillo)
+  const fenestronBlades = new THREE.Group();
+  for (let i = 0; i < 8; i++) {
+    const tblade = new THREE.Mesh(
+      new THREE.BoxGeometry(0.03, 0.45, 0.06),
+      darkMat
+    );
+    tblade.rotation.z = (i / 8) * Math.PI * 2;
+    fenestronBlades.add(tblade);
+  }
+  // Hub pequeño central
+  const fenestronHub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8),
+    new THREE.MeshLambertMaterial({ color: 0x888888 })
+  );
+  fenestronHub.rotation.z = Math.PI / 2;
+  fenestronBlades.add(fenestronHub);
+  fenestronBlades.rotation.y = Math.PI / 2;
+  fenestronBlades.position.set(0.05, 0.5, 3.55);
+  group.add(fenestronBlades);
+  group.userData.fenestronBlades = fenestronBlades;
+
+  // ========== PATINES DE ATERRIZAJE ==========
+  // Dos patines largos horizontales (separados para que se vean desde atrás)
+  for (const side of [-1, 1]) {
+    const skid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 3.4, 10),
+      skidMat
+    );
+    skid.rotation.x = Math.PI / 2;
+    skid.position.set(side * 0.8, -1.15, 0.2);
+    group.add(skid);
+    // Extremos curvados (levantados hacia arriba-adelante)
+    const skidFront = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8),
+      skidMat
+    );
+    skidFront.rotation.x = -Math.PI / 3;
+    skidFront.position.set(side * 0.8, -0.98, -1.65);
+    group.add(skidFront);
+  }
+  // Soportes diagonales
+  for (const side of [-1, 1]) {
+    for (const zOff of [-0.5, 0.9]) {
+      const support = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.75, 0.08),
+        skidMat
+      );
+      support.rotation.z = side * 0.25;
+      support.position.set(side * 0.65, -0.78, zOff);
+      group.add(support);
+    }
+  }
+
+  // ========== MÁSTIL DEL ROTOR PRINCIPAL ==========
+  const rotorBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3, 0.45, 0.35, 12),
+    bodyMat
+  );
+  rotorBase.position.set(0, 0.95, 0.1);
+  group.add(rotorBase);
+
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10),
+    darkMat
+  );
+  mast.position.set(0, 1.35, 0.1);
+  group.add(mast);
+
+  // ========== ROTOR PRINCIPAL (5 palas grandes y visibles) ==========
+  const rotorMain = new THREE.Group();
+  for (let i = 0; i < 5; i++) {
+    const blade = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 0.08, 0.28),   // más grande (3.6 → 4.2)
+      darkMat
+    );
+    blade.rotation.y = (i / 5) * Math.PI * 2;
+    blade.rotation.z = 0.05;
+    rotorMain.add(blade);
+  }
+  const hub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.28, 0.2, 10),
+    new THREE.MeshLambertMaterial({ color: 0x999999 })
+  );
+  rotorMain.add(hub);
+  rotorMain.position.set(0, 1.7, 0.1);
+  group.add(rotorMain);
+  group.userData.rotorMain = rotorMain;
+
+  // Disco del rotor (blur)
+  const rotorDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(2.1, 32),          // más grande
+    new THREE.MeshBasicMaterial({
+      color: 0xcccccc, transparent: true, opacity: 0.1, side: THREE.DoubleSide
+    })
+  );
+  rotorDisc.rotation.x = -Math.PI / 2;
+  rotorDisc.position.set(0, 1.78, 0.1);
+  group.add(rotorDisc);
+
+  // ========== LUCES NAVEGACIÓN ==========
+  // Luz verde (estribor / derecha)
+  const greenLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.11, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x4ade80 })
+  );
+  greenLight.position.set(1.32, -0.1, -0.9);
+  group.add(greenLight);
+  group.userData.greenLight = greenLight;
+
+  // Luz roja (babor / izquierda)
+  const redLight = new THREE.Mesh(
+    new THREE.SphereGeometry(0.11, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xe63946 })
+  );
+  redLight.position.set(-1.32, -0.1, -0.9);
+  group.add(redLight);
+  group.userData.redLight = redLight;
+
+  // Luz blanca anti-colisión (flash superior)
+  const antiCollide = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  antiCollide.position.set(0, 1.15, 1.0);
+  group.add(antiCollide);
+  group.userData.antiCollide = antiCollide;
+
+  // Sombra circular en el suelo
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(2.2, 28),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.45, side: THREE.DoubleSide
+    })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.02;
+  group.userData.shadow = shadow;
+
+  // Orientación: el frente apunta hacia -Z (igual que la ambulancia)
+  group.userData.kind = 'helicopter';
+  return group;
+}
+
+function makeSurpriseBox() {
+  const group = new THREE.Group();
+
+  // Cubo dorado pulsante (1.5x más grande que antes)
+  const BOX_SIZE = 1.5;
+  const BOX_Y = 2.2;
+  const boxGeom = new THREE.BoxGeometry(BOX_SIZE, BOX_SIZE, BOX_SIZE);
+  const boxMat = new THREE.MeshLambertMaterial({
+    color: 0xffd54f,
+    emissive: 0xf5a623,
+    emissiveIntensity: 0.6
+  });
+  const box = new THREE.Mesh(boxGeom, boxMat);
+  box.position.y = BOX_Y;
+  group.add(box);
+
+  // Cruz roja en cada cara
+  const crossMat = new THREE.MeshBasicMaterial({ color: 0xe63946 });
+  const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.08), crossMat);
+  const crossH = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.08), crossMat);
+
+  // Cara frontal
+  const crossFront = new THREE.Group();
+  crossFront.add(crossV.clone()); crossFront.add(crossH.clone());
+  crossFront.position.set(0, BOX_Y, BOX_SIZE / 2 + 0.01);
+  group.add(crossFront);
+
+  // Cara trasera
+  const crossBack = new THREE.Group();
+  crossBack.add(crossV.clone()); crossBack.add(crossH.clone());
+  crossBack.position.set(0, BOX_Y, -BOX_SIZE / 2 - 0.01);
+  group.add(crossBack);
+
+  // Cara izquierda
+  const crossL = new THREE.Group();
+  const crossVL = crossV.clone(); crossVL.rotation.y = Math.PI / 2;
+  const crossHL = crossH.clone(); crossHL.rotation.y = Math.PI / 2;
+  crossL.add(crossVL); crossL.add(crossHL);
+  crossL.position.set(-BOX_SIZE / 2 - 0.01, BOX_Y, 0);
+  group.add(crossL);
+
+  // Cara derecha
+  const crossR = new THREE.Group();
+  const crossVR = crossV.clone(); crossVR.rotation.y = Math.PI / 2;
+  const crossHR = crossH.clone(); crossHR.rotation.y = Math.PI / 2;
+  crossR.add(crossVR); crossR.add(crossHR);
+  crossR.position.set(BOX_SIZE / 2 + 0.01, BOX_Y, 0);
+  group.add(crossR);
+
+  // Halo pulsante grande en el suelo
+  const halo = new THREE.Mesh(
+    new THREE.CircleGeometry(1.8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+  );
+  halo.rotation.x = -Math.PI / 2;
+  halo.position.y = 0.05;
+  group.add(halo);
+  group.userData.halo = halo;
+
+  // Luz muy potente
+  const light = new THREE.PointLight(0xffd54f, 3.0, 18);
+  light.position.y = BOX_Y;
+  group.add(light);
+  group.userData.light = light;
+
+  // Billboard "SORPRESA" sobre la caja (sprite con canvas)
+  const cv = document.createElement('canvas');
+  cv.width = 320; cv.height = 128;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = 'rgba(255, 213, 79, 0.95)';
+  cx.beginPath();
+  cx.roundRect(8, 16, 304, 96, 18);
+  cx.fill();
+  cx.strokeStyle = '#e63946';
+  cx.lineWidth = 4;
+  cx.beginPath();
+  cx.roundRect(8, 16, 304, 96, 18);
+  cx.stroke();
+  cx.fillStyle = '#0a0908';
+  cx.font = "bold 52px 'Fraunces', serif";
+  cx.textAlign = 'center';
+  cx.textBaseline = 'middle';
+  cx.fillText('🎁 SORPRESA', 160, 64);
+  const tex = new THREE.CanvasTexture(cv);
+  const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(3.5, 1.4, 1);
+  sprite.position.set(0, BOX_Y + 1.8, 0);
+  group.add(sprite);
+  group.userData.sprite = sprite;
+
+  // Partículas orbitantes (chispas)
+  const sparkleGroup = new THREE.Group();
+  for (let i = 0; i < 6; i++) {
+    const sparkle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    const angle = (i / 6) * Math.PI * 2;
+    sparkle.position.set(Math.cos(angle) * 1.6, BOX_Y, Math.sin(angle) * 1.6);
+    sparkleGroup.add(sparkle);
+  }
+  group.add(sparkleGroup);
+  group.userData.sparkleGroup = sparkleGroup;
+
+  group.userData.kind = 'surprise';
+  group.userData.spawnTime = performance.now();
+  return group;
+}
+
 /* ================================================================
    ESCENARIO
    ================================================================ */
@@ -2774,6 +5240,69 @@ const TILE_PATTERNS = [
     items: [{k:'coin',l:0,z:10},{k:'coin',l:1,z:15},{k:'coin',l:2,z:20}]
   },
 
+  // === VERY HARD (dificultad 4, >1200m) ===
+  // Callejón: dos carriles bloqueados en diferentes puntos, obligan a tomar el libre
+  { name: 'alley_left', difficulty: 4, obstacles: [{k:'car',l:1,z:8},{k:'car',l:2,z:8},{k:'car',l:1,z:20},{k:'car',l:2,z:20}],
+    items: [{k:'coin',l:0,z:8},{k:'coin',l:0,z:14},{k:'coin',l:0,z:20}]
+  },
+  { name: 'alley_right', difficulty: 4, obstacles: [{k:'car',l:0,z:8},{k:'car',l:1,z:8},{k:'car',l:0,z:20},{k:'car',l:1,z:20}],
+    items: [{k:'coin',l:2,z:8},{k:'coin',l:2,z:14},{k:'coin',l:2,z:20}]
+  },
+  // Salto obligado: 3 saltables seguidos
+  { name: 'jump_gauntlet', difficulty: 4, obstacles: [{k:'cone',l:1,z:7},{k:'cone',l:1,z:14},{k:'cone',l:1,z:21}],
+    items: [{k:'coin',l:1,z:7},{k:'coin',l:1,z:14},{k:'coin',l:1,z:21}]
+  },
+  // Cars + scooter (mezcla de tipos)
+  { name: 'mixed_chaos', difficulty: 4, obstacles: [{k:'car',l:0,z:9},{k:'scooter',l:1,z:15},{k:'car',l:2,z:21}],
+    items: [{k:'coin',l:2,z:6},{k:'coin',l:1,z:12},{k:'coin',l:0,z:18}]
+  },
+  // Truck + barrier combo
+  { name: 'truck_barrier', difficulty: 4, obstacles: [{k:'truck',l:0,z:12},{k:'barrier',l:2,z:22}],
+    items: [{k:'coin',l:2,z:8},{k:'coin',l:1,z:14},{k:'coin',l:1,z:22},{k:'coin',l:0,z:22}]
+  },
+
+  // === BRUTAL (dificultad 5, >2500m) ===
+  // Salto y cambio: obstáculo bajo + obstáculo alto en diagonal
+  { name: 'jump_switch_left', difficulty: 5, obstacles: [{k:'cone',l:1,z:8},{k:'car',l:1,z:20},{k:'car',l:2,z:20}],
+    items: [{k:'coin',l:1,z:8},{k:'coin',l:1,z:14},{k:'coin',l:0,z:20}]
+  },
+  { name: 'jump_switch_right', difficulty: 5, obstacles: [{k:'cone',l:1,z:8},{k:'car',l:0,z:20},{k:'car',l:1,z:20}],
+    items: [{k:'coin',l:1,z:8},{k:'coin',l:1,z:14},{k:'coin',l:2,z:20}]
+  },
+  // Doble camión lateral - solo centro libre
+  { name: 'dual_trucks', difficulty: 5, obstacles: [{k:'truck',l:0,z:14},{k:'truck',l:2,z:14}],
+    items: [{k:'coin',l:1,z:6},{k:'coin',l:1,z:10},{k:'coin',l:1,z:14},{k:'coin',l:1,z:18},{k:'coin',l:1,z:22}]
+  },
+  // Zigzag de camiones (forzado completo)
+  { name: 'truck_zigzag', difficulty: 5, obstacles: [{k:'truck',l:0,z:8},{k:'truck',l:2,z:18}],
+    items: [{k:'coin',l:1,z:8},{k:'coin',l:2,z:13},{k:'coin',l:1,z:18},{k:'coin',l:0,z:23}]
+  },
+  // 4 barreras escalonadas
+  { name: 'barrier_wave', difficulty: 5, obstacles: [{k:'barrier',l:0,z:6},{k:'barrier',l:1,z:12},{k:'barrier',l:2,z:18},{k:'barrier',l:0,z:24}],
+    items: [{k:'coin',l:2,z:6},{k:'coin',l:0,z:12},{k:'coin',l:1,z:18},{k:'coin',l:2,z:24}]
+  },
+
+  // === INSANE (dificultad 6, >4000m) ===
+  // Muro casi completo: solo 1 carril libre
+  { name: 'wall_left_only', difficulty: 6, obstacles: [{k:'car',l:1,z:10},{k:'car',l:2,z:10},{k:'car',l:1,z:20},{k:'car',l:2,z:20}],
+    items: [{k:'coin',l:0,z:7},{k:'coin',l:0,z:12},{k:'coin',l:0,z:17},{k:'coin',l:0,z:22}]
+  },
+  { name: 'wall_right_only', difficulty: 6, obstacles: [{k:'car',l:0,z:10},{k:'car',l:1,z:10},{k:'car',l:0,z:20},{k:'car',l:1,z:20}],
+    items: [{k:'coin',l:2,z:7},{k:'coin',l:2,z:12},{k:'coin',l:2,z:17},{k:'coin',l:2,z:22}]
+  },
+  // Salto + callejón (salto de cono y luego solo centro libre)
+  { name: 'jump_into_alley', difficulty: 6, obstacles: [{k:'cone',l:1,z:6},{k:'truck',l:0,z:18},{k:'truck',l:2,z:18}],
+    items: [{k:'coin',l:1,z:6},{k:'coin',l:1,z:12},{k:'coin',l:1,z:18},{k:'coin',l:1,z:24}]
+  },
+  // Todo obstáculos: 3 coches en línea con un único carril escape por tile
+  { name: 'car_wall_shifting', difficulty: 6, obstacles: [{k:'car',l:0,z:8},{k:'car',l:1,z:8},{k:'car',l:1,z:18},{k:'car',l:2,z:18}],
+    items: [{k:'coin',l:2,z:8},{k:'coin',l:2,z:13},{k:'coin',l:0,z:18},{k:'coin',l:0,z:23}]
+  },
+  // Conos + barreras: saltos continuos
+  { name: 'triple_jump_sequence', difficulty: 6, obstacles: [{k:'cone',l:0,z:6},{k:'barrier',l:1,z:14},{k:'cone',l:2,z:22}],
+    items: [{k:'coin',l:0,z:6},{k:'coin',l:1,z:14},{k:'coin',l:2,z:22}]
+  },
+
   // === PATIENT tiles (estrellas especiales) ===
   { name: 'patient_center', difficulty: 0, obstacles: [], special: true,
     items: [{k:'coin',l:0,z:5},{k:'patient',l:1,z:12},{k:'coin',l:2,z:18}]
@@ -2799,18 +5328,24 @@ const activeItems = [];
 let nextTileZ = -10;
 let tilesSinceLastPatient = 0;
 let tilesSinceLastPowerup = 0;
+let lastSurpriseBoxDistance = 0;  // distancia a la que se generó la última caja
 
 function selectTilePattern() {
-  // Dificultad escalonada por distancia (0-3)
-  // <150m: 0 (solo monedas), <500m: 1, <1200m: 2, >1200m: 3
-  let maxDiff;
-  if (STATE.distance < 150) maxDiff = 0;
-  else if (STATE.distance < 500) maxDiff = 1;
-  else if (STATE.distance < 1200) maxDiff = 2;
-  else maxDiff = 3;
+  // Escala de dificultad 0-6 por distancia (ESPACIADA para disfrutar)
+  // Diseño: ~3 min de juego cómodo antes de patrones brutales
+  const d = STATE.distance;
+  let maxDiff, minDiff;
+  if (d < 250)        { maxDiff = 0; minDiff = 0; }   // warm-up
+  else if (d < 800)   { maxDiff = 1; minDiff = 0; }   // fácil con algo de obstáculo
+  else if (d < 2000)  { maxDiff = 2; minDiff = 0; }   // medio
+  else if (d < 3500)  { maxDiff = 3; minDiff = 1; }   // normal
+  else if (d < 5500)  { maxDiff = 4; minDiff = 2; }   // desafiante
+  else if (d < 8000)  { maxDiff = 5; minDiff = 3; }   // muy duro
+  else                { maxDiff = 6; minDiff = 4; }   // brutal (>8km, top players)
 
-  // Power-up cada ~6-8 tiles
-  if (tilesSinceLastPowerup > 6 && Math.random() < 0.3) {
+  // Power-up cada ~6-8 tiles (menos frecuente a alta dificultad)
+  const powerupChance = d < 3500 ? 0.3 : 0.18;
+  if (tilesSinceLastPowerup > 6 && Math.random() < powerupChance) {
     tilesSinceLastPowerup = 0;
     const powerupTiles = TILE_PATTERNS.filter(t => t.powerup);
     return powerupTiles[Math.floor(Math.random() * powerupTiles.length)];
@@ -2823,9 +5358,17 @@ function selectTilePattern() {
     return patientTiles[Math.floor(Math.random() * patientTiles.length)];
   }
 
-  // Tile normal ajustado a fase
-  const eligible = TILE_PATTERNS.filter(t => t.difficulty <= maxDiff && !t.special && !t.powerup);
-  return eligible[Math.floor(Math.random() * eligible.length)];
+  // Tile normal: dificultad entre minDiff y maxDiff
+  const eligible = TILE_PATTERNS.filter(t =>
+    t.difficulty >= minDiff &&
+    t.difficulty <= maxDiff &&
+    !t.special && !t.powerup
+  );
+  // Fallback: si no hay ninguno en el rango, coger cualquiera dentro de maxDiff
+  const pool = eligible.length > 0
+    ? eligible
+    : TILE_PATTERNS.filter(t => t.difficulty <= maxDiff && !t.special && !t.powerup);
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function spawnTile(startZ) {
@@ -2892,6 +5435,27 @@ function spawnTile(startZ) {
       }
     }
   }
+
+  // Spawn de CAJA SORPRESA cada ~800m (la primera a partir de 300m)
+  if (STATE.distance > 300 && (STATE.distance - lastSurpriseBoxDistance) > 800 && Math.random() < 0.7) {
+    // Buscar un carril sin obstáculo y sin item bloqueante
+    const candidateLanes = [0, 1, 2].filter(lane => {
+      const hasObstacle = pattern.obstacles.some(o => o.l === lane && o.z > 8 && o.z < 18);
+      const hasItem = pattern.items.some(i => i.l === lane && i.z > 8 && i.z < 18);
+      return !hasObstacle && !hasItem;
+    });
+    if (candidateLanes.length > 0) {
+      const lane = candidateLanes[Math.floor(Math.random() * candidateLanes.length)];
+      const boxMesh = makeSurpriseBox();
+      boxMesh.position.set(LANES[lane], 0, startZ - 13);
+      scene.add(boxMesh);
+      activeItems.push({
+        mesh: boxMesh, lane, kind: 'surprise',
+        value: 0, collected: false
+      });
+      lastSurpriseBoxDistance = STATE.distance;
+    }
+  }
 }
 
 function generateTiles() {
@@ -2934,6 +5498,15 @@ function disposeObj(obj) {
 const ambulance = makeAmbulance();
 ambulance.position.set(0, 0, 0);
 scene.add(ambulance);
+
+// Helicóptero HEMS (oculto hasta que se active el Modo HEMS)
+const helicopter = makeHelicopter();
+helicopter.visible = false;
+scene.add(helicopter);
+// Sombra del heli (objeto separado en scene)
+const helicopterShadow = helicopter.userData.shadow;
+helicopterShadow.visible = false;
+scene.add(helicopterShadow);
 
 const player = {
   lane: 1,
@@ -3067,26 +5640,118 @@ function checkCollisions() {
     if (it.collected) continue;
     if (Math.abs(it.mesh.position.z) > 15) continue;
 
-    // Imán: atrae monedas y pacientes hacia el jugador
-    if (STATE.magnet && (it.kind === 'coin' || it.kind === 'patient')) {
-      const dz = Math.abs(it.mesh.position.z);
-      if (dz < 12) {
-        const dirX = ambulance.position.x - it.mesh.position.x;
-        it.mesh.position.x += dirX * 0.15;
-        if (it.kind === 'coin') {
-          it.mesh.position.y += (1.2 - it.mesh.position.y) * 0.15;
+    // VORTEX ASPIRADOR (Wormhole): atrae TODO desde 30m con trayectoria espiral
+    if (STATE.vortex) {
+      const vortexTargets = ['coin', 'patient', 'letter', 'powerup', 'surprise'];
+      if (vortexTargets.includes(it.kind)) {
+        const dx = ambulance.position.x - it.mesh.position.x;
+        const dz = ambulance.position.z - it.mesh.position.z;
+        const dist2d = Math.sqrt(dx * dx + dz * dz);
+        if (dist2d < 30) {
+          // Fuerza de atracción: más fuerte cuanto más cerca
+          const pullStrength = 0.28 + (1 - dist2d / 30) * 0.15;
+          // Componente radial (hacia la ambulancia)
+          it.mesh.position.x += dx * pullStrength;
+          it.mesh.position.z += dz * pullStrength;
+          // Componente tangencial (espiral) — añade rotación al movimiento
+          const tangX = -dz * 0.08;
+          const tangZ = dx * 0.08;
+          it.mesh.position.x += tangX;
+          it.mesh.position.z += tangZ;
+          // Subir la moneda ligeramente (efecto dramático: los items ascienden al vortex)
+          if (it.kind === 'coin') {
+            const targetY = 1.5 + (1 - dist2d / 30) * 1.5;
+            it.mesh.position.y += (targetY - it.mesh.position.y) * 0.18;
+          }
         }
       }
     }
 
-    const iBox = {
-      x: it.mesh.position.x,
-      y: it.mesh.position.y + ITEM_HITBOX.h / 2,
-      z: it.mesh.position.z,
-      w: ITEM_HITBOX.w,
-      h: ITEM_HITBOX.h,
-      d: ITEM_HITBOX.d,
-    };
+    // Imán: atrae items hacia el jugador
+    // - Normal: radio 12m, solo monedas y pacientes
+    // - SVA activado: radio 15m, atrae casi todo + dispara línea azul de captura
+    // - Modo HEMS: radio 20m, atrae TODO (monedas, pacientes, letras, powerups, cajas)
+    if (STATE.magnet || STATE.jetpack || STATE.sva) {
+      const isMegaMagnet = STATE.jetpack;
+      const isSVA = STATE.sva && !isMegaMagnet;
+      let radius;
+      if (isMegaMagnet) radius = 20;
+      else if (isSVA) radius = 15;
+      else radius = 12;
+
+      let attracts;
+      if (isMegaMagnet || isSVA) {
+        attracts = ['coin', 'patient', 'letter', 'powerup', 'surprise', 'trauma_item'];
+      } else {
+        attracts = ['coin', 'patient', 'trauma_item'];
+      }
+
+      if (attracts.includes(it.kind)) {
+        const dz = Math.abs(it.mesh.position.z);
+        if (dz < radius) {
+          // Fuerza de atracción: SVA un poco más agresiva que magnet normal
+          let pullStrength;
+          if (isMegaMagnet) pullStrength = 0.22;
+          else if (isSVA) pullStrength = 0.20;
+          else pullStrength = 0.15;
+          const dirX = ambulance.position.x - it.mesh.position.x;
+          it.mesh.position.x += dirX * pullStrength;
+          // Atraer en Z (hacia el jugador), pero SOLO si el item está DELANTE (z negativo)
+          // Nunca atraer items que ya estén detrás: se tienen que despawnar
+          if ((isMegaMagnet || isSVA) && it.mesh.position.z < -2) {
+            const dirZ = ambulance.position.z - it.mesh.position.z;
+            it.mesh.position.z += dirZ * 0.08;
+          }
+          if (it.kind === 'coin') {
+            it.mesh.position.y += (1.2 - it.mesh.position.y) * 0.15;
+          }
+          // TRAIL de partículas: solo durante modo HEMS, para items en movimiento activo
+          // Se spawnea solo cada ~4 frames para no saturar
+          if (isMegaMagnet && dz > 3 && (Date.now() % 4 === 0)) {
+            spawnHemsTrailParticle(it.mesh.position);
+          }
+          // LÍNEA DE CAPTURA SVA: feedback visual cuando un haz "toca" un item
+          // Se dispara una vez por item con probabilidad baja para no saturar visualmente
+          if (isSVA && dz > 4 && !it._svaCaptured && Math.random() < 0.08) {
+            spawnSVACaptureLine(it.mesh.position);
+            it._svaCaptured = true;  // solo 1 vez por item
+          }
+
+          // AUTO-CAPTURA durante HEMS: si un item está muy cerca del heli en 3D,
+          // recogerlo automáticamente (arregla bug de items "pegados" detrás)
+          if (isMegaMagnet && !it.collected) {
+            const dist3D = Math.sqrt(
+              Math.pow(it.mesh.position.x - ambulance.position.x, 2) +
+              Math.pow(it.mesh.position.z - ambulance.position.z, 2)
+            );
+            if (dist3D < 2.5) {
+              collectItem(it);
+              continue;  // saltar el resto de checks del loop, ya procesado
+            }
+          }
+        }
+      }
+    }
+
+    // Hitbox específico para caja sorpresa (más grande y a mayor altura)
+    let iBox;
+    if (it.kind === 'surprise') {
+      iBox = {
+        x: it.mesh.position.x,
+        y: 2.2,  // altura del cubo
+        z: it.mesh.position.z,
+        w: 2.0, h: 3.0, d: 2.0,  // más grande y alto
+      };
+    } else {
+      iBox = {
+        x: it.mesh.position.x,
+        y: it.mesh.position.y + ITEM_HITBOX.h / 2,
+        z: it.mesh.position.z,
+        w: ITEM_HITBOX.w,
+        h: ITEM_HITBOX.h,
+        d: ITEM_HITBOX.d,
+      };
+    }
 
     if (boxesIntersect(pBox, iBox)) {
       collectItem(it);
@@ -3096,25 +5761,36 @@ function checkCollisions() {
 
 function collectItem(it) {
   it.collected = true;
+  // Guardar posición para el número volante (el mesh se borra después)
+  const worldPos = { x: it.mesh.position.x, y: it.mesh.position.y, z: it.mesh.position.z };
 
   if (it.kind === 'coin') {
     STATE.coins++;
     addScore(10);
     STATE.combo++;
-    STATE.comboTimer = 60;
+    STATE.comboTimer = 240;  // 4 segundos sin moneda y se resetea el combo (antes 1s)
     if (STATE.combo > STATE.runStats.maxCombo) STATE.runStats.maxCombo = STATE.combo;
 
     spawnCollectParticles(it.mesh.position, 0xffd54f, 8);
 
     // Textos motivacionales por combo (en toast central, muy visible)
-    if (STATE.combo === 5) showToast('¡RACHA!', '5 monedas seguidas', 0xffd54f);
-    else if (STATE.combo === 10) showToast('¡EN FUEGO!', '10 combo', 0xff6b35);
-    else if (STATE.combo === 20) showToast('¡IMPARABLE!', '20 combo', 0xf5a623);
-    else if (STATE.combo === 30) showToast('¡LEYENDA!', '30 combo', 0xe63946);
-    else if (STATE.combo === 50) showToast('¡MEDIO CENTENAR!', '50 combo', 0xe63946);
-    else if (STATE.combo === 100) showToast('¡100 COMBO!', 'inhumano', 0xa855f7);
+    if (STATE.combo === 10) showToast('¡RACHA!', '10 monedas seguidas', 0xffd54f);
+    else if (STATE.combo === 25) showToast('¡EN FUEGO!', '25 combo', 0xff6b35);
+    else if (STATE.combo === 50) showToast('¡IMPARABLE!', '50 combo', 0xff3300);
+    else if (STATE.combo === 80) showToast('¡INCREÍBLE!', '80 combo · a por el Mastery', 0x10b981);
+    else if (STATE.combo === 100) showToast('¡100 COMBO!', '20 más para el Mastery...', 0x06b6d4);
+    else if (STATE.combo === 120) {
+      // Toast de logro PRIMERO, luego MASTERY MODE a los 600ms (efecto "build-up")
+      // IMPORTANTE: mastery es distinto de fever — mecánica propia, solo por combo
+      showToast('¡120 COMBO!', '⚡ activando MASTERY...', 0x10b981);
+      setTimeout(() => { if (STATE.combo >= 120) activateMasteryMode(); }, 600);
+    }
+    else if (STATE.combo === 150) showToast('¡LEYENDA!', '150 combo', 0xa855f7);
+    else if (STATE.combo === 200) showToast('¡INHUMANO!', '200 combo', 0xa855f7);
 
     updateComboDisplay();
+    // Contador HEMS: cuenta coin capturada durante modo HEMS
+    if (STATE.jetpack) bumpHemsCounter(10 * 3, worldPos);  // x3 en HEMS
   }
   else if (it.kind === 'patient') {
     STATE.patients++;
@@ -3122,9 +5798,11 @@ function collectItem(it) {
     showToast('¡PACIENTE SALVADO!', '+' + earned, 0xe63946);
     spawnCollectParticles(it.mesh.position, 0xe63946, 40);
     spawnCollectParticles(it.mesh.position, 0x4ade80, 25);
+    if (STATE.jetpack) bumpHemsCounter(earned, worldPos);
   }
   else if (it.kind === 'powerup') {
     activatePowerup(it.powerupKind, it.mesh.position);
+    if (STATE.jetpack) bumpHemsCounter(200, worldPos);  // bonus por powerup atraído
   }
   else if (it.kind === 'letter') {
     const char = it.char;
@@ -3133,7 +5811,28 @@ function collectItem(it) {
       addScore(50);
       spawnCollectParticles(it.mesh.position, 0x4ade80, 18);
       spawnCollectParticles(it.mesh.position, 0xffd54f, 10);
+      if (STATE.jetpack) bumpHemsCounter(50 * 3, worldPos);
     }
+  }
+  else if (it.kind === 'surprise') {
+    // Abrir caja sorpresa — uno de 6 efectos aleatorios
+    openSurpriseBox(it.mesh.position);
+    // Explosión dorada
+    spawnCollectParticles(it.mesh.position, 0xffd54f, 60);
+    spawnCollectParticles(it.mesh.position, 0xe63946, 30);
+    spawnCollectParticles(it.mesh.position, 0xffffff, 20);
+    if (STATE.jetpack) bumpHemsCounter(500, worldPos);  // bonus grande por caja
+  }
+  else if (it.kind === 'trauma_item') {
+    // Item de material prehospitalario (de caja CÓDIGO TRAUMA)
+    const item = it.traumaItem;
+    const earned = addScore(item.points);
+    // Partículas del color del item
+    spawnCollectParticles(it.mesh.position, item.color, 14);
+    spawnCollectParticles(it.mesh.position, item.glow, 8);
+    // Número flotante SIN nombre (como solicitó el usuario)
+    spawnFloatingPointsNumber('+' + earned, worldPos, item.glow);
+    if (STATE.jetpack) bumpHemsCounter(earned, worldPos);
   }
 
   scene.remove(it.mesh);
@@ -3144,6 +5843,130 @@ function collectItem(it) {
 /* ================================================================
    POWER-UPS
    ================================================================ */
+// CAJA SORPRESA: abre con uno de 6 efectos aleatorios (pesos variables)
+function openSurpriseBox(position) {
+  // Modo HEMS es el jackpot (20%), los otros 5 reparten 80% (16% c/u)
+  const weightedEffects = [
+    ['hems', 20],          // jackpot: helicóptero 8s con imán gigante
+    ['coin_rain', 16],     // lluvia de 60 monedas con caída real
+    ['mega_patients', 16], // 6 pacientes en zigzag con luces
+    ['lightning', 16],     // 6s Código Trauma + rayos + 30 monedas
+    ['wormhole', 16],      // teletransporte 300m + anillos
+    ['sva', 16],           // SVA ACTIVADO: rotativos azules + escudo + imán + ×2 puntos + 8s
+  ];
+  const totalWeight = weightedEffects.reduce((s, [, w]) => s + w, 0);
+  let roll = Math.random() * totalWeight;
+  let effect = 'hems';
+  for (const [e, w] of weightedEffects) {
+    roll -= w;
+    if (roll <= 0) { effect = e; break; }
+  }
+  applySurpriseBoxEffect(effect, position);
+}
+
+// Aplica un efecto de caja sorpresa (usado por openSurpriseBox y por triggerDebugEffect).
+// Fuente única de verdad para los 6 efectos — si lo cambias aquí, se refleja en ambos sitios.
+function applySurpriseBoxEffect(effect, position) {
+  // Si no hay posición (modo debug sin caja), usar delante del jugador
+  if (!position) {
+    position = {
+      x: ambulance.position.x,
+      y: ambulance.position.y + 2,
+      z: ambulance.position.z - 3
+    };
+  }
+
+  if (effect === 'hems') {
+    activateModoHEMS();
+  }
+  else if (effect === 'coin_rain') {
+    showToast('¡LLUVIA DE MONEDAS!', '+60 monedas doradas', 0xffd54f);
+    for (let i = 0; i < 20; i++) {
+      for (let lane = 0; lane < 3; lane++) {
+        const coin = makeCoin();
+        const zOffset = -14 - (i * 2.2);
+        coin.position.set(LANES[lane] + (Math.random() - 0.5) * 0.4, 10 + Math.random() * 3, zOffset);
+        coin.userData.falling = true;
+        coin.userData.fallSpeed = 0;
+        coin.userData.targetY = 1.2 + Math.random() * 0.3;
+        scene.add(coin);
+        activeItems.push({ mesh: coin, lane, kind: 'coin', value: 10, collected: false });
+      }
+    }
+    flashScreen(0xffd54f, 0.3, 400);
+    spawnCollectParticles(position, 0xffd54f, 80);
+    spawnCollectParticles(position, 0xf5a623, 50);
+    addTemporaryLight(position, 0xffd54f, 4, 800);
+  }
+  else if (effect === 'mega_patients') {
+    showToast('¡ALUVIÓN DE PACIENTES!', '6 pacientes críticos', 0xe63946);
+    const lanePattern = [1, 0, 1, 2, 1, 1];
+    for (let i = 0; i < 6; i++) {
+      const p = makePatient();
+      const lane = lanePattern[i];
+      const zOffset = -14 - (i * 7);
+      p.position.set(LANES[lane], 0, zOffset);
+      const emergencyLight = new THREE.PointLight(0xe63946, 2, 8);
+      emergencyLight.position.set(0, 3, 0);
+      p.add(emergencyLight);
+      p.userData.emergencyLight = emergencyLight;
+      p.userData.emergency = true;
+      scene.add(p);
+      activeItems.push({ mesh: p, lane, kind: 'patient', value: 0, collected: false });
+    }
+    flashScreen(0xe63946, 0.4, 500);
+    addTemporaryLight(position, 0xe63946, 5, 1500);
+    spawnCollectParticles(position, 0xe63946, 80);
+  }
+  else if (effect === 'lightning') {
+    // Activar estado RAYO independiente (no Código Trauma)
+    STATE.rayo = true;
+    STATE.rayoTimer = 6 * 60;
+    STATE.invincible = true;
+    STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 6 * 60);
+    showToast('⚡ ¡RELÁMPAGO!', '6s · Monedas ×5', 0xffe066);
+    // Banner amarillo propio
+    const banner = document.getElementById('rayo-banner');
+    if (banner) banner.classList.add('active');
+    // Crear aura eléctrica sobre la ambulancia
+    createRayoAura();
+    // Triple flash blanco
+    flashScreen(0xffffff, 0.9, 150);
+    setTimeout(() => flashScreen(0xffffff, 0.7, 120), 180);
+    setTimeout(() => flashScreen(0xffe066, 0.4, 200), 350);
+    // 30 monedas bonus frente al jugador
+    for (let i = 0; i < 30; i++) {
+      const coin = makeCoin();
+      const lane = i % 3;
+      coin.position.set(LANES[lane], 1.2 + Math.random() * 0.3, -10 - (i * 1.5));
+      scene.add(coin);
+      activeItems.push({ mesh: coin, lane, kind: 'coin', value: 10, collected: false });
+    }
+    spawnLightningEffect();
+    addTemporaryLight(position, 0xffe066, 8, 1200);
+    shakeCamera(1.5);
+    spawnCollectParticles(position, 0xf5a623, 80);
+    spawnCollectParticles(position, 0xffffff, 40);
+  }
+  else if (effect === 'wormhole') {
+    // ASPIRADOR gigante: 5s atrayendo TODO desde 30m de radio
+    STATE.vortex = true;
+    STATE.vortexTimer = 5 * 60;
+    showToast('🌀 ¡VÓRTICE ASPIRADOR!', '5s · absorbe todo', 0xa855f7);
+    flashScreen(0xa855f7, 0.6, 400);
+    spawnVortexRings();  // anillos iniciales
+    createVortexVisuals(); // espiral visible encima de la ambulancia
+    shakeCamera(0.8);
+    addTemporaryLight(position, 0xa855f7, 10, 1500);
+    spawnCollectParticles(position, 0xa855f7, 120);
+    spawnCollectParticles(position, 0xd8b4ff, 60);
+  }
+  else if (effect === 'sva') {
+    // SVA ACTIVADO: la ambulancia se transforma en unidad de Soporte Vital Avanzado
+    activateSVA();
+  }
+}
+
 function activatePowerup(kind, position) {
   if (kind === 'magnet') {
     STATE.magnet = true;
@@ -3221,6 +6044,566 @@ function resetCombo() {
    PARTÍCULAS
    ================================================================ */
 const particleSystems = [];
+const temporaryLights = [];
+
+// Flash fullscreen (overlay de color que aparece y se desvanece)
+function flashScreen(colorHex, opacity, durationMs) {
+  let flash = document.getElementById('screen-flash');
+  if (!flash) {
+    flash = document.createElement('div');
+    flash.id = 'screen-flash';
+    flash.style.cssText = `
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 50;
+      opacity: 0; transition: opacity 0.08s ease;
+    `;
+    document.body.appendChild(flash);
+  }
+  const r = (colorHex >> 16) & 0xff;
+  const g = (colorHex >> 8) & 0xff;
+  const b = colorHex & 0xff;
+  flash.style.background = `rgb(${r}, ${g}, ${b})`;
+  flash.style.opacity = opacity;
+  // Fade out
+  setTimeout(() => { flash.style.opacity = '0'; }, 80);
+  setTimeout(() => { if (flash) flash.remove(); }, durationMs);
+}
+
+// Luz temporal en una posición 3D (que se desvanece sola)
+function addTemporaryLight(position, colorHex, intensity, durationMs) {
+  const light = new THREE.PointLight(colorHex, intensity, 25);
+  light.position.set(position.x, position.y, position.z);
+  scene.add(light);
+  temporaryLights.push({
+    light,
+    createdAt: performance.now(),
+    duration: durationMs,
+    initialIntensity: intensity
+  });
+}
+
+// Actualiza las luces temporales cada frame (fade out gradual)
+function updateTemporaryLights() {
+  const now = performance.now();
+  for (let i = temporaryLights.length - 1; i >= 0; i--) {
+    const tl = temporaryLights[i];
+    const elapsed = now - tl.createdAt;
+    if (elapsed >= tl.duration) {
+      scene.remove(tl.light);
+      temporaryLights.splice(i, 1);
+    } else {
+      const t = 1 - (elapsed / tl.duration);
+      tl.light.intensity = tl.initialIntensity * t;
+    }
+  }
+}
+
+// Estela de fuego naranja detrás de la ambulancia durante FEVER MODE
+let feverTrail = null;
+function createFeverTrail() {
+  if (feverTrail) return;
+  const group = new THREE.Group();
+
+  // ========== ANILLO DE FUEGO en el suelo (más sutil, solo 12 conos pequeños) ==========
+  const ringFlames = [];
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const radius = 2.0;
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.22, 0.9, 6),
+      new THREE.MeshBasicMaterial({
+        color: i % 3 === 0 ? 0xff3300 : (i % 3 === 1 ? 0xff6b35 : 0xffaa00),
+        transparent: true,
+        opacity: 0.55
+      })
+    );
+    flame.position.set(Math.cos(angle) * radius, 0.45, Math.sin(angle) * radius);
+    flame.userData.baseAngle = angle;
+    flame.userData.phase = i * 0.4;
+    flame.userData.baseRadius = radius;
+    group.add(flame);
+    ringFlames.push(flame);
+  }
+  group.userData.ringFlames = ringFlames;
+
+  // ========== COLA TRASERA de fuego (lo único realmente visible, detrás del vehículo) ==========
+  // Empieza más atrás (z=2.5) para no superponerse con la ambulancia
+  const tailFlames = [];
+  for (let i = 0; i < 12; i++) {
+    const flame = new THREE.Mesh(
+      new THREE.SphereGeometry(0.45 + Math.random() * 0.2, 8, 6),
+      new THREE.MeshBasicMaterial({
+        color: [0xff3300, 0xff6b35, 0xffaa00, 0xffdd33][i % 4],
+        transparent: true,
+        opacity: 0.7
+      })
+    );
+    flame.position.set((Math.random() - 0.5) * 0.9, 0.7 + Math.random() * 0.4, 2.5 + i * 0.5);
+    flame.userData.phase = i * 0.25;
+    flame.userData.baseZ = 2.5 + i * 0.5;
+    flame.userData.baseSize = 0.45 + (i / 12) * 0.3; // más grandes hacia el final (efecto trail)
+    group.add(flame);
+    tailFlames.push(flame);
+  }
+  group.userData.tailFlames = tailFlames;
+
+  // ========== LUZ NARANJA (intensidad reducida para no saturar) ==========
+  const light = new THREE.PointLight(0xff6b35, 4, 18);
+  light.position.set(0, 1.5, 2);  // posicionada detrás
+  group.add(light);
+  group.userData.light = light;
+
+  feverTrail = group;
+  scene.add(feverTrail);
+}
+
+function destroyFeverTrail() {
+  if (!feverTrail) return;
+  scene.remove(feverTrail);
+  feverTrail.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  feverTrail = null;
+}
+
+/* ================================================================
+   AURA 3D DE MASTERY MODE — cristales/prismas verdes girando
+   ================================================================ */
+let masteryAura = null;
+function createMasteryAura() {
+  if (masteryAura) return;
+  const group = new THREE.Group();
+
+  // 8 cristales orbitando alrededor del jugador (octaedros = diamantes)
+  const crystals = [];
+  for (let i = 0; i < 8; i++) {
+    const crystal = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.35, 0),
+      new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0x10b981 : 0x06b6d4,
+        transparent: true,
+        opacity: 0.75,
+        wireframe: false
+      })
+    );
+    crystal.userData.phase = (i / 8) * Math.PI * 2;  // ángulo inicial
+    crystal.userData.baseY = 1.4;
+    group.add(crystal);
+    crystals.push(crystal);
+  }
+  group.userData.crystals = crystals;
+
+  // Anillo energético horizontal (como un halo flotante)
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(2.0, 2.3, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide
+    })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.1;
+  group.add(ring);
+  group.userData.ring = ring;
+
+  // Luz verde pulsante
+  const light = new THREE.PointLight(0x10b981, 3, 12);
+  light.position.set(0, 2, 0);
+  group.add(light);
+  group.userData.light = light;
+
+  masteryAura = group;
+  scene.add(masteryAura);
+}
+
+function destroyMasteryAura() {
+  if (!masteryAura) return;
+  scene.remove(masteryAura);
+  masteryAura.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  masteryAura = null;
+}
+
+function updateMasteryAura(dt) {
+  if (!masteryAura || !STATE.mastery) return;
+  masteryAura.position.x = ambulance.position.x;
+  masteryAura.position.z = ambulance.position.z;
+  masteryAura.position.y = ambulance.position.y;
+
+  const now = Date.now();
+
+  // Cristales orbitando + subiendo/bajando
+  if (masteryAura.userData.crystals) {
+    const orbitRadius = 2.4;
+    for (const c of masteryAura.userData.crystals) {
+      c.userData.phase += dt * 1.5;
+      c.position.x = Math.cos(c.userData.phase) * orbitRadius;
+      c.position.z = Math.sin(c.userData.phase) * orbitRadius;
+      c.position.y = c.userData.baseY + Math.sin(c.userData.phase * 2) * 0.4;
+      c.rotation.x += dt * 2;
+      c.rotation.y += dt * 1.5;
+    }
+  }
+  // Anillo rota lento
+  if (masteryAura.userData.ring) {
+    masteryAura.userData.ring.rotation.z += dt * 0.8;
+    masteryAura.userData.ring.material.opacity = 0.3 + Math.abs(Math.sin(now / 400)) * 0.25;
+  }
+  // Luz pulsante
+  if (masteryAura.userData.light) {
+    masteryAura.userData.light.intensity = 2 + Math.abs(Math.sin(now / 200)) * 3;
+  }
+}
+
+// Pantalla de liquidación al terminar Mastery naturalmente
+function showMasteryLiquidation(earnedDuringMastery) {
+  const bonus = earnedDuringMastery;  // el bonus es igual a lo ganado (multiplicador ×2 total)
+  addScore(bonus);
+
+  const el = document.getElementById('mastery-liquidation');
+  const earnedEl = document.getElementById('mastery-liq-earned');
+  const bonusEl = document.getElementById('mastery-liq-bonus');
+  const totalEl = document.getElementById('mastery-liq-total');
+  if (!el || !earnedEl || !bonusEl || !totalEl) return;
+
+  // Animación de contadores (cuentan de 0 al valor final en 1 segundo)
+  const duration = 1000;
+  const start = performance.now();
+  function animate(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    earnedEl.textContent = Math.floor(earnedDuringMastery * ease).toLocaleString('es-ES');
+    bonusEl.textContent = '+' + Math.floor(bonus * ease).toLocaleString('es-ES');
+    totalEl.textContent = '+' + Math.floor((earnedDuringMastery + bonus) * ease).toLocaleString('es-ES');
+    if (t < 1) requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  el.classList.add('visible');
+  // Auto-cerrar en 3 segundos
+  setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+function updateFeverTrail(dt) {
+  if (!feverTrail || !STATE.fever) return;
+  feverTrail.position.x = ambulance.position.x;
+  feverTrail.position.z = ambulance.position.z;
+  feverTrail.position.y = ambulance.position.y;
+
+  const now = Date.now();
+
+  // ANIMAR ANILLO DE FUEGO (pulsa sutilmente)
+  if (feverTrail.userData.ringFlames) {
+    for (const f of feverTrail.userData.ringFlames) {
+      f.userData.phase += dt * 5;
+      const h = Math.abs(Math.sin(f.userData.phase)) * 0.7 + 0.3;
+      f.scale.y = h;
+      // Opacidad reducida (max 0.55 vs anterior 0.95)
+      f.material.opacity = 0.35 + Math.abs(Math.sin(f.userData.phase * 1.5)) * 0.2;
+      const r = f.userData.baseRadius + Math.sin(f.userData.phase * 0.5) * 0.15;
+      f.position.set(
+        Math.cos(f.userData.baseAngle) * r,
+        0.3 + h * 0.2,
+        Math.sin(f.userData.baseAngle) * r
+      );
+    }
+  }
+
+  // COLA TRASERA (oscila con turbulencia, principal efecto visual)
+  if (feverTrail.userData.tailFlames) {
+    for (const f of feverTrail.userData.tailFlames) {
+      f.userData.phase += dt * 3.5;
+      f.position.x = Math.sin(f.userData.phase) * 0.4;
+      f.position.y = 0.7 + Math.abs(Math.sin(f.userData.phase * 2)) * 0.5;
+      const sc = 0.85 + Math.sin(f.userData.phase * 2) * 0.25;
+      f.scale.set(sc, sc, sc);
+      f.material.opacity = 0.45 + Math.abs(Math.sin(f.userData.phase * 1.5)) * 0.35;
+    }
+  }
+
+  // LUZ: parpadeo más suave, menor intensidad para no saturar pantalla
+  if (feverTrail.userData.light) {
+    feverTrail.userData.light.intensity = 3 + Math.abs(Math.sin(now / 100)) * 2.5;
+  }
+}
+
+// Aura eléctrica amarilla alrededor de la ambulancia durante el Relámpago
+let rayoAura = null;
+function createRayoAura() {
+  if (rayoAura) return;
+  const group = new THREE.Group();
+
+  // Esfera amarilla translúcida pulsante
+  const sphereGeom = new THREE.SphereGeometry(2.5, 16, 12);
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: 0xffe066,
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.DoubleSide
+  });
+  const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+  sphere.position.y = 1.2;
+  group.add(sphere);
+  group.userData.sphere = sphere;
+
+  // 16 chispas que orbitan constantemente
+  const sparks = [];
+  for (let i = 0; i < 16; i++) {
+    const spark = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.4, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    const angle = (i / 16) * Math.PI * 2;
+    spark.userData.baseAngle = angle;
+    spark.userData.offsetH = (i % 4) * 0.4;
+    spark.position.set(Math.cos(angle) * 2.2, 0.5 + spark.userData.offsetH, Math.sin(angle) * 2.2);
+    group.add(spark);
+    sparks.push(spark);
+  }
+  group.userData.sparks = sparks;
+
+  // Luz amarilla intensa
+  const light = new THREE.PointLight(0xffe066, 4, 15);
+  light.position.y = 1.5;
+  group.add(light);
+  group.userData.light = light;
+
+  rayoAura = group;
+  scene.add(rayoAura);
+}
+
+function destroyRayoAura() {
+  if (!rayoAura) return;
+  scene.remove(rayoAura);
+  rayoAura.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  rayoAura = null;
+}
+
+function updateRayoAura(dt) {
+  if (!rayoAura || !STATE.rayo) return;
+  rayoAura.position.x = ambulance.position.x;
+  rayoAura.position.z = ambulance.position.z;
+  rayoAura.position.y = ambulance.position.y;
+  // Pulso de la esfera
+  if (rayoAura.userData.sphere) {
+    const pulse = 1 + Math.sin(Date.now() / 80) * 0.15;
+    rayoAura.userData.sphere.scale.set(pulse, pulse, pulse);
+    rayoAura.userData.sphere.material.opacity = 0.15 + Math.sin(Date.now() / 60) * 0.08;
+  }
+  // Parpadeo luz
+  if (rayoAura.userData.light) {
+    rayoAura.userData.light.intensity = 3 + Math.abs(Math.sin(Date.now() / 50)) * 3;
+  }
+  // Orbitar chispas con sacudidas
+  if (rayoAura.userData.sparks) {
+    for (const s of rayoAura.userData.sparks) {
+      s.userData.baseAngle += dt * 7;
+      const jitterX = (Math.random() - 0.5) * 0.15;
+      const jitterZ = (Math.random() - 0.5) * 0.15;
+      const r = 2.2 + (Math.random() - 0.5) * 0.3;
+      s.position.set(
+        Math.cos(s.userData.baseAngle) * r + jitterX,
+        0.5 + s.userData.offsetH + Math.sin(Date.now() / 100 + s.userData.baseAngle) * 0.2,
+        Math.sin(s.userData.baseAngle) * r + jitterZ
+      );
+      s.rotation.z = Math.random() * Math.PI;
+    }
+  }
+}
+
+// Anillos expansivos púrpura (momento de activación)
+function spawnVortexRings() {
+  const rings = [];
+  for (let i = 0; i < 5; i++) {
+    const ringGeom = new THREE.RingGeometry(0.5, 0.7, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xa855f7,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide
+    });
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.position.set(ambulance.position.x, ambulance.position.y + 1.5, ambulance.position.z - 5);
+    ring.rotation.y = Math.PI / 2;
+    scene.add(ring);
+    rings.push({ mesh: ring, createdAt: performance.now(), delay: i * 80 });
+  }
+  function animateRings() {
+    const now = performance.now();
+    let allDone = true;
+    for (const r of rings) {
+      const elapsed = now - r.createdAt - r.delay;
+      if (elapsed < 0) { allDone = false; continue; }
+      if (elapsed > 500) continue;
+      allDone = false;
+      const t = elapsed / 500;
+      const scale = 0.5 + t * 12;
+      r.mesh.scale.set(scale, scale, 1);
+      r.mesh.material.opacity = 0.9 * (1 - t);
+    }
+    if (!allDone) requestAnimationFrame(animateRings);
+    else {
+      for (const r of rings) {
+        scene.remove(r.mesh);
+        r.mesh.geometry.dispose();
+        r.mesh.material.dispose();
+      }
+    }
+  }
+  requestAnimationFrame(animateRings);
+}
+
+// Espiral visible encima de la ambulancia durante los 5s del vortex
+let vortexVisual = null;
+function createVortexVisuals() {
+  if (vortexVisual) return; // ya existe
+  const group = new THREE.Group();
+  // Cono púrpura invertido (forma de embudo) encima
+  const coneMat = new THREE.MeshBasicMaterial({
+    color: 0xa855f7,
+    transparent: true,
+    opacity: 0.35,
+    side: THREE.DoubleSide
+  });
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(6, 8, 20, 1, true),
+    coneMat
+  );
+  cone.position.y = 6;
+  cone.rotation.x = Math.PI; // invertido (abertura hacia abajo)
+  group.add(cone);
+  group.userData.cone = cone;
+
+  // 3 anillos girando a diferentes alturas
+  const ringsInner = [];
+  for (let i = 0; i < 3; i++) {
+    const r = new THREE.Mesh(
+      new THREE.TorusGeometry(2.5 - i * 0.6, 0.12, 8, 32),
+      new THREE.MeshBasicMaterial({ color: 0xd8b4ff, transparent: true, opacity: 0.7 })
+    );
+    r.rotation.x = Math.PI / 2;
+    r.position.y = 2 + i * 1.5;
+    group.add(r);
+    ringsInner.push(r);
+  }
+  group.userData.ringsInner = ringsInner;
+
+  // 20 partículas púrpura en espiral permanente
+  const spiralDots = [];
+  for (let i = 0; i < 20; i++) {
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xe9d5ff })
+    );
+    // Posición inicial en espiral
+    const angle = (i / 20) * Math.PI * 4;
+    const h = (i / 20) * 7;
+    dot.position.set(Math.cos(angle) * (3 - h * 0.25), 0.5 + h, Math.sin(angle) * (3 - h * 0.25));
+    dot.userData.spiralAngle = angle;
+    dot.userData.spiralHeight = h;
+    group.add(dot);
+    spiralDots.push(dot);
+  }
+  group.userData.spiralDots = spiralDots;
+
+  vortexVisual = group;
+  scene.add(vortexVisual);
+}
+
+function destroyVortexVisuals() {
+  if (!vortexVisual) return;
+  scene.remove(vortexVisual);
+  vortexVisual.traverse(obj => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+  vortexVisual = null;
+}
+
+// Actualizar el visual del vortex cada frame (spin + seguir ambulancia)
+function updateVortexVisuals(dt) {
+  if (!vortexVisual || !STATE.vortex) return;
+  // Seguir a la ambulancia
+  vortexVisual.position.x = ambulance.position.x;
+  vortexVisual.position.z = ambulance.position.z;
+  vortexVisual.position.y = ambulance.position.y;
+  // Girar el embudo
+  if (vortexVisual.userData.cone) {
+    vortexVisual.userData.cone.rotation.y += dt * 3;
+  }
+  // Girar los anillos en sentidos opuestos
+  if (vortexVisual.userData.ringsInner) {
+    vortexVisual.userData.ringsInner.forEach((r, i) => {
+      r.rotation.z += dt * (i % 2 === 0 ? 4 : -4);
+    });
+  }
+  // Animar partículas en espiral descendiendo
+  if (vortexVisual.userData.spiralDots) {
+    for (const dot of vortexVisual.userData.spiralDots) {
+      dot.userData.spiralAngle += dt * 6;
+      dot.userData.spiralHeight -= dt * 2.5;
+      if (dot.userData.spiralHeight < 0) dot.userData.spiralHeight = 7;
+      const h = dot.userData.spiralHeight;
+      const r = 3 - h * 0.25;
+      dot.position.set(
+        Math.cos(dot.userData.spiralAngle) * r,
+        0.5 + h,
+        Math.sin(dot.userData.spiralAngle) * r
+      );
+    }
+  }
+}
+
+// Rayos zigzag amarillos alrededor del jugador (para Relámpago)
+function spawnLightningEffect() {
+  const numBolts = 8;
+  const bolts = [];
+  for (let b = 0; b < numBolts; b++) {
+    // Generar 6 puntos zigzag desde el cielo hacia el jugador
+    const angle = (b / numBolts) * Math.PI * 2;
+    const radius = 4 + Math.random() * 2;
+    const baseX = ambulance.position.x + Math.cos(angle) * radius;
+    const baseZ = ambulance.position.z + Math.sin(angle) * radius;
+
+    const points = [];
+    for (let p = 0; p < 6; p++) {
+      const t = p / 5;
+      const y = 10 - t * 10; // de 10m a 0m
+      const jitter = 0.8;
+      points.push(new THREE.Vector3(
+        baseX + (Math.random() - 0.5) * jitter,
+        y,
+        baseZ + (Math.random() - 0.5) * jitter
+      ));
+    }
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xffe066,
+      transparent: true,
+      opacity: 1,
+      linewidth: 3
+    });
+    const line = new THREE.Line(geom, mat);
+    scene.add(line);
+    bolts.push({ line, createdAt: performance.now() });
+  }
+  // Auto-eliminar los rayos tras 300ms
+  setTimeout(() => {
+    for (const b of bolts) {
+      scene.remove(b.line);
+      b.line.geometry.dispose();
+      b.line.material.dispose();
+    }
+  }, 300);
+}
 
 function spawnCollectParticles(position, color, count) {
   const geom = new THREE.BufferGeometry();
@@ -3386,14 +6769,14 @@ function checkMilestones() {
     STATE.lastMilestone = m;
     const meters = m * 500;
     const messages = [
-      'Bien hecho',
-      'No pares ahora',
-      'Eres una máquina',
-      'A por más',
-      'Leyenda en construcción',
-      'El Parc Taulí te observa',
-      'Inmortal',
-      'Golden Hour dominada'
+      'Vía aérea asegurada',          // 500m
+      'Triángulo de seguridad',       // 1000m
+      'Hemorragia controlada',        // 1500m
+      'Vía intraósea colocada',       // 2000m
+      'Activación código trauma',     // 2500m
+      'Politraumatizado estabilizado',// 3000m
+      'Golden Hour dominada',         // 3500m
+      'Leyenda del trauma'            // 4000m+
     ];
     const msg = messages[Math.min(m - 1, messages.length - 1)];
     showMilestone(`${meters}m`, msg);
@@ -3448,7 +6831,7 @@ const DEATH_MSGS = {
     'Vehículo pesado sin señalizar. Mala suerte.',
   ],
   barrier: [
-    'Obra sin balizar. El SEM también tiene derechos.',
+    'Obra sin balizar. Las emergencias también tienen derechos.',
     'Señalización deficiente. Parte al 112.',
     'Zona de obras. Nadie avisó.',
   ],
@@ -3535,7 +6918,7 @@ function quitToMenu() {
   document.getElementById('word-hunt').classList.remove('active');
   hidePowerupUI();
   resetCombo();
-  hideMissionsHud();
+  hideMissionsHud(); const _dbg = document.getElementById('debug-panel'); if (_dbg) _dbg.classList.remove('active');
   if (isMobile) mobileCtrls.classList.remove('active');
   renderMenuMissions();
   showOverlay(menuOverlay);
@@ -3577,7 +6960,37 @@ function triggerGameOver(kind) {
   document.getElementById('hud-rank').classList.remove('active');
   document.getElementById('word-hunt').classList.remove('active');
   pauseBtn.classList.remove('visible');
-  hideMissionsHud();
+  hideMissionsHud(); const _dbg = document.getElementById('debug-panel'); if (_dbg) _dbg.classList.remove('active');
+  // Ocultar todos los banners de modos especiales
+  ['codigo-rojo-banner', 'fever-banner', 'jetpack-banner', 'rayo-banner'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.classList.remove('active');
+  });
+  // Destruir visuales 3D
+  destroyVortexVisuals();
+  destroyRayoAura();
+  destroyFeverTrail();
+  destroyHemsAura();
+  destroySVAAura();
+  hideHemsCounter();
+  // Mastery: si murió durante mastery, apagarlo sin bonus
+  if (STATE.mastery) deactivateMasteryMode(true);
+  // SVA: apagarlo si estaba activo
+  if (STATE.sva) deactivateSVA();
+  const liqEl = document.getElementById('mastery-liquidation');
+  if (liqEl) liqEl.classList.remove('visible');
+  const vigEl = document.getElementById('mastery-vignette');
+  if (vigEl) vigEl.classList.remove('active');
+  // Limpiar trail particles del HEMS
+  for (const p of hemsTrailParticles) {
+    scene.remove(p);
+    if (p.geometry) p.geometry.dispose();
+    if (p.material) p.material.dispose();
+  }
+  hemsTrailParticles.length = 0;
+  // Limpiar flags de estado para que los loops no sigan referenciando
+  STATE.vortex = false;
+  STATE.rayo = false;
 
   shakeCamera(2);
 
@@ -3641,27 +7054,27 @@ function doRevive() {
 }
 
 function getRankLabel(score) {
-  if (score < 300) return '« Estudiante de primero »';
-  if (score < 800) return '« Residente R1 »';
-  if (score < 1500) return '« Adjunto recién estrenado »';
-  if (score < 2500) return '« EDEC certificado »';
-  if (score < 4000) return '« Jefe de guardia »';
-  if (score < 6500) return '« Especialista HEMS »';
-  if (score < 10000) return '« Coordinador de base »';
-  return '« Leyenda viva del SEM »';
+  if (score < 300) return '« Primer interviniente »';
+  if (score < 800) return '« SVB · Soporte Vital Básico »';
+  if (score < 1500) return '« SVA · Soporte Vital Avanzado »';
+  if (score < 2500) return '« PHTLS · Prehospital Trauma »';
+  if (score < 4000) return '« ATLS · Advanced Trauma Life Support »';
+  if (score < 6500) return '« ETC · European Trauma Course »';
+  if (score < 10000) return '« Médico HEMS · Helitransporte »';
+  return '« Trauma Team Leader · Leyenda »';
 }
 
 function getRankInfo(score) {
   const ranks = [
-    { name: 'Novato', min: 0, max: 300 },
-    { name: 'Estudiante', min: 300, max: 800 },
-    { name: 'Residente R1', min: 800, max: 1500 },
-    { name: 'Adjunto', min: 1500, max: 2500 },
-    { name: 'EDEC certificado', min: 2500, max: 4000 },
-    { name: 'Jefe de guardia', min: 4000, max: 6500 },
-    { name: 'Especialista HEMS', min: 6500, max: 10000 },
-    { name: 'Coordinador', min: 10000, max: 15000 },
-    { name: 'Leyenda SEM', min: 15000, max: 99999 },
+    { name: 'Primer interviniente', min: 0, max: 300 },
+    { name: 'SVB', min: 300, max: 800 },
+    { name: 'SVA', min: 800, max: 1500 },
+    { name: 'PHTLS', min: 1500, max: 2500 },
+    { name: 'ATLS', min: 2500, max: 4000 },
+    { name: 'ETC', min: 4000, max: 6500 },
+    { name: 'Médico HEMS', min: 6500, max: 10000 },
+    { name: 'Trauma Leader', min: 10000, max: 15000 },
+    { name: 'Leyenda', min: 15000, max: 99999 },
   ];
   for (const r of ranks) {
     if (score >= r.min && score < r.max) {
@@ -3720,7 +7133,44 @@ function animate() {
   for (const it of activeItems) {
     if (it.kind === 'coin') {
       it.mesh.rotation.y += dt * 3;
-      it.mesh.position.y = 1.2 + Math.sin(Date.now() / 400 + it.mesh.position.z) * 0.1;
+      // Si la moneda está cayendo (lluvia de monedas), aplicar gravedad
+      if (it.mesh.userData.falling) {
+        it.mesh.userData.fallSpeed += 18 * dt; // aceleración
+        it.mesh.position.y -= it.mesh.userData.fallSpeed * dt;
+        if (it.mesh.position.y <= it.mesh.userData.targetY) {
+          it.mesh.position.y = it.mesh.userData.targetY;
+          it.mesh.userData.falling = false;
+          it.mesh.userData.fallSpeed = 0;
+          // Micro explosión al tocar suelo
+          spawnCollectParticles(
+            { x: it.mesh.position.x, y: it.mesh.position.y, z: it.mesh.position.z },
+            0xffd54f, 5
+          );
+        }
+      } else {
+        it.mesh.position.y = 1.2 + Math.sin(Date.now() / 400 + it.mesh.position.z) * 0.1;
+      }
+    } else if (it.kind === 'trauma_item') {
+      // Items de material: rotan en Y, caen con gravedad igual que monedas
+      const rotSpeed = it.mesh.userData.rotSpeed || 1;
+      it.mesh.rotation.y += dt * rotSpeed;
+      if (it.mesh.userData.falling) {
+        it.mesh.userData.fallSpeed += 16 * dt;  // gravedad un pelín menor (flotan algo)
+        it.mesh.position.y -= it.mesh.userData.fallSpeed * dt;
+        if (it.mesh.position.y <= it.mesh.userData.targetY) {
+          it.mesh.position.y = it.mesh.userData.targetY;
+          it.mesh.userData.falling = false;
+          it.mesh.userData.fallSpeed = 0;
+          // Micro explosión al tocar suelo con el color del item
+          const color = (it.traumaItem && it.traumaItem.glow) || 0xdc2626;
+          spawnCollectParticles(
+            { x: it.mesh.position.x, y: it.mesh.position.y, z: it.mesh.position.z },
+            color, 6
+          );
+        }
+      } else {
+        it.mesh.position.y = it.mesh.userData.targetY + Math.sin(Date.now() / 400 + it.mesh.position.z) * 0.08;
+      }
     } else if (it.kind === 'patient') {
       if (it.mesh.userData.star) {
         it.mesh.userData.star.rotation.y += dt * 2;
@@ -3730,6 +7180,11 @@ function animate() {
       if (it.mesh.userData.groundHalo) {
         const pulse = 0.5 + Math.sin(Date.now() / 200) * 0.2;
         it.mesh.userData.groundHalo.material.opacity = pulse;
+      }
+      // Luz de emergencia parpadeante (solo pacientes de aluvión)
+      if (it.mesh.userData.emergencyLight) {
+        const blink = Math.floor(Date.now() / 120) % 2 === 0;
+        it.mesh.userData.emergencyLight.intensity = blink ? 3.5 : 0.2;
       }
     } else if (it.kind === 'powerup') {
       if (it.mesh.userData.iconMesh) {
@@ -3749,6 +7204,31 @@ function animate() {
       if (it.mesh.userData.halo) {
         const pulse = 0.4 + Math.sin(Date.now() / 220) * 0.2;
         it.mesh.userData.halo.material.opacity = pulse;
+      }
+    } else if (it.kind === 'surprise') {
+      // Caja sorpresa: rotación + flotación + pulso del halo
+      it.mesh.rotation.y += dt * 1.5;
+      // Flotación vertical (el cubo es el primer children)
+      const hoverY = Math.sin(Date.now() / 400) * 0.3;
+      if (it.mesh.children[0]) it.mesh.children[0].position.y = 2.2 + hoverY;
+      // Halo pulsante
+      if (it.mesh.userData.halo) {
+        const pulse = 0.35 + Math.sin(Date.now() / 180) * 0.3;
+        it.mesh.userData.halo.material.opacity = pulse;
+        const scale = 1 + Math.sin(Date.now() / 200) * 0.2;
+        it.mesh.userData.halo.scale.set(scale, scale, 1);
+      }
+      // Luz pulsante
+      if (it.mesh.userData.light) {
+        it.mesh.userData.light.intensity = 2.2 + Math.sin(Date.now() / 200) * 0.9;
+      }
+      // Sprite flotando también
+      if (it.mesh.userData.sprite) {
+        it.mesh.userData.sprite.position.y = 4.0 + Math.sin(Date.now() / 350) * 0.15;
+      }
+      // Chispas orbitantes
+      if (it.mesh.userData.sparkleGroup) {
+        it.mesh.userData.sparkleGroup.rotation.y -= dt * 2.5;
       }
     }
   }
@@ -3772,6 +7252,7 @@ function animate() {
   }
 
   updateParticles();
+  updateTemporaryLights();
   updateFloatingTexts();
   updateSpeedlines(dt);
 
@@ -3793,8 +7274,29 @@ function animate() {
     const curveOffset = STATE.curveAmount * 2.5;
     const targetCamX = ambulance.position.x * 0.3 + curveOffset;
     camera.position.x += (targetCamX - camera.position.x) * 0.1;
-    camera.position.y = 5 + player.jumpY * 0.2;
+
+    // Altura de cámara: si Modo HEMS, bajar ligeramente y mirar hacia arriba
+    // para ver el helicóptero en perfil 3/4 (más cinematográfico)
+    const baseY = STATE.jetpack ? 3.8 : 5;
+    camera.position.y = baseY + player.jumpY * 0.2;
+    // Z: si Modo HEMS, alejar cámara para enmarcar mejor al heli
+    const targetCamZ = STATE.jetpack ? 11 : 9;
+    if (!camera.userData) camera.userData = {};
+    if (camera.userData.z === undefined) camera.userData.z = 9;
+    camera.userData.z += (targetCamZ - camera.userData.z) * 0.04;
+    camera.position.z = camera.userData.z;
+
+    // Rotación: si Modo HEMS, mirar ligeramente hacia arriba
     camera.rotation.z = -STATE.curveAmount * 0.05;
+    if (STATE.jetpack) {
+      // Mirar hacia arriba/delante para ver el helicóptero mejor
+      camera.lookAt(
+        ambulance.position.x,
+        player.jumpY + 1.0,
+        ambulance.position.z - 10
+      );
+      camera.rotation.z = -STATE.curveAmount * 0.05;  // preservar inclinación de curva
+    }
 
     // FOV dinámico: a mayor velocidad, más abierto (sensación de velocidad)
     if (STATE.running) {
@@ -3819,8 +7321,14 @@ function update(dt) {
   const tiltTarget = (targetX - player.smoothX) * 0.15;
   ambulance.rotation.z += (tiltTarget - ambulance.rotation.z) * 0.15;
 
-  // Salto
-  if (player.jumping) {
+  // Salto (con jetpack: mantiene altura y no cae)
+  if (STATE.jetpack) {
+    // Jetpack: flotación constante con oscilación suave
+    const targetY = 3.5 + Math.sin(Date.now() / 300) * 0.3;
+    player.jumpY += (targetY - player.jumpY) * 0.08;
+    player.vy = 0;
+    player.jumping = false;
+  } else if (player.jumping) {
     player.jumpY += player.vy * dt;
     player.vy -= 34 * dt;
     if (player.jumpY <= 0) {
@@ -3828,12 +7336,66 @@ function update(dt) {
       player.vy = 0;
       player.jumping = false;
     }
+  } else if (player.jumpY > 0) {
+    // Si se desactiva jetpack, caer suave
+    player.jumpY -= 8 * dt;
+    if (player.jumpY < 0) player.jumpY = 0;
   }
   ambulance.position.y = player.jumpY;
 
+  // Sincronizar helicóptero con el jugador (mismo carril, altura vuelo)
+  if (STATE.jetpack && helicopter.visible) {
+    helicopter.position.x = player.smoothX;
+    // Oscilación vertical sutil (flotación realista)
+    const bob = Math.sin(Date.now() / 280) * 0.15;
+    helicopter.position.y = player.jumpY + bob;
+    helicopter.position.z = ambulance.position.z;
+    // Inclinar suavemente al cambiar de carril (banking)
+    const bankTarget = (targetX - player.smoothX) * 0.25;
+    helicopter.rotation.z += (bankTarget - helicopter.rotation.z) * 0.15;
+    // NOSE-DOWN permanente (en vuelo hacia adelante, el heli apunta abajo)
+    const noseDown = -0.15 + Math.sin(Date.now() / 400) * 0.03;  // -8° aprox con ligera variación
+    helicopter.rotation.x += (noseDown - helicopter.rotation.x) * 0.08;
+    // Aspas girando muy rápido
+    if (helicopter.userData.rotorMain) {
+      helicopter.userData.rotorMain.rotation.y += dt * 55;
+    }
+    // Fenestron girando muy rápido
+    if (helicopter.userData.fenestronBlades) {
+      helicopter.userData.fenestronBlades.rotation.x += dt * 45;
+    }
+    // Luces de navegación parpadeantes
+    const blink = Math.floor(Date.now() / 500) % 2 === 0;
+    if (helicopter.userData.greenLight) {
+      helicopter.userData.greenLight.material.color.setHex(blink ? 0x4ade80 : 0x1a4030);
+    }
+    if (helicopter.userData.redLight) {
+      helicopter.userData.redLight.material.color.setHex(blink ? 0x1a2030 : 0xe63946);
+    }
+    // Flash anti-colisión
+    if (helicopter.userData.antiCollide) {
+      const flash = Math.floor(Date.now() / 150) % 4 === 0;
+      helicopter.userData.antiCollide.material.color.setHex(flash ? 0xffffff : 0x303030);
+    }
+    // Sombra en el suelo + pulso de downwash
+    helicopterShadow.position.x = player.smoothX;
+    helicopterShadow.position.z = ambulance.position.z;
+    const shadowScale = 1 - (player.jumpY - 3.5) * 0.08;
+    // Pulso del downwash (la sombra late sutilmente con el rotor)
+    const downwashPulse = shadowScale * (1 + Math.sin(Date.now() / 90) * 0.05);
+    helicopterShadow.scale.set(downwashPulse, downwashPulse, 1);
+  }
+
   // VELOCIDAD CONTINUA (curva logarítmica)
   const targetSpeed = computeSpeedAt(STATE.distance);
-  const speedMul = player.braking ? 0.55 : 1;
+  // Multiplicador efímero de velocidad
+  let speedMul = player.braking ? 0.55 : 1;
+  if (STATE.codigoRojo) speedMul *= 1.5;   // Código Rojo: +50% velocidad
+  if (STATE.jetpack) speedMul *= 1.5;      // Modo HEMS: +50% velocidad
+  if (STATE.fever) speedMul *= 1.3;        // Fever Mode: +30% velocidad (adrenalina)
+  if (STATE.rayo) speedMul *= 1.4;         // Relámpago: +40% velocidad (energía eléctrica)
+  if (STATE.mastery) speedMul *= 1.2;      // Mastery Mode: +20% velocidad (concentración)
+  if (STATE.sva) speedMul *= 1.35;         // SVA Activado: +35% velocidad (urgencia)
   // Suavizado: se acerca gradualmente al objetivo continuo
   STATE.speed += (targetSpeed * speedMul - STATE.speed) * 0.05;
 
@@ -3902,6 +7464,131 @@ function update(dt) {
     }
   }
 
+  // CÓDIGO ROJO timer
+  if (STATE.codigoRojo) {
+    STATE.codigoRojoTimer--;
+    // Actualizar texto cada 10 frames
+    if (STATE.codigoRojoTimer % 10 === 0) {
+      const secs = Math.ceil(STATE.codigoRojoTimer / 60);
+      const el = document.getElementById('codigo-rojo-timer');
+      if (el) el.textContent = `${secs}s · Prioridad absoluta`;
+    }
+    if (STATE.codigoRojoTimer <= 0) {
+      deactivateCodigoRojo();
+    }
+  }
+
+  // FEVER MODE timer
+  // - Fever "natural" (por combo x20): se extiende si mantienes combo, se corta si lo pierdes
+  // - Fever "de caja/debug": 10s fijos sin condiciones
+  if (STATE.fever) {
+    STATE.feverTimer--;
+    // Actualizar texto cada 10 frames
+    if (STATE.feverTimer % 10 === 0) {
+      const secs = Math.ceil(STATE.feverTimer / 60);
+      const el = document.getElementById('fever-timer');
+      if (el) el.textContent = `${secs}s · ×3 puntos · combo ${STATE.combo}`;
+    }
+    if (STATE.feverFromBox) {
+      // Caja o debug: duración fija, no se corta ni se extiende
+      if (STATE.feverTimer <= 0) deactivateFever();
+    } else {
+      // Fever natural: condiciones por combo
+      if (STATE.combo < Math.floor(STATE.feverComboAtStart * 0.5)) {
+        deactivateFever();
+      } else if (STATE.feverTimer <= 0) {
+        if (STATE.combo >= STATE.feverComboAtStart) {
+          STATE.feverTimer = 10 * 60;
+          showToast('¡FEVER EXTENDIDO!', '+10s', 0xff6b35);
+        } else {
+          deactivateFever();
+        }
+      }
+    }
+  }
+
+  // MASTERY MODE timer (15s fijos, se termina solo, aplica bonus x2 al acabar)
+  if (STATE.mastery) {
+    STATE.masteryTimer--;
+    // Actualizar texto cada 10 frames
+    if (STATE.masteryTimer % 10 === 0) {
+      const secs = Math.ceil(STATE.masteryTimer / 60);
+      const el = document.getElementById('mastery-timer');
+      if (el) el.textContent = `${secs}s · Monedas ×5 · +${STATE.masteryPointsEarned.toLocaleString('es-ES')}`;
+    }
+    if (STATE.masteryTimer <= 0) {
+      deactivateMasteryMode(false);  // false = no murió, aplica bonus
+    }
+  }
+
+  // SVA ACTIVADO timer (8s fijos, se termina solo)
+  if (STATE.sva) {
+    STATE.svaTimer--;
+    if (STATE.svaTimer % 10 === 0) {
+      const secs = Math.ceil(STATE.svaTimer / 60);
+      const el = document.getElementById('sva-timer');
+      if (el) el.textContent = `${secs}s · Escudo · ×2 puntos`;
+    }
+    if (STATE.svaTimer <= 0) {
+      deactivateSVA();
+    }
+  }
+
+  // MODO HEMS timer (de caja sorpresa)
+  if (STATE.jetpack) {
+    STATE.jetpackTimer--;
+    // Actualizar texto
+    if (STATE.jetpackTimer % 10 === 0) {
+      const secs = Math.ceil(STATE.jetpackTimer / 60);
+      const el = document.getElementById('jetpack-timer');
+      if (el) el.textContent = `${secs}s · Rescate aéreo`;
+    }
+    if (STATE.jetpackTimer <= 0) {
+      STATE.jetpack = false;
+      deactivateModoHEMS();
+    }
+  }
+
+  // VORTEX ASPIRADOR timer
+  if (STATE.vortex) {
+    STATE.vortexTimer--;
+    if (STATE.vortexTimer <= 0) {
+      STATE.vortex = false;
+      destroyVortexVisuals();
+      flashScreen(0xa855f7, 0.4, 300);  // flash al cerrar
+    }
+  }
+  updateVortexVisuals(dt);
+
+  // RELÁMPAGO timer (aura eléctrica sostenida)
+  if (STATE.rayo) {
+    STATE.rayoTimer--;
+    // Cada ~800ms, lanzar un nuevo set de rayos
+    if (STATE.rayoTimer % 48 === 0) {
+      spawnLightningEffect();
+    }
+    if (STATE.rayoTimer <= 0) {
+      STATE.rayo = false;
+      destroyRayoAura();
+      const banner = document.getElementById('rayo-banner');
+      if (banner) banner.classList.remove('active');
+    }
+  }
+  updateRayoAura(dt);
+  updateFeverTrail(dt);
+  updateMasteryAura(dt);
+  updateHemsAura(dt);
+  updateSVAAura(dt);
+  updateHemsTrailParticles(dt);
+  // Actualizar barra del contador HEMS (progreso del timer de 8s)
+  if (STATE.jetpack) {
+    const barEl = document.getElementById('hems-counter-bar');
+    if (barEl) {
+      const pct = Math.max(0, (STATE.jetpackTimer / (8 * 60)) * 100);
+      barEl.style.width = pct + '%';
+    }
+  }
+
   // Combo timer
   if (STATE.comboTimer > 0) {
     STATE.comboTimer--;
@@ -3931,6 +7618,26 @@ function updateHUD() {
   document.getElementById('hud-coins').textContent = STATE.coins;
   document.getElementById('hud-distance').textContent = Math.floor(STATE.distance) + ' m';
   document.getElementById('hud-patients').textContent = STATE.patients;
+
+  // Velocímetro: convertir m/s a km/h (x3.6) y calcular % relativo al tope
+  const kmh = Math.round(STATE.speed * 3.6);
+  document.getElementById('hud-speed').textContent = kmh;
+  // Tope virtual extendido si hay boosts activos: así la barra no se satura
+  let maxSpeedVisual = MAX_SPEED;
+  if (STATE.codigoRojo || STATE.jetpack) maxSpeedVisual *= 1.5;
+  else if (STATE.rayo) maxSpeedVisual *= 1.4;
+  else if (STATE.sva) maxSpeedVisual *= 1.35;
+  else if (STATE.fever) maxSpeedVisual *= 1.3;
+  else if (STATE.mastery) maxSpeedVisual *= 1.2;
+  const speedPct = Math.min(100, ((STATE.speed - BASE_SPEED) / (maxSpeedVisual - BASE_SPEED)) * 100);
+  const speedBar = document.getElementById('hud-speed-bar');
+  speedBar.style.width = speedPct + '%';
+  // Zonas de color
+  let zone = 'low';
+  if (speedPct >= 95) zone = 'max';
+  else if (speedPct >= 75) zone = 'high';
+  else if (speedPct >= 40) zone = 'mid';
+  speedBar.dataset.zone = zone;
 
   // Rango
   const rank = getRankInfo(STATE.score);
@@ -3986,9 +7693,25 @@ function startGame() {
   STATE.invincible = false;
   STATE.magnet = false;
   STATE.x2Score = false;
+  STATE.codigoRojo = false;
+  STATE.codigoActivo = null;
+  STATE.fever = false;
+  STATE.jetpack = false;
+  STATE.vortex = false;
+  STATE.rayo = false;
   STATE.invincibleTimer = 0;
   STATE.magnetTimer = 0;
   STATE.x2Timer = 0;
+  STATE.codigoRojoTimer = 0;
+  STATE.feverTimer = 0;
+  STATE.feverComboAtStart = 0;
+  STATE.jetpackTimer = 0;
+  STATE.vortexTimer = 0;
+  STATE.rayoTimer = 0;
+  // Asegurar ambulancia visible y helicóptero oculto
+  ambulance.visible = true;
+  helicopter.visible = false;
+  helicopterShadow.visible = false;
   STATE.revivesUsed = 0;
   STATE.lastMilestone = 0;
   STATE.curveAmount = 0;
@@ -3996,6 +7719,41 @@ function startGame() {
   STATE.curveDistance = 0;
   STATE.recordBroken = false;
   STATE.scenarioIndex = 0;
+  // Reset de tracker caja sorpresa
+  lastSurpriseBoxDistance = 0;
+  // Ocultar todos los banners de modos especiales
+  ['codigo-rojo-banner', 'fever-banner', 'jetpack-banner', 'rayo-banner'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.classList.remove('active');
+  });
+  // Destruir visuales 3D de modos especiales
+  destroyVortexVisuals();
+  destroyRayoAura();
+  destroyFeverTrail();
+  destroyHemsAura();
+  destroyMasteryAura();
+  destroySVAAura();
+  hideHemsCounter();
+  // Cerrar liquidation si estaba visible
+  const liqEl = document.getElementById('mastery-liquidation');
+  if (liqEl) liqEl.classList.remove('visible');
+  const vigEl = document.getElementById('mastery-vignette');
+  if (vigEl) vigEl.classList.remove('active');
+  STATE.mastery = false;
+  STATE.masteryTimer = 0;
+  STATE.masteryPointsEarned = 0;
+  STATE.sva = false;
+  STATE.svaTimer = 0;
+  // Cerrar banner SVA si estaba visible
+  const svaBanner = document.getElementById('sva-banner');
+  if (svaBanner) svaBanner.classList.remove('active');
+  // Limpiar trail particles del HEMS
+  for (const p of hemsTrailParticles) {
+    scene.remove(p);
+    if (p.geometry) p.geometry.dispose();
+    if (p.material) p.material.dispose();
+  }
+  hemsTrailParticles.length = 0;
   STATE.runStats = {
     obstaclesJumped: 0,
     wordsCompleted: 0,
@@ -4012,6 +7770,10 @@ function startGame() {
   initWordHunt();
   generateTiles();
   showMissionsHud();
+
+  // DEBUG: mostrar panel de teclas al iniciar
+  const debugPanel = document.getElementById('debug-panel');
+  if (debugPanel) debugPanel.classList.add('active');
 
   showOverlay(null);
   hud.style.display = 'flex';
