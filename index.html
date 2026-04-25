@@ -1128,6 +1128,49 @@
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
   }
 
+  /* =============== METRICS PANEL (Fase 2 A1, dev-only · F2) =============== */
+  .metrics-panel {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 200;
+    display: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #d1fae5;
+    background: rgba(10, 9, 8, 0.82);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 4px;
+    padding: 8px 10px;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    min-width: 200px;
+  }
+  .metrics-panel.visible { display: block; }
+  .metrics-panel__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .metrics-panel__key { color: rgba(209, 250, 229, 0.55); }
+  .metrics-panel__val {
+    color: #d1fae5;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .metrics-panel__hint {
+    margin-top: 6px;
+    font-size: 9px;
+    color: rgba(209, 250, 229, 0.4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
   /* Countdown al reanudar */
   .resume-countdown {
     position: absolute;
@@ -1821,6 +1864,17 @@
       </button>
       <button id="btn-quit" class="btn btn--ghost">Salir al menú</button>
     </div>
+  </div>
+
+  <!-- Panel de métricas (oculto · F2 para alternar · Fase 2 A1 dev-only) -->
+  <div id="metrics-panel" class="metrics-panel">
+    <div class="metrics-panel__row"><span class="metrics-panel__key">FPS</span><span class="metrics-panel__val" id="m-fps">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">avg 5s</span><span class="metrics-panel__val" id="m-fps-avg">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">draws</span><span class="metrics-panel__val" id="m-draws">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">tris</span><span class="metrics-panel__val" id="m-tris">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">tier</span><span class="metrics-panel__val" id="m-tier">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">why</span><span class="metrics-panel__val" id="m-tier-reason">--</span></div>
+    <div class="metrics-panel__hint">F2 to toggle</div>
   </div>
 
   <!-- Countdown al reanudar -->
@@ -7138,6 +7192,75 @@ function shakeCamera(intensity) {
 }
 
 /* ================================================================
+   METRICS PANEL (Fase 2 — A1, dev-only · F2 alterna visibilidad)
+   ================================================================ */
+const Metrics = (() => {
+  const FPS_WINDOW_MS = 5000;
+  const DOM_UPDATE_MS = 160;
+
+  const samples = [];
+  let visible = false;
+  let lastDomUpdate = 0;
+  let lastInfo = { calls: 0, triangles: 0 };
+  let dom = null;
+
+  function ensureDom() {
+    if (dom) return;
+    dom = {
+      panel: document.getElementById('metrics-panel'),
+      fps: document.getElementById('m-fps'),
+      fpsAvg: document.getElementById('m-fps-avg'),
+      draws: document.getElementById('m-draws'),
+      tris: document.getElementById('m-tris'),
+      tier: document.getElementById('m-tier'),
+      reason: document.getElementById('m-tier-reason')
+    };
+  }
+
+  function toggle() {
+    ensureDom();
+    visible = !visible;
+    dom.panel.classList.toggle('visible', visible);
+  }
+
+  function tick(dt) {
+    // renderer.info.render se resetea al inicio del próximo render(),
+    // por lo que aquí (justo después de render) refleja el frame actual.
+    lastInfo.calls = renderer.info.render.calls;
+    lastInfo.triangles = renderer.info.render.triangles;
+
+    if (!visible) return;
+
+    const now = performance.now();
+    samples.push({ t: now, dt });
+    while (samples.length && now - samples[0].t > FPS_WINDOW_MS) samples.shift();
+
+    if (now - lastDomUpdate < DOM_UPDATE_MS) return;
+    lastDomUpdate = now;
+
+    const fpsNow = dt > 0 ? Math.round(1 / dt) : 0;
+    let avgFps = 0;
+    if (samples.length > 1) {
+      const sumDt = samples.reduce((s, x) => s + x.dt, 0);
+      if (sumDt > 0) avgFps = Math.round(samples.length / sumDt);
+    }
+
+    dom.fps.textContent = fpsNow;
+    dom.fpsAvg.textContent = avgFps || '--';
+    dom.draws.textContent = lastInfo.calls;
+    dom.tris.textContent = lastInfo.triangles.toLocaleString('en-US');
+    dom.tier.textContent = QUALITY_TIER;
+    dom.reason.textContent = QUALITY_TIER_REASON;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F2') { e.preventDefault(); toggle(); }
+  });
+
+  return { tick };
+})();
+
+/* ================================================================
    LOOP
    ================================================================ */
 const clock = new THREE.Clock();
@@ -7351,6 +7474,7 @@ function animate() {
   }
 
   renderer.render(scene, camera);
+  Metrics.tick(dt);
 }
 
 function update(dt) {
