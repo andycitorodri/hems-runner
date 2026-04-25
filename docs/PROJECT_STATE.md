@@ -1,8 +1,8 @@
 # HEMS Runner — Estado del proyecto
 
-**Última actualización**: 23 de abril de 2026
-**Versión actual**: v4 con optimizaciones móvil y rebalance Fever
-**Archivo de producción**: `index.html` (227 KB, ~6500 líneas)
+**Última actualización**: 25 de abril de 2026
+**Versión actual**: v4.7 en `main`; rama `phase-2` con Fase 2 · A1 cerrado (no mergeado)
+**Archivo de producción**: `index.html` (~8.300 líneas en rama `phase-2`)
 
 ---
 
@@ -109,18 +109,65 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ---
 
+## Fase 2 · Sub-bloque A1 cerrado (25 abril 2026)
+
+**Rama**: `phase-2` (6 commits por delante de `main`, sin mergear todavía).
+
+### Commits de A1 (cronológico)
+
+| SHA | Título |
+|---|---|
+| `40d1025` | Quality tier detection + apply at boot |
+| `1ea292b` | Hidden metrics panel (F2 toggle) |
+| `a2a3ccf` | Relocate metrics panel to top-right (no HUD overlap) |
+| `34f22d0` | Dynamic FPS-based tier downgrade + toast |
+| `545056b` | Quality selector in pause menu + localStorage |
+| `0688156` | (bonus) Fix ReferenceError makeWarningSign on cone spawn |
+
+**Tiempo real invertido**: ~2 sesiones cortas en 2 días (24-25 abril). Mucho más rápido que la estimación de 4-6 días del plan, asistido con Claude Code en local.
+
+### Decisiones clave tomadas
+
+- **Override manual leído en boot antes del renderer**: el único modo de que `antialias` (no hot-swappable sin recrear el renderer) se aplique correctamente desde el primer frame cuando el usuario tiene una preferencia guardada.
+- **F2 sustituye a Cmd+D para el panel de métricas**: Cmd+D conflicta con el bookmark del navegador.
+- **"Auto" mantiene su etiqueta tras downgrade dinámico**, mostrando el tier real al lado: `auto (medium)`. Cambiarlo a `medium` duro perdería la intención del usuario en futuros dispositivos.
+- **Watchdog sólo mide en gameplay activo** (`STATE.running && !STATE.paused`); pausar resetea el warmup para no contaminar muestras.
+- **Cooldown de 5s + mínimo 30 muestras** entre downgrades evitan thrashing por hipos puntuales.
+- **Antialias requiere recargar** cuando el tier cambia en runtime — el toast lo avisa explícitamente; no se recrea el renderer en caliente.
+
+### Bugs colaterales encontrados
+
+- **`makeWarningSign` ReferenceError** (pre-existente de v4.7) — arreglado en commit bonus `0688156`. Antes spamea ~31 errores en pocos segundos al aparecer conos; ahora consola limpia.
+- **draws=539 vs target <100** (`GRAPHICS_STRATEGY.md`) — no es bug, es deuda de geometría no instanciada. Anotada en `PHASE_2_PLAN.md` para abordar en Fase 2 con `InstancedMesh` cuando entren los GLTFs (sub-bloque A2).
+
+### Tests realizados
+
+- ✅ **Mac M3 / Firefox**: tier=high estable, panel F2 OK, selector OK, persistencia OK, bug bonus arreglado (consola limpia con conos en pantalla).
+- ⏳ **Pendiente**: downgrade dinámico (`Test 1`) en móvil real. Firefox desktop no expone CPU throttling efectivo, así que el watchdog no se pudo ejercitar localmente.
+- ⏳ **Pendiente**: validación en móvil reciente y móvil 3-4 años, según `GRAPHICS_STRATEGY.md` (regla de oro de 3 dispositivos antes de mergear features gráficas).
+
+### Pendiente para cerrar la rama
+
+1. Probar la rama en móvil reciente (iPhone 14+/Snapdragon 8 gen 2+) → verificar tier asignado y FPS.
+2. Probar en móvil 3-4 años → verificar que el watchdog haga downgrade si baja de 30 FPS y que el toast aparezca.
+3. Si todo va bien, mergear `phase-2` a `main` y desplegar a Cloudflare Workers.
+4. Si hay bugs, commits adicionales en la rama antes de mergear.
+
+---
+
 ## Pendiente / Próximos pasos
 
 ### Inmediato (esta semana)
 - [ ] Beta test con 5-10 compañeros del SEM/UCI por WhatsApp
 - [ ] Recopilar feedback de rendimiento en al menos 3 móviles distintos (gama alta, media, antigua)
 - [ ] Si rendimiento sigue justo en móvil → aplicar optimización Nivel 2 (reducir partículas/llamas)
+- [ ] Validar rama `phase-2` en móvil real antes de mergear a `main`
 
 ### Medio plazo (mayo-septiembre 2026)
-- [ ] Migrar entorno de desarrollo a **Claude Code + VPS Hetzner**
-- [ ] Empezar **Fase 2** siguiendo el documento `GRAPHICS_STRATEGY.md` (ver carpeta `docs/`)
-- [ ] Sistema de quality tiers desde el día 1
-- [ ] Assets reales GLTF, shaders custom, post-procesado opcional
+- [ ] Migrar entorno de desarrollo a **Claude Code + VPS Hetzner** *(parcialmente hecho: Claude Code en Mac M3 local desde 24 abril 2026)*
+- [x] Empezar **Fase 2** siguiendo el documento `GRAPHICS_STRATEGY.md` *(en marcha: A1 cerrado el 25 abril 2026)*
+- [x] Sistema de quality tiers desde el día 1 *(implementado en A1)*
+- [ ] Assets reales GLTF, shaders custom, post-procesado opcional *(A2-A4)*
 
 ### Lanzamiento (septiembre-octubre 2026)
 - [ ] Comprar dominio propio `.com` o `.cat` (~12€/año) — ej. `hems-runner.com`, `hemsrunner.cat`, `traumarunner2026.com`

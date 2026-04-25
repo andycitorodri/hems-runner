@@ -89,6 +89,38 @@ Trabajamos en este orden secuencial. Cada sub-bloque debe quedar funcional antes
 
 **Riesgos**: bajo. Es código nuevo encapsulado que no rompe lo existente.
 
+##### A1 — Cierre (25 abril 2026)
+
+**Estado**: ✅ Cerrado en rama `phase-2` (no mergeado a `main` hasta validar móvil real).
+
+**Tiempo real**: ~2 sesiones cortas en 2 días (24-25 abril). Más rápido que la estimación 4-6 días, asistido con Claude Code en Mac M3 local.
+
+**Commits** (cronológico):
+
+| SHA | Título |
+|---|---|
+| `40d1025` | Quality tier detection + apply at boot |
+| `1ea292b` | Hidden metrics panel (F2 toggle) |
+| `a2a3ccf` | Relocate metrics panel to top-right (no HUD overlap) |
+| `34f22d0` | Dynamic FPS-based tier downgrade + toast |
+| `545056b` | Quality selector in pause menu + localStorage |
+| `0688156` | (bonus) Fix ReferenceError makeWarningSign on cone spawn |
+
+**Decisiones que se desviaron o concretaron del plan original**:
+- Hotkey del panel: **F2** únicamente (Cmd+D entra en conflicto con bookmark del navegador).
+- Override manual leído **en boot antes del renderer** (necesario para `antialias`, que no es hot-swappable).
+- **Antialias requiere recarga** cuando cambia el tier en runtime — el toast lo avisa explícitamente, no se recrea el renderer en caliente.
+- "Auto" mantiene su etiqueta tras downgrade dinámico, mostrando el tier real al lado: `auto (medium)`.
+
+**Tests realizados**:
+- ✅ Mac M3 / Firefox: tier=high estable, panel F2, selector, persistencia, bug bonus → todo OK.
+- ⏳ Pendiente: ejercitar el downgrade dinámico (Test 1) en móvil real. Firefox desktop no expone CPU throttling efectivo.
+- ⏳ Pendiente: validación en móvil reciente y móvil 3-4 años (regla de oro de 3 dispositivos).
+
+**Deuda colateral apuntada durante A1**:
+- **Draws=539** vs target <100 (`GRAPHICS_STRATEGY.md` §2). No es bug — es geometría no instanciada que se aborda en **A2** con `InstancedMesh` al integrar los GLTFs (especialmente para monedas, props decorativos y módulos de escenario).
+- **`makeWarningSign` undefined** — pre-existente de v4.7, arreglado en commit bonus. Sin más rastro.
+
 #### A2 — Modelos GLTF (sourcing + integración)
 
 **Objetivo**: reemplazar las geometrías primitivas de Three.js por modelos GLTF low-poly licenciados.
@@ -176,6 +208,8 @@ Trabajamos en este orden secuencial. Cada sub-bloque debe quedar funcional antes
 **Tiempo estimado**: 3-5 días de trabajo real
 
 **Riesgos**: medio. Bloom es caro, hay que monitorizar FPS en cada test.
+
+**Pendiente arrastrado de A1**: implementar **MSAA 4x explícito** para tier `high`. En A1 se usa `antialias: true` del WebGLRenderer (AA por defecto del navegador, normalmente FXAA o MSAA según GPU). MSAA 4x explícito requiere `WebGLRenderTarget` con `samples: 4` y un pipeline de render-to-target — encaja aquí porque ya estaremos montando el `EffectComposer` para Bloom.
 
 #### A5 — Sonido y música
 
@@ -358,13 +392,15 @@ El prototipo se considera terminado cuando:
 ### Esta semana (24-30 abril)
 
 1. ✅ Plan generado (este documento)
-2. Migrar a Claude Code en Mac local
-3. Crear rama `phase-2` en el repo
-4. Empezar A1 — Cimientos técnicos (quality tiers)
+2. ✅ Migrar a Claude Code en Mac local *(24 abril)*
+3. ✅ Crear rama `phase-2` en el repo *(24 abril)*
+4. ✅ Empezar **y cerrar** A1 — Cimientos técnicos (quality tiers) *(24-25 abril)*
+5. ⏳ Validar A1 en móvil real (reciente + 3-4 años) antes de mergear a `main`
 
 ### Semana 2 (1-7 mayo)
 
-- Terminar A1
+- ✅ A1 cerrado antes de tiempo (rama `phase-2`)
+- Tras validación móvil de A1 → mergear `phase-2` → `main` y desplegar
 - Empezar A2 — Sourcing de modelos GLTF
 
 ### A partir de ahí
