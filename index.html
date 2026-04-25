@@ -1128,6 +1128,95 @@
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
   }
 
+  /* =============== SELECTOR DE CALIDAD EN MENÚ DE PAUSA (Fase 2 A1) =============== */
+  .pause-overlay__quality {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .pause-overlay__quality-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--bone-dim);
+    text-transform: uppercase;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  }
+  .pause-overlay__quality-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pause-q-btn {
+    background: rgba(10, 9, 8, 0.65);
+    border: 1px solid rgba(244, 239, 230, 0.25);
+    color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    border-radius: 3px;
+  }
+  .pause-q-btn:hover { background: rgba(244, 239, 230, 0.1); }
+  .pause-q-btn.active {
+    background: var(--amber);
+    color: var(--black);
+    border-color: var(--amber);
+  }
+
+  /* =============== METRICS PANEL (Fase 2 A1, dev-only · F2) =============== */
+  /* Posición: top:90px right:8px — por debajo del bloque HUD de la derecha
+     (Monedas · Pacientes, ~82px alto) y a la izquierda del pause-btn
+     (right:18 + 42 ancho = right:60). En móvil, los controles táctiles
+     viven en bottom:18px, así que no hay solape. */
+  .metrics-panel {
+    position: absolute;
+    top: 90px;
+    right: 8px;
+    z-index: 200;
+    display: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #d1fae5;
+    background: rgba(10, 9, 8, 0.82);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 4px;
+    padding: 8px 10px;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    min-width: 200px;
+  }
+  .metrics-panel.visible { display: block; }
+  .metrics-panel__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .metrics-panel__key { color: rgba(209, 250, 229, 0.55); }
+  .metrics-panel__val {
+    color: #d1fae5;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .metrics-panel__hint {
+    margin-top: 6px;
+    font-size: 9px;
+    color: rgba(209, 250, 229, 0.4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
   /* Countdown al reanudar */
   .resume-countdown {
     position: absolute;
@@ -1814,6 +1903,15 @@
         Distancia
       </div>
     </div>
+    <div class="pause-overlay__quality">
+      <div class="pause-overlay__quality-label">Calidad gráfica · <span id="pause-q-current">auto</span></div>
+      <div class="pause-overlay__quality-options">
+        <button class="pause-q-btn" data-quality="auto">Auto</button>
+        <button class="pause-q-btn" data-quality="low">Baja</button>
+        <button class="pause-q-btn" data-quality="medium">Media</button>
+        <button class="pause-q-btn" data-quality="high">Alta</button>
+      </div>
+    </div>
     <div class="btn-row">
       <button id="btn-resume" class="btn btn-big">
         <span>Continuar</span>
@@ -1821,6 +1919,17 @@
       </button>
       <button id="btn-quit" class="btn btn--ghost">Salir al menú</button>
     </div>
+  </div>
+
+  <!-- Panel de métricas (oculto · F2 para alternar · Fase 2 A1 dev-only) -->
+  <div id="metrics-panel" class="metrics-panel">
+    <div class="metrics-panel__row"><span class="metrics-panel__key">FPS</span><span class="metrics-panel__val" id="m-fps">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">avg 5s</span><span class="metrics-panel__val" id="m-fps-avg">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">draws</span><span class="metrics-panel__val" id="m-draws">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">tris</span><span class="metrics-panel__val" id="m-tris">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">tier</span><span class="metrics-panel__val" id="m-tier">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">why</span><span class="metrics-panel__val" id="m-tier-reason">--</span></div>
+    <div class="metrics-panel__hint">F2 to toggle</div>
   </div>
 
   <!-- Countdown al reanudar -->
@@ -2194,20 +2303,132 @@ const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerH
 camera.position.set(0, 5, 9);
 camera.lookAt(0, 1, -10);
 
-// Detección de móvil para optimización de rendimiento
+// Detección de móvil (usada por Quality tier + otros sistemas no gráficos)
 const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   || (window.matchMedia && window.matchMedia('(max-width: 768px)').matches)
   || ('ontouchstart' in window && navigator.maxTouchPoints > 1);
 
+// ========== QUALITY TIER SYSTEM (Fase 2 — A1) ==========
+// Auto-detecta capacidad del hardware y selecciona preset de gráficos.
+// Se extiende en commits posteriores: panel de métricas (F2), downgrade
+// dinámico por FPS y override manual desde el menú de pausa.
+const QUALITY_PRESETS = {
+  low:    { pixelRatioCap: 1.0, antialias: false, shadows: false },
+  medium: { pixelRatioCap: 1.5, antialias: true,  shadows: true  },
+  high:   { pixelRatioCap: 2.0, antialias: true,  shadows: true  }
+};
+
+let QUALITY_TIER = 'low';
+let QUALITY_TIER_REASON = '';
+
+// iOS / iPadOS no expone hardwareConcurrency ni deviceMemory de forma
+// fiable (Safari los enmascara por privacidad: siempre 4c / 4GB). Para
+// estos dispositivos clasificamos por tamaño de pantalla lógico + dpr,
+// que sí discrimina bien entre iPhone Pro Max moderno y iPhone SE viejo.
+function detectIosDevice() {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isClassicIos = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ se enmascara como Mac; se distingue por ser táctil.
+  const isIpadOs = platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  if (!isClassicIos && !isIpadOs) return null;
+  const isIpad = isIpadOs || /iPad/.test(ua);
+  return { isIpad };
+}
+
+function classifyIos(isIpad) {
+  const w = window.screen.width || 0;
+  const h = window.screen.height || 0;
+  const longest = Math.max(w, h);
+  const shortest = Math.min(w, h);
+  const dpr = window.devicePixelRatio || 1;
+  const pixelLongest = longest * dpr;
+
+  if (isIpad) {
+    if (longest >= 1024 && pixelLongest >= 2360) {
+      return { tier: 'high', model: 'iPad Pro/Air' };
+    }
+    return { tier: 'medium', model: 'iPad' };
+  }
+  if (dpr >= 3 && longest >= 900) {
+    return { tier: 'high', model: 'iPhone Pro/Max/Plus' };
+  }
+  if (dpr >= 3 && longest >= 844) {
+    return { tier: 'medium', model: 'iPhone reciente' };
+  }
+  if (dpr >= 3 && longest >= 800) {
+    return { tier: 'medium', model: 'iPhone X/11-class' };
+  }
+  if (dpr <= 2) {
+    return { tier: 'low', model: 'iPhone SE/8-class' };
+  }
+  return { tier: 'medium', model: 'iPhone' };
+}
+
+function detectQualityTier() {
+  const cores = navigator.hardwareConcurrency || 4;
+  const memory = navigator.deviceMemory || 4;
+  const isMobile = IS_MOBILE;
+
+  let gpu = '';
+  try {
+    const tmpCanvas = document.createElement('canvas');
+    const gl = tmpCanvas.getContext('webgl') || tmpCanvas.getContext('experimental-webgl');
+    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || '';
+  } catch (_) {}
+
+  // iOS primero: hardwareConcurrency/deviceMemory mienten en Safari iOS.
+  const ios = detectIosDevice();
+  if (ios) {
+    const r = classifyIos(ios.isIpad);
+    const w = window.screen.width || 0;
+    const h = window.screen.height || 0;
+    const dpr = window.devicePixelRatio || 1;
+    QUALITY_TIER_REASON = `${r.model} · ${w}×${h} @${dpr}x`;
+    return r.tier;
+  }
+
+  if (/Apple M\d/.test(gpu)) {
+    QUALITY_TIER_REASON = `Apple M-series (${gpu})`;
+    return 'high';
+  }
+  if (!isMobile && cores >= 8 && memory >= 8) {
+    QUALITY_TIER_REASON = `desktop · ${cores}c · ${memory}GB`;
+    return 'high';
+  }
+  if (!isMobile || (memory >= 6 && cores >= 6)) {
+    QUALITY_TIER_REASON = `${isMobile ? 'mobile high' : 'desktop'} · ${cores}c · ${memory}GB`;
+    return 'medium';
+  }
+  QUALITY_TIER_REASON = `mobile · ${cores}c · ${memory}GB`;
+  return 'low';
+}
+
+QUALITY_TIER = detectQualityTier();
+
+// Persistencia del override manual del menú de pausa.
+// Si hay preferencia guardada distinta de 'auto', sobrescribe la
+// auto-detección ANTES de crear el renderer — antialias no es
+// hot-swappable y debe quedar fijado correctamente desde el inicio.
+let qualityUserLocked = false;
+try {
+  const saved = localStorage.getItem('hems-runner.qualityOverride');
+  if (saved && saved !== 'auto' && QUALITY_PRESETS[saved]) {
+    QUALITY_TIER = saved;
+    QUALITY_TIER_REASON = `manual override (${saved})`;
+    qualityUserLocked = true;
+  }
+} catch (_) {}
+
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-3d'),
-  antialias: !IS_MOBILE,  // desactivar antialiasing en móvil (imperceptible en pantalla pequeña, ahorra GPU)
+  antialias: QUALITY_PRESETS[QUALITY_TIER].antialias,
   powerPreference: 'high-performance'
 });
-// Pixel ratio adaptativo: móviles a 1.5 máx, desktop a 2 máx
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1.5 : 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY_PRESETS[QUALITY_TIER].pixelRatioCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = !IS_MOBILE;  // sombras solo en desktop
+renderer.shadowMap.enabled = QUALITY_PRESETS[QUALITY_TIER].shadows;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 window.addEventListener('resize', () => {
@@ -3775,6 +3996,7 @@ function updateHemsAura(dt) {
 // Se llama desde el loop de imán, una vez cada ~6 frames para no saturar
 const hemsTrailParticles = [];
 function spawnHemsTrailParticle(worldPos) {
+  if (ULTRA_LOW_MODE) return;
   const p = new THREE.Mesh(
     new THREE.SphereGeometry(0.08, 6, 4),
     new THREE.MeshBasicMaterial({
@@ -4149,7 +4371,7 @@ function makeScooter() {
   return group;
 }
 
-function makeCone() {
+function makeWarningSign(scale) {
   const group = new THREE.Group();
 
   // Triángulo amarillo con borde rojo
@@ -6606,6 +6828,7 @@ function spawnLightningEffect() {
 }
 
 function spawnCollectParticles(position, color, count) {
+  count = Math.max(1, Math.round(count * PARTICLE_SCALE));
   const geom = new THREE.BufferGeometry();
   const positions = new Float32Array(count * 3);
   const velocities = [];
@@ -6869,6 +7092,7 @@ function pauseGame() {
   STATE.running = false;
   document.getElementById('pause-score').textContent = STATE.score;
   document.getElementById('pause-distance').textContent = Math.floor(STATE.distance) + 'm';
+  QualityOverride.refreshUi();
   pauseOverlay.classList.add('active');
   pauseBtn.classList.remove('visible');
 }
@@ -7095,6 +7319,262 @@ function shakeCamera(intensity) {
 }
 
 /* ================================================================
+   QUALITY HOT-APPLY + PERFORMANCE WATCHDOG (Fase 2 — A1)
+   ================================================================ */
+// Suelo absoluto bajo el tier 'low'. Se activa por el watchdog cuando
+// detecta avgFps<30 sostenidos estando ya en low (sin más tier al que
+// bajar). Recorta partículas, acerca la niebla, desactiva el trail
+// HEMS y baja el pixelRatio del renderer a 0.85 (subsampling). No se
+// persiste — se reevalúa cada sesión. Cualquier override manual desde
+// el menú de pausa lo resetea (el usuario retoma el control).
+let ULTRA_LOW_MODE = false;
+let PARTICLE_SCALE = 1;
+const FOG_DEFAULT_NEAR = 45;
+const FOG_DEFAULT_FAR = 200;
+const FOG_ULTRA_NEAR = 25;
+const FOG_ULTRA_FAR = 90;
+const ULTRA_PIXEL_RATIO = 0.85;
+
+function enableUltraLow() {
+  if (ULTRA_LOW_MODE) return;
+  ULTRA_LOW_MODE = true;
+  PARTICLE_SCALE = 0.5;
+  scene.fog.near = FOG_ULTRA_NEAR;
+  scene.fog.far = FOG_ULTRA_FAR;
+  renderer.setPixelRatio(ULTRA_PIXEL_RATIO);
+}
+
+function disableUltraLow() {
+  if (!ULTRA_LOW_MODE) return;
+  ULTRA_LOW_MODE = false;
+  PARTICLE_SCALE = 1;
+  scene.fog.near = FOG_DEFAULT_NEAR;
+  scene.fog.far = FOG_DEFAULT_FAR;
+  // pixelRatio se restaura por applyQualitySettings() del callsite.
+}
+
+// Aplica los settings hot-swappable del tier actual al renderer.
+// antialias / MSAA NO son hot-swappable (requieren recrear el renderer)
+// y se quedan como se eligieron en boot — el toast lo avisa.
+function applyQualitySettings() {
+  const q = QUALITY_PRESETS[QUALITY_TIER];
+  const cap = ULTRA_LOW_MODE
+    ? ULTRA_PIXEL_RATIO
+    : Math.min(window.devicePixelRatio, q.pixelRatioCap);
+  renderer.setPixelRatio(cap);
+  renderer.shadowMap.enabled = q.shadows;
+}
+
+// qualityUserLocked se declara en el bloque Quality de boot (junto al
+// renderer) para que pueda activarse antes de instanciarlo.
+
+const PerfWatchdog = (() => {
+  const SAMPLE_WINDOW_MS = 5000;
+  const WARMUP_MS = 3000;
+  const CHECK_INTERVAL_MS = 1000;
+  const COOLDOWN_MS = 5000;
+  const FPS_FLOOR = 30;
+  const MIN_SAMPLES = 30;
+
+  const samples = [];
+  let runStart = 0;
+  let lastCheck = 0;
+  let lastDowngrade = 0;
+  let prevActive = false;
+
+  function reset() {
+    samples.length = 0;
+    runStart = 0;
+    lastCheck = 0;
+  }
+
+  function tick(dt) {
+    const active = !!STATE.running && !STATE.paused;
+    if (!active) {
+      if (prevActive) reset();
+      prevActive = false;
+      return;
+    }
+    const now = performance.now();
+    if (!prevActive) {
+      runStart = now;
+      prevActive = true;
+    }
+
+    samples.push({ t: now, dt });
+    while (samples.length && now - samples[0].t > SAMPLE_WINDOW_MS) samples.shift();
+
+    if (now - runStart < WARMUP_MS) return;
+    if (now - lastCheck < CHECK_INTERVAL_MS) return;
+    lastCheck = now;
+
+    if (qualityUserLocked) return;
+    if (now - lastDowngrade < COOLDOWN_MS) return;
+    if (samples.length < MIN_SAMPLES) return;
+
+    const sumDt = samples.reduce((s, x) => s + x.dt, 0);
+    if (sumDt <= 0) return;
+    const avgFps = samples.length / sumDt;
+    if (avgFps >= FPS_FLOOR) return;
+
+    // Suelo absoluto: en low ya no hay tier al que bajar — activamos
+    // ultra-low (recortes adicionales sin cambio de tier). Si ya está
+    // activo, no hay nada más que hacer.
+    if (QUALITY_TIER === 'low') {
+      if (ULTRA_LOW_MODE) return;
+      enableUltraLow();
+      lastDowngrade = now;
+      showToast('⚙️ Modo rendimiento máximo activado', `recortando efectos para mejorar fluidez (${avgFps.toFixed(0)} FPS)`, 0x9ca3af);
+      return;
+    }
+
+    const previousTier = QUALITY_TIER;
+    QUALITY_TIER = QUALITY_TIER === 'high' ? 'medium' : 'low';
+    QUALITY_TIER_REASON = `auto-downgrade · ${avgFps.toFixed(0)} FPS < ${FPS_FLOOR}`;
+    applyQualitySettings();
+    lastDowngrade = now;
+
+    const aaNote = (QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias)
+      ? ' · AA cambia al recargar'
+      : '';
+    showToast('⚙️ Modo gráfico ajustado', `optimizando para tu dispositivo (${QUALITY_TIER})${aaNote}`, 0x9ca3af);
+  }
+
+  return { tick };
+})();
+
+/* ================================================================
+   QUALITY OVERRIDE (Fase 2 — A1, selector en menú de pausa)
+   ================================================================ */
+// Permite al usuario fijar el tier manualmente desde el menú de pausa.
+// Persiste en localStorage. La preferencia se lee también en el bloque
+// Quality de boot — aquí sólo se gestionan los clicks y la UI.
+const QualityOverride = (() => {
+  const KEY = 'hems-runner.qualityOverride';
+  const VALID = new Set(['auto', 'low', 'medium', 'high']);
+
+  function read() {
+    try {
+      const v = localStorage.getItem(KEY);
+      return VALID.has(v) ? v : 'auto';
+    } catch (_) { return 'auto'; }
+  }
+
+  function refreshUi() {
+    const choice = read();
+    document.querySelectorAll('.pause-q-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.quality === choice);
+    });
+    const lbl = document.getElementById('pause-q-current');
+    if (lbl) lbl.textContent = choice === 'auto' ? `auto (${QUALITY_TIER})` : choice;
+  }
+
+  function set(value) {
+    if (!VALID.has(value)) return;
+    const previousTier = QUALITY_TIER;
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+
+    // Cualquier override manual resetea ultra-low: el usuario está
+    // tomando control consciente del tier; el watchdog volverá a
+    // activarlo si los tirones reaparecen sostenidamente en low.
+    disableUltraLow();
+
+    if (value === 'auto') {
+      qualityUserLocked = false;
+      QUALITY_TIER = detectQualityTier();
+    } else {
+      qualityUserLocked = true;
+      QUALITY_TIER = value;
+      QUALITY_TIER_REASON = `manual override (${value})`;
+    }
+    applyQualitySettings();
+    refreshUi();
+
+    const aaChanged = QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias;
+    const sub = value === 'auto' ? `auto (${QUALITY_TIER})` : value;
+    showToast('Calidad gráfica', `${sub}${aaChanged ? ' · AA cambia al recargar' : ''}`, 0xf5a623);
+  }
+
+  function init() {
+    document.querySelectorAll('.pause-q-btn').forEach(b => {
+      b.addEventListener('click', () => set(b.dataset.quality));
+    });
+    refreshUi();
+  }
+
+  return { init, refreshUi };
+})();
+
+/* ================================================================
+   METRICS PANEL (Fase 2 — A1, dev-only · F2 alterna visibilidad)
+   ================================================================ */
+const Metrics = (() => {
+  const FPS_WINDOW_MS = 5000;
+  const DOM_UPDATE_MS = 160;
+
+  const samples = [];
+  let visible = false;
+  let lastDomUpdate = 0;
+  let lastInfo = { calls: 0, triangles: 0 };
+  let dom = null;
+
+  function ensureDom() {
+    if (dom) return;
+    dom = {
+      panel: document.getElementById('metrics-panel'),
+      fps: document.getElementById('m-fps'),
+      fpsAvg: document.getElementById('m-fps-avg'),
+      draws: document.getElementById('m-draws'),
+      tris: document.getElementById('m-tris'),
+      tier: document.getElementById('m-tier'),
+      reason: document.getElementById('m-tier-reason')
+    };
+  }
+
+  function toggle() {
+    ensureDom();
+    visible = !visible;
+    dom.panel.classList.toggle('visible', visible);
+  }
+
+  function tick(dt) {
+    // renderer.info.render se resetea al inicio del próximo render(),
+    // por lo que aquí (justo después de render) refleja el frame actual.
+    lastInfo.calls = renderer.info.render.calls;
+    lastInfo.triangles = renderer.info.render.triangles;
+
+    if (!visible) return;
+
+    const now = performance.now();
+    samples.push({ t: now, dt });
+    while (samples.length && now - samples[0].t > FPS_WINDOW_MS) samples.shift();
+
+    if (now - lastDomUpdate < DOM_UPDATE_MS) return;
+    lastDomUpdate = now;
+
+    const fpsNow = dt > 0 ? Math.round(1 / dt) : 0;
+    let avgFps = 0;
+    if (samples.length > 1) {
+      const sumDt = samples.reduce((s, x) => s + x.dt, 0);
+      if (sumDt > 0) avgFps = Math.round(samples.length / sumDt);
+    }
+
+    dom.fps.textContent = fpsNow;
+    dom.fpsAvg.textContent = avgFps || '--';
+    dom.draws.textContent = lastInfo.calls;
+    dom.tris.textContent = lastInfo.triangles.toLocaleString('en-US');
+    dom.tier.textContent = QUALITY_TIER;
+    dom.reason.textContent = QUALITY_TIER_REASON;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F2') { e.preventDefault(); toggle(); }
+  });
+
+  return { tick };
+})();
+
+/* ================================================================
    LOOP
    ================================================================ */
 const clock = new THREE.Clock();
@@ -7308,6 +7788,8 @@ function animate() {
   }
 
   renderer.render(scene, camera);
+  Metrics.tick(dt);
+  PerfWatchdog.tick(dt);
 }
 
 function update(dt) {
@@ -7847,6 +8329,7 @@ document.getElementById('btn-revive').addEventListener('click', doRevive);
 document.getElementById('pause-btn').addEventListener('click', pauseGame);
 document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-quit').addEventListener('click', quitToMenu);
+QualityOverride.init();
 
 document.getElementById('btn-leaderboard').addEventListener('click', () => {
   renderLB();
