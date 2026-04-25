@@ -3996,6 +3996,7 @@ function updateHemsAura(dt) {
 // Se llama desde el loop de imán, una vez cada ~6 frames para no saturar
 const hemsTrailParticles = [];
 function spawnHemsTrailParticle(worldPos) {
+  if (ULTRA_LOW_MODE) return;
   const p = new THREE.Mesh(
     new THREE.SphereGeometry(0.08, 6, 4),
     new THREE.MeshBasicMaterial({
@@ -6827,6 +6828,7 @@ function spawnLightningEffect() {
 }
 
 function spawnCollectParticles(position, color, count) {
+  count = Math.max(1, Math.round(count * PARTICLE_SCALE));
   const geom = new THREE.BufferGeometry();
   const positions = new Float32Array(count * 3);
   const velocities = [];
@@ -7319,12 +7321,47 @@ function shakeCamera(intensity) {
 /* ================================================================
    QUALITY HOT-APPLY + PERFORMANCE WATCHDOG (Fase 2 — A1)
    ================================================================ */
+// Suelo absoluto bajo el tier 'low'. Se activa por el watchdog cuando
+// detecta avgFps<30 sostenidos estando ya en low (sin más tier al que
+// bajar). Recorta partículas, acerca la niebla, desactiva el trail
+// HEMS y baja el pixelRatio del renderer a 0.85 (subsampling). No se
+// persiste — se reevalúa cada sesión. Cualquier override manual desde
+// el menú de pausa lo resetea (el usuario retoma el control).
+let ULTRA_LOW_MODE = false;
+let PARTICLE_SCALE = 1;
+const FOG_DEFAULT_NEAR = 45;
+const FOG_DEFAULT_FAR = 200;
+const FOG_ULTRA_NEAR = 25;
+const FOG_ULTRA_FAR = 90;
+const ULTRA_PIXEL_RATIO = 0.85;
+
+function enableUltraLow() {
+  if (ULTRA_LOW_MODE) return;
+  ULTRA_LOW_MODE = true;
+  PARTICLE_SCALE = 0.5;
+  scene.fog.near = FOG_ULTRA_NEAR;
+  scene.fog.far = FOG_ULTRA_FAR;
+  renderer.setPixelRatio(ULTRA_PIXEL_RATIO);
+}
+
+function disableUltraLow() {
+  if (!ULTRA_LOW_MODE) return;
+  ULTRA_LOW_MODE = false;
+  PARTICLE_SCALE = 1;
+  scene.fog.near = FOG_DEFAULT_NEAR;
+  scene.fog.far = FOG_DEFAULT_FAR;
+  // pixelRatio se restaura por applyQualitySettings() del callsite.
+}
+
 // Aplica los settings hot-swappable del tier actual al renderer.
 // antialias / MSAA NO son hot-swappable (requieren recrear el renderer)
 // y se quedan como se eligieron en boot — el toast lo avisa.
 function applyQualitySettings() {
   const q = QUALITY_PRESETS[QUALITY_TIER];
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatioCap));
+  const cap = ULTRA_LOW_MODE
+    ? ULTRA_PIXEL_RATIO
+    : Math.min(window.devicePixelRatio, q.pixelRatioCap);
+  renderer.setPixelRatio(cap);
   renderer.shadowMap.enabled = q.shadows;
 }
 
@@ -7372,7 +7409,6 @@ const PerfWatchdog = (() => {
     lastCheck = now;
 
     if (qualityUserLocked) return;
-    if (QUALITY_TIER === 'low') return;
     if (now - lastDowngrade < COOLDOWN_MS) return;
     if (samples.length < MIN_SAMPLES) return;
 
@@ -7380,6 +7416,17 @@ const PerfWatchdog = (() => {
     if (sumDt <= 0) return;
     const avgFps = samples.length / sumDt;
     if (avgFps >= FPS_FLOOR) return;
+
+    // Suelo absoluto: en low ya no hay tier al que bajar — activamos
+    // ultra-low (recortes adicionales sin cambio de tier). Si ya está
+    // activo, no hay nada más que hacer.
+    if (QUALITY_TIER === 'low') {
+      if (ULTRA_LOW_MODE) return;
+      enableUltraLow();
+      lastDowngrade = now;
+      showToast('⚙️ Modo rendimiento máximo activado', `recortando efectos para mejorar fluidez (${avgFps.toFixed(0)} FPS)`, 0x9ca3af);
+      return;
+    }
 
     const previousTier = QUALITY_TIER;
     QUALITY_TIER = QUALITY_TIER === 'high' ? 'medium' : 'low';
@@ -7426,6 +7473,11 @@ const QualityOverride = (() => {
     if (!VALID.has(value)) return;
     const previousTier = QUALITY_TIER;
     try { localStorage.setItem(KEY, value); } catch (_) {}
+
+    // Cualquier override manual resetea ultra-low: el usuario está
+    // tomando control consciente del tier; el watchdog volverá a
+    // activarlo si los tirones reaparecen sostenidamente en low.
+    disableUltraLow();
 
     if (value === 'auto') {
       qualityUserLocked = false;
