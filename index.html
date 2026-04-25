@@ -1128,6 +1128,48 @@
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
   }
 
+  /* =============== SELECTOR DE CALIDAD EN MENÚ DE PAUSA (Fase 2 A1) =============== */
+  .pause-overlay__quality {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .pause-overlay__quality-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--bone-dim);
+    text-transform: uppercase;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  }
+  .pause-overlay__quality-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pause-q-btn {
+    background: rgba(10, 9, 8, 0.65);
+    border: 1px solid rgba(244, 239, 230, 0.25);
+    color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    border-radius: 3px;
+  }
+  .pause-q-btn:hover { background: rgba(244, 239, 230, 0.1); }
+  .pause-q-btn.active {
+    background: var(--amber);
+    color: var(--black);
+    border-color: var(--amber);
+  }
+
   /* =============== METRICS PANEL (Fase 2 A1, dev-only · F2) =============== */
   /* Posición: top:90px right:8px — por debajo del bloque HUD de la derecha
      (Monedas · Pacientes, ~82px alto) y a la izquierda del pause-btn
@@ -1861,6 +1903,15 @@
         Distancia
       </div>
     </div>
+    <div class="pause-overlay__quality">
+      <div class="pause-overlay__quality-label">Calidad gráfica · <span id="pause-q-current">auto</span></div>
+      <div class="pause-overlay__quality-options">
+        <button class="pause-q-btn" data-quality="auto">Auto</button>
+        <button class="pause-q-btn" data-quality="low">Baja</button>
+        <button class="pause-q-btn" data-quality="medium">Media</button>
+        <button class="pause-q-btn" data-quality="high">Alta</button>
+      </div>
+    </div>
     <div class="btn-row">
       <button id="btn-resume" class="btn btn-big">
         <span>Continuar</span>
@@ -2300,6 +2351,20 @@ function detectQualityTier() {
 }
 
 QUALITY_TIER = detectQualityTier();
+
+// Persistencia del override manual del menú de pausa.
+// Si hay preferencia guardada distinta de 'auto', sobrescribe la
+// auto-detección ANTES de crear el renderer — antialias no es
+// hot-swappable y debe quedar fijado correctamente desde el inicio.
+let qualityUserLocked = false;
+try {
+  const saved = localStorage.getItem('hems-runner.qualityOverride');
+  if (saved && saved !== 'auto' && QUALITY_PRESETS[saved]) {
+    QUALITY_TIER = saved;
+    QUALITY_TIER_REASON = `manual override (${saved})`;
+    qualityUserLocked = true;
+  }
+} catch (_) {}
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-3d'),
@@ -6970,6 +7035,7 @@ function pauseGame() {
   STATE.running = false;
   document.getElementById('pause-score').textContent = STATE.score;
   document.getElementById('pause-distance').textContent = Math.floor(STATE.distance) + 'm';
+  QualityOverride.refreshUi();
   pauseOverlay.classList.add('active');
   pauseBtn.classList.remove('visible');
 }
@@ -7207,9 +7273,8 @@ function applyQualitySettings() {
   renderer.shadowMap.enabled = q.shadows;
 }
 
-// Bandera que el commit 4 (override manual desde menú de pausa)
-// activará para impedir que el watchdog pise la elección del usuario.
-let qualityUserLocked = false;
+// qualityUserLocked se declara en el bloque Quality de boot (junto al
+// renderer) para que pueda activarse antes de instanciarlo.
 
 const PerfWatchdog = (() => {
   const SAMPLE_WINDOW_MS = 5000;
@@ -7274,6 +7339,63 @@ const PerfWatchdog = (() => {
   }
 
   return { tick };
+})();
+
+/* ================================================================
+   QUALITY OVERRIDE (Fase 2 — A1, selector en menú de pausa)
+   ================================================================ */
+// Permite al usuario fijar el tier manualmente desde el menú de pausa.
+// Persiste en localStorage. La preferencia se lee también en el bloque
+// Quality de boot — aquí sólo se gestionan los clicks y la UI.
+const QualityOverride = (() => {
+  const KEY = 'hems-runner.qualityOverride';
+  const VALID = new Set(['auto', 'low', 'medium', 'high']);
+
+  function read() {
+    try {
+      const v = localStorage.getItem(KEY);
+      return VALID.has(v) ? v : 'auto';
+    } catch (_) { return 'auto'; }
+  }
+
+  function refreshUi() {
+    const choice = read();
+    document.querySelectorAll('.pause-q-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.quality === choice);
+    });
+    const lbl = document.getElementById('pause-q-current');
+    if (lbl) lbl.textContent = choice === 'auto' ? `auto (${QUALITY_TIER})` : choice;
+  }
+
+  function set(value) {
+    if (!VALID.has(value)) return;
+    const previousTier = QUALITY_TIER;
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+
+    if (value === 'auto') {
+      qualityUserLocked = false;
+      QUALITY_TIER = detectQualityTier();
+    } else {
+      qualityUserLocked = true;
+      QUALITY_TIER = value;
+      QUALITY_TIER_REASON = `manual override (${value})`;
+    }
+    applyQualitySettings();
+    refreshUi();
+
+    const aaChanged = QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias;
+    const sub = value === 'auto' ? `auto (${QUALITY_TIER})` : value;
+    showToast('Calidad gráfica', `${sub}${aaChanged ? ' · AA cambia al recargar' : ''}`, 0xf5a623);
+  }
+
+  function init() {
+    document.querySelectorAll('.pause-q-btn').forEach(b => {
+      b.addEventListener('click', () => set(b.dataset.quality));
+    });
+    refreshUi();
+  }
+
+  return { init, refreshUi };
 })();
 
 /* ================================================================
@@ -8100,6 +8222,7 @@ document.getElementById('btn-revive').addEventListener('click', doRevive);
 document.getElementById('pause-btn').addEventListener('click', pauseGame);
 document.getElementById('btn-resume').addEventListener('click', resumeGame);
 document.getElementById('btn-quit').addEventListener('click', quitToMenu);
+QualityOverride.init();
 
 document.getElementById('btn-leaderboard').addEventListener('click', () => {
   renderLB();
