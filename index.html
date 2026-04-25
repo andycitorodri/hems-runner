@@ -7196,6 +7196,87 @@ function shakeCamera(intensity) {
 }
 
 /* ================================================================
+   QUALITY HOT-APPLY + PERFORMANCE WATCHDOG (Fase 2 — A1)
+   ================================================================ */
+// Aplica los settings hot-swappable del tier actual al renderer.
+// antialias / MSAA NO son hot-swappable (requieren recrear el renderer)
+// y se quedan como se eligieron en boot — el toast lo avisa.
+function applyQualitySettings() {
+  const q = QUALITY_PRESETS[QUALITY_TIER];
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatioCap));
+  renderer.shadowMap.enabled = q.shadows;
+}
+
+// Bandera que el commit 4 (override manual desde menú de pausa)
+// activará para impedir que el watchdog pise la elección del usuario.
+let qualityUserLocked = false;
+
+const PerfWatchdog = (() => {
+  const SAMPLE_WINDOW_MS = 5000;
+  const WARMUP_MS = 3000;
+  const CHECK_INTERVAL_MS = 1000;
+  const COOLDOWN_MS = 5000;
+  const FPS_FLOOR = 30;
+  const MIN_SAMPLES = 30;
+
+  const samples = [];
+  let runStart = 0;
+  let lastCheck = 0;
+  let lastDowngrade = 0;
+  let prevActive = false;
+
+  function reset() {
+    samples.length = 0;
+    runStart = 0;
+    lastCheck = 0;
+  }
+
+  function tick(dt) {
+    const active = !!STATE.running && !STATE.paused;
+    if (!active) {
+      if (prevActive) reset();
+      prevActive = false;
+      return;
+    }
+    const now = performance.now();
+    if (!prevActive) {
+      runStart = now;
+      prevActive = true;
+    }
+
+    samples.push({ t: now, dt });
+    while (samples.length && now - samples[0].t > SAMPLE_WINDOW_MS) samples.shift();
+
+    if (now - runStart < WARMUP_MS) return;
+    if (now - lastCheck < CHECK_INTERVAL_MS) return;
+    lastCheck = now;
+
+    if (qualityUserLocked) return;
+    if (QUALITY_TIER === 'low') return;
+    if (now - lastDowngrade < COOLDOWN_MS) return;
+    if (samples.length < MIN_SAMPLES) return;
+
+    const sumDt = samples.reduce((s, x) => s + x.dt, 0);
+    if (sumDt <= 0) return;
+    const avgFps = samples.length / sumDt;
+    if (avgFps >= FPS_FLOOR) return;
+
+    const previousTier = QUALITY_TIER;
+    QUALITY_TIER = QUALITY_TIER === 'high' ? 'medium' : 'low';
+    QUALITY_TIER_REASON = `auto-downgrade · ${avgFps.toFixed(0)} FPS < ${FPS_FLOOR}`;
+    applyQualitySettings();
+    lastDowngrade = now;
+
+    const aaNote = (QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias)
+      ? ' · AA cambia al recargar'
+      : '';
+    showToast('⚙️ Modo gráfico ajustado', `optimizando para tu dispositivo (${QUALITY_TIER})${aaNote}`, 0x9ca3af);
+  }
+
+  return { tick };
+})();
+
+/* ================================================================
    METRICS PANEL (Fase 2 — A1, dev-only · F2 alterna visibilidad)
    ================================================================ */
 const Metrics = (() => {
@@ -7479,6 +7560,7 @@ function animate() {
 
   renderer.render(scene, camera);
   Metrics.tick(dt);
+  PerfWatchdog.tick(dt);
 }
 
 function update(dt) {
