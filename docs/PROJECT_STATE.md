@@ -1,8 +1,8 @@
 # HEMS Runner — Estado del proyecto
 
 **Última actualización**: 25 de abril de 2026
-**Versión actual**: v4.7 en `main`; rama `phase-2` con Fase 2 · A1 cerrado (no mergeado)
-**Archivo de producción**: `index.html` (~8.300 líneas en rama `phase-2`)
+**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main` (incluye 2 fixes post-validación móvil)
+**Archivo de producción**: `index.html` (~8.400 líneas)
 
 ---
 
@@ -111,7 +111,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ## Fase 2 · Sub-bloque A1 cerrado (25 abril 2026)
 
-**Rama**: `phase-2` (6 commits por delante de `main`, sin mergear todavía).
+**Estado**: ✅ Mergeado a `main` tras validación en los 3 dispositivos de referencia.
 
 ### Commits de A1 (cronológico)
 
@@ -123,8 +123,11 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `34f22d0` | Dynamic FPS-based tier downgrade + toast |
 | `545056b` | Quality selector in pause menu + localStorage |
 | `0688156` | (bonus) Fix ReferenceError makeWarningSign on cone spawn |
+| `d93a202` | docs: close Fase 2 sub-bloque A1 |
+| `fa94596` | A1 fix: iOS-aware quality tier detection (screen+dpr heuristic) |
+| `50bb258` | A1 fix: ultra-low mode within low tier (watchdog floor) |
 
-**Tiempo real invertido**: ~2 sesiones cortas en 2 días (24-25 abril). Mucho más rápido que la estimación de 4-6 días del plan, asistido con Claude Code en local.
+**Tiempo real invertido**: ~3 sesiones cortas en 2 días (24-25 abril). La estimación original era 4-6 días; los 2 fixes post-validación fueron sesión única el mismo día 25.
 
 ### Decisiones clave tomadas
 
@@ -134,24 +137,22 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - **Watchdog sólo mide en gameplay activo** (`STATE.running && !STATE.paused`); pausar resetea el warmup para no contaminar muestras.
 - **Cooldown de 5s + mínimo 30 muestras** entre downgrades evitan thrashing por hipos puntuales.
 - **Antialias requiere recargar** cuando el tier cambia en runtime — el toast lo avisa explícitamente; no se recrea el renderer en caliente.
+- **iOS clasifica por pantalla, no por hardware**: Safari iOS bloquea `hardwareConcurrency` y `deviceMemory` por privacidad (siempre 4c/4GB), por lo que TODOS los iPhones caían en `low`. Rama dedicada anterior a la heurística cores/memory que usa `screen.width × screen.height × devicePixelRatio` + detección iPadOS por `maxTouchPoints`. iPhone 16 Pro Max ahora se clasifica `high`.
+- **Ultra-low mode como suelo bajo `low`**: el watchdog no podía ayudar a dispositivos ya en `low` (return temprano). Ahora activa recortes adicionales sin cambiar de tier — partículas ×0.5, niebla 25/90, trail HEMS off, pixelRatio 0.85. Toast `"Modo rendimiento máximo activado"` (deliberadamente neutro, no alarmista). Override manual desde el menú de pausa lo resetea siempre — el usuario retoma el control y el watchdog volverá a activarlo si los tirones reaparecen.
+- **No postpro hoy**: verificado antes de bajar pixelRatio < 1.0. Cuando entre el `EffectComposer` en A4 (Bloom), revisar que `composer.setPixelRatio()` también respete `ULTRA_PIXEL_RATIO`.
 
 ### Bugs colaterales encontrados
 
 - **`makeWarningSign` ReferenceError** (pre-existente de v4.7) — arreglado en commit bonus `0688156`. Antes spamea ~31 errores en pocos segundos al aparecer conos; ahora consola limpia.
 - **draws=539 vs target <100** (`GRAPHICS_STRATEGY.md`) — no es bug, es deuda de geometría no instanciada. Anotada en `PHASE_2_PLAN.md` para abordar en Fase 2 con `InstancedMesh` cuando entren los GLTFs (sub-bloque A2).
+- **iOS detection rota** (descubierto en validación móvil del 25 abril) — `hardwareConcurrency`/`deviceMemory` mienten en Safari iOS. Arreglado en `fa94596`.
+- **Watchdog inútil en `low`** (descubierto en validación móvil del 25 abril en Galaxy XCover5) — no podía bajar más, dejaba al usuario sufriendo tirones sin avisar. Arreglado en `50bb258`.
 
-### Tests realizados
+### Tests realizados (validación móvil completa, 25 abril 2026)
 
-- ✅ **Mac M3 / Firefox**: tier=high estable, panel F2 OK, selector OK, persistencia OK, bug bonus arreglado (consola limpia con conos en pantalla).
-- ⏳ **Pendiente**: downgrade dinámico (`Test 1`) en móvil real. Firefox desktop no expone CPU throttling efectivo, así que el watchdog no se pudo ejercitar localmente.
-- ⏳ **Pendiente**: validación en móvil reciente y móvil 3-4 años, según `GRAPHICS_STRATEGY.md` (regla de oro de 3 dispositivos antes de mergear features gráficas).
-
-### Pendiente para cerrar la rama
-
-1. Probar la rama en móvil reciente (iPhone 14+/Snapdragon 8 gen 2+) → verificar tier asignado y FPS.
-2. Probar en móvil 3-4 años → verificar que el watchdog haga downgrade si baja de 30 FPS y que el toast aparezca.
-3. Si todo va bien, mergear `phase-2` a `main` y desplegar a Cloudflare Workers.
-4. Si hay bugs, commits adicionales en la rama antes de mergear.
+- ✅ **Mac M3 / Firefox**: tier=high (Apple M-series), no-regresión confirmada tras los 2 fixes. Panel F2, selector, persistencia, bug bonus → todo OK.
+- ✅ **iPhone 16 Pro Max / Safari**: tier=high asignado correctamente por la heurística iOS (antes caía erróneamente en low por `hardwareConcurrency=4`/`deviceMemory=4`). 3 micro-stutters casi imperceptibles en 2 min de juego — el watchdog no actúa porque no llega a `<30 FPS sostenidos`, comportamiento correcto. **Bug 1 RESUELTO.**
+- ✅ **Galaxy XCover5 / Chrome**: boot en tier `low`, ultra-low se activa nada más empezar (FPS bajos sostenidos), toast aparece, recortes verificados visualmente (niebla más cercana, imagen blanda por subsampling 0.85). **Bug 2 RESUELTO.** El XCover5 sigue siendo lento incluso en ultra-low — el cuello de botella está en geometría/draw calls (deuda de A2 con `InstancedMesh`), no en efectos. Documentado como **"dispositivo bajo el target razonable"**: rugged industrial de gama baja de 2021 con Mali-G52, queda **fuera de los 3 dispositivos de referencia oficiales** del `GRAPHICS_STRATEGY.md`. El sistema hace todo lo que puede y avisa al usuario.
 
 ---
 
@@ -161,7 +162,8 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - [ ] Beta test con 5-10 compañeros del SEM/UCI por WhatsApp
 - [ ] Recopilar feedback de rendimiento en al menos 3 móviles distintos (gama alta, media, antigua)
 - [ ] Si rendimiento sigue justo en móvil → aplicar optimización Nivel 2 (reducir partículas/llamas)
-- [ ] Validar rama `phase-2` en móvil real antes de mergear a `main`
+- [x] Validar rama `phase-2` en móvil real antes de mergear a `main` *(25 abril 2026, 3 dispositivos)*
+- [x] Mergear `phase-2` a `main` y desplegar a Cloudflare Workers *(25 abril 2026)*
 
 ### Medio plazo (mayo-septiembre 2026)
 - [ ] Migrar entorno de desarrollo a **Claude Code + VPS Hetzner** *(parcialmente hecho: Claude Code en Mac M3 local desde 24 abril 2026)*

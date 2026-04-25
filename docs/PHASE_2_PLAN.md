@@ -91,9 +91,9 @@ Trabajamos en este orden secuencial. Cada sub-bloque debe quedar funcional antes
 
 ##### A1 — Cierre (25 abril 2026)
 
-**Estado**: ✅ Cerrado en rama `phase-2` (no mergeado a `main` hasta validar móvil real).
+**Estado**: ✅ Cerrado y mergeado a `main` tras validación en los 3 dispositivos de referencia.
 
-**Tiempo real**: ~2 sesiones cortas en 2 días (24-25 abril). Más rápido que la estimación 4-6 días, asistido con Claude Code en Mac M3 local.
+**Tiempo real**: ~3 sesiones cortas en 2 días (24-25 abril). Estimación original 4-6 días; los 2 fixes post-validación móvil fueron sesión única el mismo 25.
 
 **Commits** (cronológico):
 
@@ -105,21 +105,28 @@ Trabajamos en este orden secuencial. Cada sub-bloque debe quedar funcional antes
 | `34f22d0` | Dynamic FPS-based tier downgrade + toast |
 | `545056b` | Quality selector in pause menu + localStorage |
 | `0688156` | (bonus) Fix ReferenceError makeWarningSign on cone spawn |
+| `d93a202` | docs: close Fase 2 sub-bloque A1 |
+| `fa94596` | A1 fix: iOS-aware quality tier detection (screen+dpr heuristic) |
+| `50bb258` | A1 fix: ultra-low mode within low tier (watchdog floor) |
 
 **Decisiones que se desviaron o concretaron del plan original**:
 - Hotkey del panel: **F2** únicamente (Cmd+D entra en conflicto con bookmark del navegador).
 - Override manual leído **en boot antes del renderer** (necesario para `antialias`, que no es hot-swappable).
 - **Antialias requiere recarga** cuando cambia el tier en runtime — el toast lo avisa explícitamente, no se recrea el renderer en caliente.
 - "Auto" mantiene su etiqueta tras downgrade dinámico, mostrando el tier real al lado: `auto (medium)`.
+- **iOS clasifica por pantalla + dpr** en rama dedicada anterior a la heurística cores/memory, porque Safari iOS bloquea `hardwareConcurrency`/`deviceMemory` por privacidad. Sin esto, todo iPhone caía en `low`.
+- **Ultra-low mode como suelo bajo `low`**: el watchdog ya no hace return temprano si está en `low`; activa recortes adicionales (partículas ×0.5, niebla 25/90, trail HEMS off, pixelRatio 0.85). Override manual lo resetea.
+- **Sin postpro hoy**: verificado antes de bajar pixelRatio < 1.0. Cuando entre `EffectComposer` en A4 (Bloom), revisar que `composer.setPixelRatio()` también respete `ULTRA_PIXEL_RATIO`.
 
-**Tests realizados**:
-- ✅ Mac M3 / Firefox: tier=high estable, panel F2, selector, persistencia, bug bonus → todo OK.
-- ⏳ Pendiente: ejercitar el downgrade dinámico (Test 1) en móvil real. Firefox desktop no expone CPU throttling efectivo.
-- ⏳ Pendiente: validación en móvil reciente y móvil 3-4 años (regla de oro de 3 dispositivos).
+**Tests realizados** (validación móvil completa, 25 abril 2026):
+- ✅ Mac M3 / Firefox: tier=high estable (Apple M-series), no-regresión confirmada tras los 2 fixes.
+- ✅ iPhone 16 Pro Max / Safari: tier=high asignado correctamente por la heurística iOS (antes caía en low). 3 micro-stutters casi imperceptibles en 2 min — el watchdog no actúa porque no llega a `<30 FPS sostenidos`, comportamiento correcto. **Bug 1 RESUELTO.**
+- ✅ Galaxy XCover5 / Chrome: boot en `low`, ultra-low se activa nada más empezar, toast y recortes verificados visualmente. **Bug 2 RESUELTO.**
 
 **Deuda colateral apuntada durante A1**:
 - **Draws=539** vs target <100 (`GRAPHICS_STRATEGY.md` §2). No es bug — es geometría no instanciada que se aborda en **A2** con `InstancedMesh` al integrar los GLTFs (especialmente para monedas, props decorativos y módulos de escenario).
 - **`makeWarningSign` undefined** — pre-existente de v4.7, arreglado en commit bonus. Sin más rastro.
+- **Galaxy XCover5 — dispositivo bajo target**: rugged industrial de gama baja de 2021 con Mali-G52. El cuello de botella es geometría/draw calls (no efectos), por lo que ultra-low ayuda pero no llega a fluido. Queda **fuera de los 3 dispositivos de referencia oficiales** del `GRAPHICS_STRATEGY.md`. Volver a probarlo tras A2 (`InstancedMesh` + GLTFs optimizados) — debería mejorar significativamente.
 
 #### A2 — Modelos GLTF (sourcing + integración)
 
@@ -395,12 +402,13 @@ El prototipo se considera terminado cuando:
 2. ✅ Migrar a Claude Code en Mac local *(24 abril)*
 3. ✅ Crear rama `phase-2` en el repo *(24 abril)*
 4. ✅ Empezar **y cerrar** A1 — Cimientos técnicos (quality tiers) *(24-25 abril)*
-5. ⏳ Validar A1 en móvil real (reciente + 3-4 años) antes de mergear a `main`
+5. ✅ Validar A1 en móvil real (Mac M3, iPhone 16 Pro Max, Galaxy XCover5) *(25 abril)*
+6. ✅ Mergear `phase-2` → `main` *(25 abril)*
 
 ### Semana 2 (1-7 mayo)
 
-- ✅ A1 cerrado antes de tiempo (rama `phase-2`)
-- Tras validación móvil de A1 → mergear `phase-2` → `main` y desplegar
+- ✅ A1 cerrado y mergeado antes de tiempo
+- Desplegar `index.html` actualizado a Cloudflare Workers (drag & drop manual)
 - Empezar A2 — Sourcing de modelos GLTF
 
 ### A partir de ahí
