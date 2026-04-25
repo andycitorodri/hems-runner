@@ -1129,10 +1129,14 @@
   }
 
   /* =============== METRICS PANEL (Fase 2 A1, dev-only · F2) =============== */
+  /* Posición: top:90px right:8px — por debajo del bloque HUD de la derecha
+     (Monedas · Pacientes, ~82px alto) y a la izquierda del pause-btn
+     (right:18 + 42 ancho = right:60). En móvil, los controles táctiles
+     viven en bottom:18px, así que no hay solape. */
   .metrics-panel {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 90px;
+    right: 8px;
     z-index: 200;
     display: none;
     font-family: 'IBM Plex Mono', monospace;
