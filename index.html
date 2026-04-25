@@ -2321,6 +2321,50 @@ const QUALITY_PRESETS = {
 let QUALITY_TIER = 'low';
 let QUALITY_TIER_REASON = '';
 
+// iOS / iPadOS no expone hardwareConcurrency ni deviceMemory de forma
+// fiable (Safari los enmascara por privacidad: siempre 4c / 4GB). Para
+// estos dispositivos clasificamos por tamaño de pantalla lógico + dpr,
+// que sí discrimina bien entre iPhone Pro Max moderno y iPhone SE viejo.
+function detectIosDevice() {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isClassicIos = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ se enmascara como Mac; se distingue por ser táctil.
+  const isIpadOs = platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  if (!isClassicIos && !isIpadOs) return null;
+  const isIpad = isIpadOs || /iPad/.test(ua);
+  return { isIpad };
+}
+
+function classifyIos(isIpad) {
+  const w = window.screen.width || 0;
+  const h = window.screen.height || 0;
+  const longest = Math.max(w, h);
+  const shortest = Math.min(w, h);
+  const dpr = window.devicePixelRatio || 1;
+  const pixelLongest = longest * dpr;
+
+  if (isIpad) {
+    if (longest >= 1024 && pixelLongest >= 2360) {
+      return { tier: 'high', model: 'iPad Pro/Air' };
+    }
+    return { tier: 'medium', model: 'iPad' };
+  }
+  if (dpr >= 3 && longest >= 900) {
+    return { tier: 'high', model: 'iPhone Pro/Max/Plus' };
+  }
+  if (dpr >= 3 && longest >= 844) {
+    return { tier: 'medium', model: 'iPhone reciente' };
+  }
+  if (dpr >= 3 && longest >= 800) {
+    return { tier: 'medium', model: 'iPhone X/11-class' };
+  }
+  if (dpr <= 2) {
+    return { tier: 'low', model: 'iPhone SE/8-class' };
+  }
+  return { tier: 'medium', model: 'iPhone' };
+}
+
 function detectQualityTier() {
   const cores = navigator.hardwareConcurrency || 4;
   const memory = navigator.deviceMemory || 4;
@@ -2333,6 +2377,17 @@ function detectQualityTier() {
     const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
     if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || '';
   } catch (_) {}
+
+  // iOS primero: hardwareConcurrency/deviceMemory mienten en Safari iOS.
+  const ios = detectIosDevice();
+  if (ios) {
+    const r = classifyIos(ios.isIpad);
+    const w = window.screen.width || 0;
+    const h = window.screen.height || 0;
+    const dpr = window.devicePixelRatio || 1;
+    QUALITY_TIER_REASON = `${r.model} · ${w}×${h} @${dpr}x`;
+    return r.tier;
+  }
 
   if (/Apple M\d/.test(gpu)) {
     QUALITY_TIER_REASON = `Apple M-series (${gpu})`;
