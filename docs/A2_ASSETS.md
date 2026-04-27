@@ -46,6 +46,50 @@
 
 ---
 
+## Pipeline ajustado tras Sesión 1 — conversión FBX→glTF
+
+**Hallazgo (2026-04-27)**: la mayoría de los packs de Quaternius candidatos para A2/A3 vienen sólo en **FBX, OBJ y Blend** — no en glTF directo. Concretamente afecta a `Q-Cars`, `Q-PT`, `Q-Build`, `Q-Streets`. Solo dos packs Quaternius dan **glTF directo**: `Q-Nature` (Ultimate Stylized Nature) y `Q-PlatU` (Ultimate Platformer Pack).
+
+**Decisión**: en Sesión 2 se instalará **Blender CLI** y se montará un script bash de conversión batch FBX→GLB que se ejecutará antes de `gltf-transform optimize`. Es el modo más reproducible y escalable de homogeneizar el pipeline.
+
+**Pipeline actualizado** (sustituye al de la sección anterior cuando empiece la Sesión 2):
+
+1. **Descargar** pack desde la fuente (manual, Sesión 2).
+2. **(NUEVO) Conversión FBX/OBJ → GLB** con Blender CLI headless si el pack no trae glTF directo.
+3. `gltf-transform optimize input.glb output.glb` (decimación + limpieza).
+4. Texturas a **KTX2** con Basis Universal.
+5. Carga con **`GLTFLoader` + `KTX2Loader`** en Three.js.
+6. **`InstancedMesh`** para assets masivos (monedas, conos, edificios reutilizables).
+
+**Alternativa rechazada**: conversión online 1 a 1 (CDN tipo "fbx2gltf online"). Motivos: no escala con un pack de 76 edificios, no es reproducible (no queda script en el repo), y dependencia externa no auditada para un proyecto que se desplegará públicamente.
+
+---
+
+## Packs verificados (Sesión 1 — 2026-04-27)
+
+URLs verificadas con `WebFetch`. Cada pack se referencia en la tabla por **clave corta** para evitar repetir URL.
+
+| Clave | Nombre completo | URL | Licencia | Modelos | Formato | Notas |
+|---|---|---|---|---|---|---|
+| `K-Cars` | Kenney — Car Kit | https://kenney.nl/assets/car-kit | CC0 | 45 archivos | (verificar al descargar — Kenney suele dar GLB) | Autor: Kenney. Cobertura sospechada: coches civiles, posible ambulancia. |
+| `K-Plat` | Kenney — Platformer Kit | https://kenney.nl/assets/platformer-kit | CC0 | 150 archivos | (verificar al descargar) | Autor: Kenney. Candidato secundario para moneda. |
+| `Q-Cars` | Quaternius — Cars Pack | https://quaternius.com/packs/cars.html | CC0 | 8 coches | FBX, OBJ, Blend (NO glTF directo) | Autor: Quaternius. Cobertura: 4 variantes de tráfico. |
+| `Q-PT` | Quaternius — Public Transport | https://quaternius.com/packs/publictransport.html | CC0 | 12 modelos | FBX, OBJ, Blend | Autor: Quaternius. **Incluye ambulancia explícitamente** + autobús + tren. |
+| `Q-Build` | Quaternius — Ultimate Buildings | https://quaternius.com/packs/ultimatetexturedbuildings.html | CC0 | 76 edificios | FBX, OBJ, Blend | Autor: Quaternius. Estilo no confirmado modernista; sirve como base genérica para Eixample. |
+| `Q-Streets` | Quaternius — Modular Streets | https://quaternius.com/packs/modularstreets.html | CC0 | 25 modelos | FBX, OBJ, Blend | Autor: Quaternius. Carreteras modulares; props de calle (cono/valla/contenedor) **a verificar al descargar**, no listados explícitamente. |
+| `Q-Nature` | Quaternius — Ultimate Stylized Nature | https://quaternius.com/packs/ultimatestylizednature.html | CC0 | 63 modelos | **FBX, OBJ, Blend, glTF** | Autor: Quaternius. Palmeras **no confirmadas explícitamente**, verificar al descargar. |
+| `Q-PlatU` | Quaternius — Ultimate Platformer Pack | https://quaternius.itch.io/ultimate-platformer-pack | CC0 | >100 modelos | **FBX, OBJ, Blend, glTF** | Autor: Quaternius. "Powerups, Hazards, Animated mechanics" — candidato fuerte para moneda y caja sorpresa. |
+| `PP-Heli-J` | Poly Pizza — Helicopter (jeremy, 2017) | https://poly.pizza/m/eb7b31pjGtQ | **CC-BY 3.0** | 1 modelo | OBJ, glTF | Autor: jeremy. Low-poly genérico, sin cruz roja (decal posterior). **Atribución obligatoria.** |
+| `PP-Heli-G` | Poly Pizza — Helicopter (Poly by Google, 2017) | https://poly.pizza/m/cTzINMr0WdS | **CC-BY 3.0** | 1 modelo | OBJ, glTF | Autor: Poly by Google. Low-poly genérico, sin cruz roja. **Atribución obligatoria.** |
+
+### Notas de pipeline derivadas
+
+- **Quaternius mayoritariamente NO da glTF directo** (Cars, Public Transport, Ultimate Buildings, Modular Streets vienen en FBX/OBJ/Blend). Sesión 2 deberá añadir paso de conversión vía Blender CLI o `obj2gltf` antes de `gltf-transform optimize`. Los dos packs que sí dan glTF directo son `Q-Nature` y `Q-PlatU`.
+- **Poly Pizza CC-BY**: ambos helicópteros candidatos requieren atribución. Anotar en pantalla de créditos del juego cuando se elija el final.
+- **Kenney**: el formato exacto no aparece en la página del pack pero históricamente Kenney da GLB. Verificar al descargar en Sesión 2.
+
+---
+
 ## Tabla de assets
 
 Categorías:
@@ -60,33 +104,33 @@ Estados:
 - **OPTIMIZADO** — pasado por `gltf-transform` + KTX2 (Sesión 2+).
 - **INTEGRADO** — ya carga en el juego sustituyendo primitiva (Sesión 3+).
 
-| # | Asset | Categoría | Fuente | URL | Autor | Licencia | Tris (~) | Estado | Notas |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Moneda/medalla | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Prioridad #1 (InstancedMesh, ataca draw calls) |
-| 2 | Cono de tráfico | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Prioridad #2 (también InstancedMesh) |
-| 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Prioridad #3 — HERO, más difícil de encontrar |
-| 4 | Ambulancia low-poly | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | HERO del jugador |
-| 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Estático en A2 |
-| 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | — |
-| 7 | Coche civil 1 | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Variante tráfico |
-| 8 | Coche civil 2 | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Variante tráfico |
-| 9 | Coche civil 3 | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Variante tráfico |
-| 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Variante tráfico |
-| 11 | Valla urbana | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Obstáculo |
-| 12 | Contenedor basura | GENÉRICO_JUEGO | — | — | — | — | — | PENDIENTE | Obstáculo |
-| 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | HERO landmark |
-| 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | HERO landmark |
-| 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | Reutilizable (balcones, fachada) |
-| 16 | Edificio modernista 2 | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | Reutilizable |
-| 17 | Edificio modernista 3 | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | Reutilizable |
-| 18 | Edificio modernista 4 (opcional) | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | Reutilizable |
-| 19 | Edificio modernista 5 (opcional) | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | Reutilizable |
-| 20 | Skybox día Barcelona | BIOMA_EIXAMPLE | — | — | — | — | — | PENDIENTE | HDRI o gradient sólido |
-| 21 | W Hotel "vela" | BIOMA_BARCELONETA | — | — | — | — | — | PENDIENTE | HERO landmark |
-| 22 | Torre Mapfre | BIOMA_BARCELONETA | — | — | — | — | — | PENDIENTE | HERO landmark |
-| 23 | Palmera | BIOMA_BARCELONETA | — | — | — | — | — | PENDIENTE | Reutilizable, varias instancias |
-| 24 | Paseo marítimo / suelo baldosas | BIOMA_BARCELONETA | — | — | — | — | — | PENDIENTE | Tileable |
-| 25 | Skybox costa abierta | BIOMA_BARCELONETA | — | — | — | — | — | PENDIENTE | Atardecer |
+| # | Asset | Categoría | Pack candidatos | Licencia | Estado | Notas |
+|---|---|---|---|---|---|---|
+| 1 | Moneda/medalla | GENÉRICO_JUEGO | `Q-PlatU` (1ª), `K-Plat` (2ª) | CC0 / CC0 | CANDIDATO | InstancedMesh — ataca draw calls. Verificar al descargar que existe modelo de coin/gem. |
+| 2 | Cono de tráfico | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | InstancedMesh. Props de calle no listados explícitamente — verificar al descargar; si no, buscar pack alternativo en Sesión 2. |
+| 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | `PP-Heli-J` (1ª), `PP-Heli-G` (2ª) | CC-BY 3.0 / CC-BY 3.0 | CANDIDATO | Sin cruz roja en el modelo — añadir decal/textura emisiva en integración. Atribución obligatoria. |
+| 4 | Ambulancia low-poly | GENÉRICO_JUEGO | `Q-PT` (1ª), `K-Cars` (2ª) | CC0 / CC0 | CANDIDATO | `Q-PT` confirma "ambulance" explícitamente. |
+| 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
+| 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | `Q-PlatU` (1ª) | CC0 | CANDIDATO | "Powerups" del pack es el candidato; verificar variante con lazo o aplicar textura. |
+| 7 | Coche civil 1 | GENÉRICO_JUEGO | `K-Cars` (1ª), `Q-Cars` (2ª) | CC0 / CC0 | CANDIDATO | Cobertura múltiple de un solo pack. |
+| 8 | Coche civil 2 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
+| 9 | Coche civil 3 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
+| 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
+| 11 | Valla urbana | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
+| 12 | Contenedor basura | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
+| 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
+| 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
+| 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | `Q-Build` (1ª) | CC0 | CANDIDATO | Base genérica; se "modernizará" con texturas custom (balcones, ocres) en A3. |
+| 16 | Edificio modernista 2 | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
+| 17 | Edificio modernista 3 | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
+| 18 | Edificio modernista 4 (opcional) | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
+| 19 | Edificio modernista 5 (opcional) | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
+| 20 | Skybox día Barcelona | BIOMA_EIXAMPLE | — | — | PENDIENTE | A3: empezar con gradient sólido procedural en shader (sin asset). HDRIs caros; opcional buscar en Poly Haven. |
+| 21 | W Hotel "vela" | BIOMA_BARCELONETA | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
+| 22 | Torre Mapfre | BIOMA_BARCELONETA | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
+| 23 | Palmera | BIOMA_BARCELONETA | `Q-Nature` (1ª) | CC0 | CANDIDATO | Palmera no confirmada explícitamente; pack tiene 63 modelos de naturaleza, alta probabilidad. Verificar al descargar. |
+| 24 | Paseo marítimo / suelo baldosas | BIOMA_BARCELONETA | — | — | PENDIENTE | Probable solución vía textura tileable + plano (no asset GLTF). Tratar en A3. |
+| 25 | Skybox costa abierta | BIOMA_BARCELONETA | — | — | PENDIENTE | Idem fila 20: gradient procedural primero. |
 
 ---
 
@@ -129,7 +173,25 @@ Estados:
 
 ## Notas de búsqueda
 
-(Se irá llenando con observaciones durante el sourcing: packs descartados, autores recurrentes, paquetes que cubren múltiples assets, etc.)
+### Sesión 1 — 2026-04-27
+
+**Packs descartados (404 / no existentes)**:
+- Kenney "Transportation Kit" — URL `https://kenney.nl/assets/transportation-kit` da 404. No aparece tampoco en el listado actual de packs 3D de Kenney; helicóptero hay que sourcearlo en Poly Pizza.
+- Quaternius "Ultimate Modular City" — URL antigua sugerida da 404. Web reorganizada; el pack equivalente actual es `Q-Streets` + `Q-Build` combinados.
+- Quaternius "Modular Buildings" (URL antigua) — 404. Reemplazado por `Q-Build` (Ultimate Buildings, 76 modelos).
+
+**Autor recurrente**: Quaternius (laulhet@gmail.com) — todos sus packs CC0; máxima cobertura para A2/A3 con un solo autor a citar (aunque CC0 no obliga).
+
+**Cobertura múltiple confirmada**:
+- `Q-PT` cubre ambulancia (4) y potencialmente otros vehículos de emergencia.
+- `Q-Build` cubre todos los edificios genéricos de Eixample (15-19) base.
+- `Q-PlatU` cubre moneda (1) y caja sorpresa (6) en un solo pack glTF.
+- `Q-Streets` aspira a cubrir cono (2), valla (11), contenedor (12) — pendiente verificar al descargar.
+
+**Pendientes para próxima ronda de sourcing** (antes de Sesión 2):
+- Paciente acostado en camilla (5) — no encontrado en packs verificados.
+- Verificar visualmente landmarks Sketchfab: Sagrada Família, Casa Batlló, W Hotel, Torre Mapfre.
+- Skyboxes: confirmar enfoque (gradient procedural primero, HDRI Poly Haven después si hace falta).
 
 ---
 
