@@ -4,6 +4,7 @@
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
 **Última actualización**: 2026-04-27
+**Cobertura**: 20/25 candidatos. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -118,7 +119,7 @@ Estados:
 | 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
 | 11 | Valla urbana | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
 | 12 | Contenedor basura | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
-| 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
+| 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | Sketchfab — wareFLO | CC-BY | CANDIDATO | URL: https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — 42.7k tris, 21.2k verts. HERO landmark Eixample. Low-poly monocromo limpio, torres bien diferenciadas, encaja con Quaternius/Kenney. Colores vía materiales Three.js. **Atribución obligatoria.** |
 | 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
 | 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | `Q-Build` (1ª) | CC0 | CANDIDATO | Base genérica; se "modernizará" con texturas custom (balcones, ocres) en A3. |
 | 16 | Edificio modernista 2 | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
@@ -190,11 +191,30 @@ Estados:
 
 **Pendientes para próxima ronda de sourcing** (antes de Sesión 2):
 - Paciente acostado en camilla (5) — no encontrado en packs verificados.
-- Verificar visualmente landmarks Sketchfab: Sagrada Família, Casa Batlló, W Hotel, Torre Mapfre.
+- Verificar visualmente landmarks Sketchfab restantes: Casa Batlló, W Hotel, Torre Mapfre.
 - Skyboxes: confirmar enfoque (gradient procedural primero, HDRI Poly Haven después si hace falta).
+
+**Plan B landmarks restantes** (Casa Batlló, W Hotel, Torre Mapfre): si no aparecen modelos Sketchfab utilizables tras filtrar (CC-BY/CC0 + Downloadable + peso razonable), modelar como cajas estilizadas low-poly directamente en Three.js durante A3 (5-10 min por landmark). La silueta general es reconocible y mantiene coherencia con el estilo del juego.
+
+### Sesión 1 — landmark Sagrada Família (decisión)
+
+**Modelo elegido**: wareFLO (CC-BY, 42.7k tris) — fila 13.
+
+Se compararon 4 candidatos Sketchfab (filtro CC-BY + CC0 + Downloadable):
+
+| Candidato | Tris | Licencia | Decisión |
+|---|---|---|---|
+| **wareFLO** | 42.7k | CC-BY | **ELEGIDO** — peso óptimo (<50k target) + estilo low-poly compatible con catálogo. |
+| danirocha02 "Templo Epiatório" | 966.7k | CC-BY | Descartado — peso 23× target. |
+| Roberto Domínguez | 930.4k | CC-BY | Descartado — peso excesivo + topología sucia ("Generated with AI"). |
+| MaaB "SAGRADA FAMILIA" | 47k | CC-BY | Descartado — STL para impresión 3D con peana decorativa; requeriría limpieza extra en Blender no justificada. |
+
+**Observación general sobre búsqueda Sketchfab**: el filtro CC-BY + CC0 + Downloadable es muy restrictivo si se incluye "low poly" en el término (1 resultado para "sagrada familia low poly"). Funciona mejor sin ese término (12 resultados, de los cuales solo 1-2 son utilizables tras filtrar fotogrametrías y modelos pesados). **Aplicar este criterio para los 3 landmarks restantes.**
 
 ---
 
 ## Créditos pendientes
 
 (Lista de autores + URLs de los modelos CC-BY/CC-BY-SA finalmente integrados, para incluir en pantalla de créditos del juego cuando se cierre A2.)
+
+- **wareFLO** — Sagrada Família — https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — CC-BY (Attribution).
