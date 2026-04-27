@@ -2281,6 +2281,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 /* ================================================================
@@ -2459,6 +2460,23 @@ scene.add(new THREE.AmbientLight(0x4a5a7a, 0.35));
 const rimLight = new THREE.DirectionalLight(0xf5a623, 0.35);
 rimLight.position.set(-20, 20, 30);
 scene.add(rimLight);
+
+// ========== ASSETS GLTF (spike A2) ==========
+// Pre-carga de modelos GLB. makeCoin() clona el template; si aún no
+// está disponible (red lenta) o la carga falla, cae al fallback procedural.
+let coinGltfTemplate = null;
+if (typeof THREE.GLTFLoader === 'function') {
+  new THREE.GLTFLoader().load(
+    'assets/models/coin-gold.glb',
+    (gltf) => { coinGltfTemplate = gltf.scene; },
+    undefined,
+    (err) => {
+      console.warn('[A2 spike] coin-gold.glb load failed, using procedural fallback', err);
+    }
+  );
+} else {
+  console.warn('[A2 spike] THREE.GLTFLoader no disponible, usando fallback procedural');
+}
 
 // ========== CONSTANTES ==========
 const LANE_WIDTH = 2.5;
@@ -4500,16 +4518,25 @@ function makeCone() {
    ================================================================ */
 function makeCoin() {
   const group = new THREE.Group();
-  const coin = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16),
-    new THREE.MeshLambertMaterial({
-      color: 0xffd54f,
-      emissive: 0x6a4010,
-      emissiveIntensity: 0.4
-    })
-  );
-  coin.rotation.x = Math.PI / 2;
-  group.add(coin);
+
+  if (coinGltfTemplate) {
+    // Spike A2: moneda Kenney GLB clonada del template precargado.
+    const coin = coinGltfTemplate.clone(true);
+    coin.scale.setScalar(1.5);
+    group.add(coin);
+  } else {
+    // Fallback procedural (template aún no cargado o GLTFLoader fallido).
+    const coin = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16),
+      new THREE.MeshLambertMaterial({
+        color: 0xffd54f,
+        emissive: 0x6a4010,
+        emissiveIntensity: 0.4
+      })
+    );
+    coin.rotation.x = Math.PI / 2;
+    group.add(coin);
+  }
 
   // Halo
   const halo = new THREE.Mesh(
