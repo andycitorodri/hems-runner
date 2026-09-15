@@ -5,9 +5,9 @@ la atribución se muestra en los créditos del menú del juego.
 	https://poly.pizza/m/aQ_Us04oiz1
 	Licencia: CC-BY 3.0 — https://creativecommons.org/licenses/by/3.0/
 
-	helicopter.glb — "Helicopter" by Poly by Google
-	https://poly.pizza/m/cTzINMr0WdS
-	Licencia: CC-BY 3.0 — https://creativecommons.org/licenses/by/3.0/
-	Colores de material ajustados en el juego (carrocería amarillo SEM).
+	helicopter-kazuma.glb — "Helicopter" by kazuma
+	https://poly.pizza/m/EQJ2MECUbx
+	Licencia: CC0 1.0 (Public Domain) — http://creativecommons.org/publicdomain/zero/1.0/
+	Colores de material ajustados en el juego (todo amarillo SEM salvo rotor y cristal).
 
 	Optimizados con tools/optimize-glb.sh (prune + dedup + quantize).
