@@ -187,7 +187,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `15c5421`…`bc7c3af` | Rendimiento: LightPool, warm-up, Lambert, perf-mobile, DynamicRes |
 | `9352565` | Cono Kenney con `createInstancer` genérico + señales como sprites compartidos |
 | `ec819bd` | Valla Quaternius (Poly Pizza, CC0) instanciada + `tools/preview-glb.html` |
-| `cdff56a` / `15e87d7` | Patinete (jeremy, CC-BY) y helicóptero (kazuma, CC0) vía Poly Pizza |
+| `cdff56a` … | Patinete (jeremy, CC-BY) y helicóptero (Poly by Google, CC-BY; se probó kazuma y se descartó) vía Poly Pizza |
 
 ### Cómo añadir un modelo nuevo
 
