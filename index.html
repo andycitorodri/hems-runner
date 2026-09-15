@@ -6587,7 +6587,7 @@ function makeSurpriseBox() {
    ESCENARIO
    ================================================================ */
 const roadSegments = [];
-const sceneObjects = []; // todos los edificios, árboles, farolas que se mueven
+const sceneObjects = []; // carretera, líneas y bordes que se mueven (los props van en Props)
 
 function createRoad() {
   const road = new THREE.Mesh(
@@ -6641,10 +6641,98 @@ function createSideGround() {
   scene.add(groundRight);
 }
 
+/* ================================================================
+   PROPS DEL ESCENARIO INSTANCIADOS (Fase 2 — A3.0)
+   Edificios, tejados, ventanas, árboles y farolas eran ~360 mallas
+   sueltas (un draw call y un material cada una). Ahora cada tipo es UN
+   InstancedMesh con geometría unitaria; cada prop es un registro
+   {x,y,z, sx,sy,sz, ry, color} y cada frame se recompone su matriz con
+   la z desplazada (el mundo se mueve hacia +z y se recicla). Mismo
+   aspecto, ~8 draw calls. Color por instancia (instanceColor) para
+   edificios y copas.
+   ================================================================ */
+const Props = (() => {
+  const LAYER_DEFS = {
+    building: { geometry: () => new THREE.BoxGeometry(1, 1, 1), material: () => new THREE.MeshLambertMaterial({ color: 0xffffff }), shadow: true, receive: true, perColor: true, recycle: { limit: 20, span: 400 } },
+    roof:     { geometry: () => new THREE.BoxGeometry(1, 1, 1), material: () => new THREE.MeshLambertMaterial({ color: 0x5a3020 }), recycle: { limit: 20, span: 400 } },
+    window:   { geometry: () => new THREE.PlaneGeometry(0.5, 0.6), material: () => new THREE.MeshBasicMaterial({ color: 0xffd070 }), recycle: { limit: 20, span: 400 } },
+    trunk:    { geometry: () => new THREE.CylinderGeometry(0.2, 0.25, 1.5, 6), material: () => new THREE.MeshLambertMaterial({ color: 0x5a3820 }), shadow: true, recycle: { limit: 15, span: 350 } },
+    canopy:   { geometry: () => new THREE.SphereGeometry(1, 8, 6), material: () => new THREE.MeshLambertMaterial({ color: 0xffffff }), shadow: true, perColor: true, recycle: { limit: 15, span: 350 } },
+    pole:     { geometry: () => new THREE.CylinderGeometry(0.08, 0.1, 4, 6), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
+    arm:      { geometry: () => new THREE.BoxGeometry(0.08, 0.08, 1), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
+    bulb:     { geometry: () => new THREE.SphereGeometry(0.2, 6, 6), material: () => new THREE.MeshBasicMaterial({ color: 0xffe8a0 }), recycle: { limit: 15, span: 336 } },
+  };
+  const MAX = 256;
+  const layers = {};
+  const _pos = new THREE.Vector3(), _quat = new THREE.Quaternion(), _scale = new THREE.Vector3(), _m = new THREE.Matrix4(), _c = new THREE.Color();
+
+  function layer(name) {
+    if (layers[name]) return layers[name];
+    const def = LAYER_DEFS[name];
+    const mesh = new THREE.InstancedMesh(def.geometry(), def.material(), MAX);
+    mesh.frustumCulled = false;
+    mesh.castShadow = !!def.shadow;
+    mesh.receiveShadow = !!def.receive;
+    // r128: setColorAt() dimensiona instanceColor con mesh.count (0 aquí),
+    // así que se crea a mano con capacidad MAX.
+    if (def.perColor) mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3);
+    mesh.count = 0;
+    scene.add(mesh);
+    return (layers[name] = { def, mesh, items: [] });
+  }
+
+  // add('building', { x, y, z, sx, sy, sz, ry, color })
+  function add(name, it) {
+    const L = layer(name);
+    if (L.items.length >= MAX) return null;
+    const item = { x: it.x, y: it.y, z: it.z, sx: it.sx ?? 1, sy: it.sy ?? 1, sz: it.sz ?? 1, ry: it.ry || 0, color: it.color };
+    L.items.push(item);
+    if (L.def.perColor) L.mesh.setColorAt(L.items.length - 1, _c.setHex(item.color ?? 0xffffff));
+    return item;
+  }
+
+  function writeMatrix(L, i) {
+    const it = L.items[i];
+    _pos.set(it.x, it.y, it.z);
+    _quat.setFromAxisAngle(_yAxis, it.ry);
+    _scale.set(it.sx, it.sy, it.sz);
+    L.mesh.setMatrixAt(i, _m.compose(_pos, _quat, _scale));
+  }
+  const _yAxis = new THREE.Vector3(0, 1, 0);
+
+  // Mueve el mundo: z += moveZ, recicla y reescribe matrices
+  function update(moveZ) {
+    for (const name in layers) {
+      const L = layers[name];
+      const { limit, span } = L.def.recycle;
+      for (let i = 0; i < L.items.length; i++) {
+        const it = L.items[i];
+        it.z += moveZ;
+        if (it.z > limit) it.z -= span;
+        writeMatrix(L, i);
+      }
+      L.mesh.count = L.items.length;
+      if (L.items.length) L.mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  function setColor(name, i, hex) {
+    const L = layers[name];
+    if (!L || !L.def.perColor || !L.items[i]) return;
+    L.items[i].color = hex;
+    L.mesh.setColorAt(i, _c.setHex(hex));
+    L.mesh.instanceColor.needsUpdate = true;
+  }
+
+  function count(name) { return layers[name] ? layers[name].items.length : 0; }
+
+  return { add, update, setColor, count, layer };
+})();
+
 function populateEnvironment() {
   const sc = SCENARIOS[STATE.scenarioIndex % SCENARIOS.length];
 
-  // Edificios
+  // Edificios (caja unitaria escalada + tejado + ventanas)
   for (let i = 0; i < 50; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const z = -i * 8 - 5;
@@ -6652,71 +6740,43 @@ function populateEnvironment() {
     const w = 3 + Math.random() * 3;
     const d = 3 + Math.random() * 3;
     const color = sc.buildingColor[Math.floor(Math.random() * sc.buildingColor.length)];
-
-    const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
     const x = side * (LANE_WIDTH * 1.5 + 6 + Math.random() * 4);
-    building.position.set(x, h / 2, z);
-    building.castShadow = true; building.receiveShadow = true;
-    scene.add(building);
-    sceneObjects.push({ mesh: building, type: 'building' });
-
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3), new THREE.MeshLambertMaterial({ color: 0x5a3020 }));
-    roof.position.set(x, h + 0.2, z);
-    scene.add(roof);
-    sceneObjects.push({ mesh: roof, type: 'building' });
+    Props.add('building', { x, y: h / 2, z, sx: w, sy: h, sz: d, color });
+    Props.add('roof', { x, y: h + 0.2, z, sx: w + 0.3, sy: 0.4, sz: d + 0.3 });
 
     if (Math.random() > 0.3) {
       const winCount = Math.floor(h / 2);
       for (let wy = 0; wy < winCount; wy++) {
         if (Math.random() > 0.5) {
-          const window = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.6), new THREE.MeshBasicMaterial({ color: 0xffd070 }));
-          const wside = side;
-          window.position.set(x - wside * (w / 2 + 0.01), 1 + wy * 1.8, z + (Math.random() - 0.5) * (d - 0.6));
-          window.rotation.y = wside > 0 ? -Math.PI / 2 : Math.PI / 2;
-          scene.add(window);
-          sceneObjects.push({ mesh: window, type: 'building' });
+          Props.add('window', {
+            x: x - side * (w / 2 + 0.01), y: 1 + wy * 1.8, z: z + (Math.random() - 0.5) * (d - 0.6),
+            ry: side > 0 ? -Math.PI / 2 : Math.PI / 2
+          });
         }
       }
     }
   }
 
-  // Árboles
+  // Árboles (tronco + copa esférica con radio y color por instancia)
   for (let i = 0; i < 35; i++) {
     const side = Math.random() > 0.5 ? -1 : 1;
     const z = -i * 10 - Math.random() * 8;
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 1.5, 6), new THREE.MeshLambertMaterial({ color: 0x5a3820 }));
     const x = side * (LANE_WIDTH * 1.5 + 2.5 + Math.random() * 2);
-    trunk.position.set(x, 0.75, z); trunk.castShadow = true;
-    scene.add(trunk);
-    sceneObjects.push({ mesh: trunk, type: 'tree' });
-    const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.9 + Math.random() * 0.3, 8, 6), new THREE.MeshLambertMaterial({ color: 0x3a5a28 + Math.floor(Math.random() * 0x202020) }));
-    canopy.position.set(x, 2.0, z); canopy.castShadow = true;
-    scene.add(canopy);
-    sceneObjects.push({ mesh: canopy, type: 'tree' });
+    const r = 0.9 + Math.random() * 0.3;
+    Props.add('trunk', { x, y: 0.75, z });
+    Props.add('canopy', { x, y: 2.0, z, sx: r, sy: r, sz: r, color: 0x3a5a28 + Math.floor(Math.random() * 0x202020) });
   }
 
-  // Farolas
+  // Farolas (poste + brazo + bombilla emisiva; sin PointLight, ver LightPool)
   for (let i = 0; i < 24; i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const z = -i * 14 - 10;
     const x = side * (LANE_WIDTH * 1.5 + 1);
-
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 4, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a30 }));
-    pole.position.set(x, 2, z);
-    scene.add(pole);
-    sceneObjects.push({ mesh: pole, type: 'light' });
-
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1), new THREE.MeshLambertMaterial({ color: 0x2a2a30 }));
-    arm.position.set(x - side * 0.5, 4, z);
-    scene.add(arm);
-    sceneObjects.push({ mesh: arm, type: 'light' });
-
-    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffe8a0 }));
-    bulb.position.set(x - side * 1, 3.8, z);
-    scene.add(bulb);
-    sceneObjects.push({ mesh: bulb, type: 'light' });
-    // Sin PointLight por farola (ver LightPool): la bombilla emisiva basta.
+    Props.add('pole', { x, y: 2, z });
+    Props.add('arm', { x: x - side * 0.5, y: 4, z });
+    Props.add('bulb', { x: x - side * 1, y: 3.8, z });
   }
+  Props.update(0);
 }
 
 function changeScenario() {
@@ -6741,16 +6801,13 @@ function changeScenario() {
   groundLeft.material.color.setHex(sc.ground);
   groundRight.material.color.setHex(sc.ground);
 
-  // Cambiar edificios gradualmente
-  const buildings = sceneObjects.filter(o => o.type === 'building' && o.mesh.material && o.mesh.material.color);
-  buildings.forEach((o, i) => {
+  // Cambiar edificios gradualmente (color por instancia)
+  const nBuildings = Props.count('building');
+  for (let i = 0; i < nBuildings; i++) {
     setTimeout(() => {
-      if (o.mesh.material && !o.mesh.material.emissive) {
-        const color = sc.buildingColor[Math.floor(Math.random() * sc.buildingColor.length)];
-        o.mesh.material.color.setHex(color);
-      }
+      Props.setColor('building', i, sc.buildingColor[Math.floor(Math.random() * sc.buildingColor.length)]);
     }, i * 15);
-  });
+  }
 }
 
 /* ================================================================
@@ -9340,10 +9397,8 @@ function update(dt) {
   for (const o of sceneObjects) {
     o.mesh.position.z += moveZ;
     if (o.type === 'dash' && o.mesh.position.z > 10) o.mesh.position.z -= 180;
-    if (o.type === 'building' && o.mesh.position.z > 20) o.mesh.position.z -= 400;
-    if (o.type === 'tree' && o.mesh.position.z > 15) o.mesh.position.z -= 350;
-    if (o.type === 'light' && o.mesh.position.z > 15) o.mesh.position.z -= 336;
   }
+  Props.update(moveZ);  // edificios, árboles, farolas (instanciados)
   for (const o of activeObstacles) o.mesh.position.z += moveZ;
   for (const i of activeItems) i.mesh.position.z += moveZ;
   nextTileZ += moveZ;
