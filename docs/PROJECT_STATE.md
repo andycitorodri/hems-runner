@@ -168,7 +168,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ## Fase 2 · Sub-bloque A2 — infraestructura de assets (15 septiembre 2026)
 
-**Estado**: 🔧 En curso en rama `phase-2-a2`. Integrados y desplegados: moneda, ambulancia, 8 vehículos de tráfico, cono, valla, patinete, helicóptero (Version `2cd3c0b4`). Pendiente: caja sorpresa y paciente (`A2_ASSETS.md`).
+**Estado**: ✅ **Cerrado el 16 sept 2026** en rama `phase-2-a2` (Version `63d390ef`). Integrados: moneda, ambulancia, 8 vehículos de tráfico, cono, valla, patinete, helicóptero. Paciente y caja sorpresa se quedan procedurales por decisión (paciente mejorado: camilla atravesada, manta azul, pelo, cartel ✚ PACIENT). Ver `A2_ASSETS.md`.
 
 ### Commits de A2 (cronológico)
 
@@ -188,6 +188,8 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `9352565` | Cono Kenney con `createInstancer` genérico + señales como sprites compartidos |
 | `ec819bd` | Valla Quaternius (Poly Pizza, CC0) instanciada + `tools/preview-glb.html` |
 | `cdff56a` … | Patinete (jeremy, CC-BY) y helicóptero (Poly by Google, CC-BY; se probó kazuma y se descartó) vía Poly Pizza |
+| `0104280` | Banners de modo apilados cuando coinciden varios |
+| `f6f26ea` / `f6d178a` | Paciente legible: camilla atravesada, +25 %, manta azul, pelo, cartel ✚ PACIENT |
 
 ### Cómo añadir un modelo nuevo
 
@@ -236,8 +238,7 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 
 ### Pendiente en A2
 
-- Caja sorpresa (`makeSurpriseBox`, `Q-PlatU` candidato) y paciente (sin candidato: buscar "stretcher"/"patient" en Poly Pizza).
-- Helicóptero: cruz roja / logo SEM como decal (opcional).
+- (Opcional, no bloqueante) Helicóptero: cruz roja / logo SEM como decal.
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 

@@ -4,7 +4,7 @@
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
 **Última actualización**: 2026-09-15
-**Cobertura**: **10 integrados** (moneda, ambulancia, 4 coches civiles, cono, valla, patinete, helicóptero) + 2 camiones de tráfico. Pendientes del genérico: caja sorpresa (6) y paciente (5). Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
+**A2 cerrado (16 sept 2026)**: 10 integrados (moneda, ambulancia, 6 coches, 2 camiones, cono, valla, patinete, helicóptero); paciente y caja sorpresa se quedan procedurales por decisión. Pendientes para A3: landmarks y edificios de bioma. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -137,8 +137,8 @@ Estados:
 | 2 | Cono de tráfico | GENÉRICO_JUEGO | **`K-Cars`** (`cone.glb`) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/cone.glb` (24 KB, 172 tris, escala 1.5). `ConeInstancer` (instanciador genérico `createInstancer`): cuerpo + aura, 2 draw calls para todos. Señales como sprites compartidos. |
 | 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | **Poly Pizza — Poly by Google** | CC-BY 3.0 | **INTEGRADO** | `assets/models/polypizza/helicopter-google.glb` (50 KB, 1.041 tris, escala 0.0095, `center`). Todo amarillo SEM salvo rotor/ventanas (negro) y un detalle rojo; rotores agrupados en pivotes. Se probó el de kazuma (CC0, `EQJ2MECUbx`) y el usuario prefirió este. Atribución en créditos. |
 | 4 | Ambulancia low-poly | GENÉRICO_JUEGO | **`K-Cars`** (elegido; `Q-PT` descartado, requería Blender) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/ambulance.glb` (85 KB, 2.8k tris, ruedas y puertas como nodos). Carrocería recoloreada a amarillo SEM vía paleta (`tools/png_swatch.py`). |
-| 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
-| 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | `Q-PlatU` (1ª) | CC0 | CANDIDATO | "Powerups" del pack es el candidato; verificar variante con lazo o aplicar textura. |
+| 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — (procedural) | — | **CERRADO (procedural)** | Poly Pizza no tiene camilla con paciente (solo catres). Se mejoró el procedural: camilla atravesada al carril, +25 %, manta azul hospital, pelo, cartel ✚ PACIENT. Decisión del 16 sept 2026. |
+| 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | — (procedural) | — | **CERRADO (procedural)** | Es señalética (cubo dorado pulsante con cartel SORPRESA); un GLB aportaría poco. Reversible. |
 | 7 | Coche civil 1 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `sedan.glb` — `makeCar()` elige al azar entre 6 variantes (`Assets.CAR_KEYS`). |
 | 8 | Coche civil 2 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `suv.glb`, `taxi.glb`. |
 | 9 | Coche civil 3 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `van.glb`, `hatchback-sports.glb`. |
