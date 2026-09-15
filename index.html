@@ -2477,6 +2477,8 @@ const I18N_STRINGS = {
     'credit.ambulance': 'Ambulancia',
     'credit.traffic': 'Tráfico',
     'credit.barrier': 'Valla',
+    'credit.scooter': 'Patinete',
+    'credit.helicopter': 'Helicóptero',
 
     // Tutorial primera partida
     'tutorial.jump': 'Saltar',
@@ -2791,6 +2793,8 @@ const I18N_STRINGS = {
     'credit.ambulance': 'Ambulància',
     'credit.traffic': 'Trànsit',
     'credit.barrier': 'Tanca',
+    'credit.scooter': 'Patinet',
+    'credit.helicopter': 'Helicòpter',
 
     'tutorial.jump': 'Saltar',
     'tutorial.lane_left': 'Carril esquerre',
@@ -3415,6 +3419,17 @@ const Assets = (() => {
       credit: { what: 'credit.traffic', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
     }]))
   };
+  // scooter/helicopter (Poly Pizza, CC-BY): unidades enormes → scale;
+  // `ground` apoya el modelo en y=0 y lo centra en x/z; `center` centra el
+  // bbox en el origen (los tres ejes); `offset` desplaza.
+  MANIFEST.scooter = {
+    url: 'assets/models/polypizza/scooter.glb', scale: 0.083, ground: true,
+    credit: { what: 'credit.scooter', author: 'jeremy', url: 'https://poly.pizza/m/aQ_Us04oiz1', license: 'CC-BY 3.0' }
+  };
+  MANIFEST.helicopter = {
+    url: 'assets/models/polypizza/helicopter.glb', scale: 0.0095, center: true,
+    credit: { what: 'credit.helicopter', author: 'Poly by Google', url: 'https://poly.pizza/m/cTzINMr0WdS', license: 'CC-BY 3.0' }
+  };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
     credit: { what: 'credit.barrier', author: 'Quaternius', url: 'https://quaternius.com', license: 'CC0' }
@@ -3466,6 +3481,23 @@ const Assets = (() => {
               m.dispose();
             }
           });
+          if (spec.ground || spec.center || spec.offset) {
+            // Envolver en un Group para poder apoyar/centrar/desplazar sin
+            // tocar los nodos del modelo.
+            const wrap = new THREE.Group();
+            wrap.add(tpl);
+            if (spec.ground || spec.center) {
+              const bb = new THREE.Box3().setFromObject(tpl);
+              const c = bb.getCenter(new THREE.Vector3());
+              tpl.position.set(-c.x, spec.ground ? -bb.min.y : -c.y, -c.z);
+            }
+            if (spec.offset) tpl.position.add(new THREE.Vector3(spec.offset.x || 0, spec.offset.y || 0, spec.offset.z || 0));
+            markShared(wrap);
+            templates[key] = wrap;
+            done++; if (onProgress) onProgress(done, total);
+            resolve();
+            return;
+          }
           markShared(tpl);
           templates[key] = tpl;
           done++; if (onProgress) onProgress(done, total);
@@ -5401,6 +5433,17 @@ function makeBarrier() {
 function makeScooter() {
   const group = new THREE.Group();
 
+  if (Assets.has('scooter')) {
+    // Patinete GLB: cuerpo y aura los dibuja ScooterInstancer.
+    const jumpSign = makeJumpSign();
+    jumpSign.position.set(0, 2.2, 0);
+    group.add(jumpSign);
+    group.userData.kind = 'scooter';
+    return group;
+  }
+
+  // Fallback procedural (modelo no disponible).
+
   // MUCHO más visible: aura roja al suelo
   const auraGeom = new THREE.CircleGeometry(1.0, 24);
   const auraMat = new THREE.MeshBasicMaterial({
@@ -5579,42 +5622,55 @@ function createInstancer(buildLayers, ready, MAX) {
   return { sync, layer };
 }
 
+// Capas de un template GLB: una por malla (GLTFLoader parte cada primitiva
+// en un Mesh), con su transform dentro del template y recursos compartidos.
+function gltfLayers(key) {
+  const tpl = Assets.get(key);
+  tpl.updateMatrixWorld(true);
+  const layers = [];
+  tpl.traverse(c => {
+    if (c.isMesh) layers.push({ geometry: c.geometry, material: c.material, local: c.matrixWorld.clone(), castShadow: true, shared: true });
+  });
+  return layers;
+}
+
 const ConeInstancer = createInstancer((usingGltf) => {
-  let body;
-  if (usingGltf) {
-    const tpl = Assets.get('cone');
-    tpl.updateMatrixWorld(true);
-    const mesh = tpl.getObjectByProperty('isMesh', true);
-    body = { geometry: mesh.geometry, material: mesh.material, local: mesh.matrixWorld.clone(), castShadow: true, shared: true };
-  } else {
-    body = {
-      geometry: new THREE.ConeGeometry(0.35, 0.9, 10),
-      material: new THREE.MeshLambertMaterial({ color: 0xff6b35 }),
-      local: new THREE.Matrix4().makeTranslation(0, 0.52, 0),
-      castShadow: true
-    };
-  }
+  const body = usingGltf ? gltfLayers('cone') : [{
+    geometry: new THREE.ConeGeometry(0.35, 0.9, 10),
+    material: new THREE.MeshLambertMaterial({ color: 0xff6b35 }),
+    local: new THREE.Matrix4().makeTranslation(0, 0.52, 0),
+    castShadow: true
+  }];
   const aura = {
     geometry: new THREE.CircleGeometry(0.9, 24),
     material: new THREE.MeshBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
     local: new THREE.Matrix4().makeRotationX(-Math.PI / 2).setPosition(0, 0.02, 0)
   };
-  return [body, aura];
+  return [aura, ...body];  // la capa 0 es siempre el aura (se anima)
 }, () => Assets.has('cone'), 64);
 
 // Valla (Quaternius, CC0): cuerpo + luz parpadeante instanciados. Sin GLB no
 // hay capas: makeBarrier() construye el procedural dentro del Group.
 const BarrierInstancer = createInstancer((usingGltf) => {
   if (!usingGltf) return [];
-  const tpl = Assets.get('barrier');
-  tpl.updateMatrixWorld(true);
-  const mesh = tpl.getObjectByProperty('isMesh', true);
   return [
-    { geometry: mesh.geometry, material: mesh.material, local: mesh.matrixWorld.clone(), castShadow: true, shared: true },
     { geometry: new THREE.SphereGeometry(0.12, 8, 8), material: new THREE.MeshBasicMaterial({ color: 0xffa500 }),
-      local: new THREE.Matrix4().makeTranslation(0, 1.15, 0) },
+      local: new THREE.Matrix4().makeTranslation(0, 1.15, 0) },  // capa 0: luz (se anima)
+    ...gltfLayers('barrier'),
   ];
 }, () => Assets.has('barrier'), 48);
+
+// Patinete (jeremy, CC-BY): cuerpo GLB (3 materiales, InstancedMesh con
+// array de materiales) + aura roja pulsante. Sin GLB, procedural en el Group.
+const ScooterInstancer = createInstancer((usingGltf) => {
+  if (!usingGltf) return [];
+  return [
+    { geometry: new THREE.CircleGeometry(1.0, 24),
+      material: new THREE.MeshBasicMaterial({ color: 0xe63946, transparent: true, opacity: 0.4, side: THREE.DoubleSide }),
+      local: new THREE.Matrix4().makeRotationX(-Math.PI / 2).setPosition(0, 0.02, 0) },  // capa 0: aura (se anima)
+    ...gltfLayers('scooter'),
+  ];
+}, () => Assets.has('scooter'), 48);
 
 /* ================================================================
    RECOGIBLES
@@ -5994,7 +6050,94 @@ function makePowerUp(kind) {
 // CAJA SORPRESA - modelo 3D (grande y muy visible)
 // HELICÓPTERO HEMS estilo Airbus H145 del SEM
 // Silueta reconocible: cabina ovoide + boom largo + fenestron característico
+// Luces de navegación, flash anti-colisión y sombra: comunes al GLB y al
+// procedural. Posiciones en el espacio del grupo (morro hacia -z).
+function addHelicopterLightsAndShadow(group, p) {
+  const greenLight = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: 0x4ade80 }));
+  greenLight.position.copy(p.green);
+  group.add(greenLight);
+  group.userData.greenLight = greenLight;
+
+  const redLight = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshBasicMaterial({ color: 0xe63946 }));
+  redLight.position.copy(p.red);
+  group.add(redLight);
+  group.userData.redLight = redLight;
+
+  const antiCollide = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  antiCollide.position.copy(p.anti);
+  group.add(antiCollide);
+  group.userData.antiCollide = antiCollide;
+
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(2.2, 28),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.02;
+  group.userData.shadow = shadow;
+}
+
+// Reúne varias piezas (meshes) en un Group pivotado en `centerWorld` (en
+// el espacio "mundo" del cuerpo, que aún no está en la escena) para poder
+// girarlas juntas sobre ese punto (rotores del GLB, que vienen en trozos).
+function pivotParts(parts, centerWorld) {
+  const parent = parts[0].parent;
+  const center = parent.worldToLocal(centerWorld.clone());
+  const pivot = new THREE.Group();
+  pivot.position.copy(center);
+  parent.add(pivot);
+  parent.updateMatrixWorld(true);
+  for (const m of parts) pivot.attach(m);
+  return pivot;
+}
+
+function makeHelicopterFromGltf() {
+  const group = new THREE.Group();
+  const body = Assets.clone('helicopter');
+  group.add(body);
+  // Colores por color original (los nombres de material se pierden al
+  // optimizar): amarillo apagado → amarillo SEM; rojo oscuro → rojo del juego.
+  const RECOLOR = { 'aa8b0d': 0xf5b431, '6a0101': 0xe63946 };
+  const recolor = m => {
+    const to = RECOLOR[m.color.getHexString()];
+    if (to === undefined) return m;
+    const mm = m.clone(); mm.color.setHex(to); return mm;
+  };
+  body.traverse(c => {
+    if (!c.isMesh) return;
+    c.castShadow = true;
+    c.material = Array.isArray(c.material) ? c.material.map(recolor) : recolor(c.material);
+  });
+  // Rotores por geometría (el modelo trae las palas en trozos sin nombre):
+  // - principal: el mesh más ancho en x marca la altura del rotor; todas las
+  //   piezas a esa altura (±0.5) son palas/buje; pivote en el centro común.
+  // - cola: piezas pequeñas en el extremo +z (a menos de 0.6 del final).
+  body.updateMatrixWorld(true);
+  const meshes = [];
+  body.traverse(c => { if (c.isMesh) { const bb = new THREE.Box3().setFromObject(c); meshes.push({ c, bb, size: bb.getSize(new THREE.Vector3()), center: bb.getCenter(new THREE.Vector3()) }); } });
+  const widest = meshes.reduce((a, b) => (b.size.x > a.size.x ? b : a));
+  const rotorParts = meshes.filter(m => Math.abs(m.center.y - widest.center.y) < 0.5 && m.center.z > widest.center.z - 2 && m.center.z < widest.center.z + 2);
+  const rotorBox = rotorParts.reduce((acc, m) => acc.union(m.bb), new THREE.Box3());
+  group.userData.rotorMain = pivotParts(rotorParts.map(m => m.c), rotorBox.getCenter(new THREE.Vector3()));
+  const tailZ = Math.max(...meshes.map(m => m.bb.max.z));
+  const tailParts = meshes.filter(m => !rotorParts.includes(m) && tailZ - m.bb.max.z < 0.6 && m.size.x < 1.5 && m.size.y < 1.5 && m.size.z < 1.5);
+  if (tailParts.length) {
+    const tailBox = tailParts.reduce((acc, m) => acc.union(m.bb), new THREE.Box3());
+    group.userData.fenestronBlades = pivotParts(tailParts.map(m => m.c), tailBox.getCenter(new THREE.Vector3()));
+  }
+
+  const bb = new THREE.Box3().setFromObject(body);
+  addHelicopterLightsAndShadow(group, {
+    green: new THREE.Vector3(bb.max.x * 0.35, bb.min.y + 1.0, -0.9),
+    red:   new THREE.Vector3(bb.min.x * 0.35, bb.min.y + 1.0, -0.9),
+    anti:  new THREE.Vector3(0, bb.max.y - 0.2, 1.0),
+  });
+  group.userData.kind = 'helicopter';
+  return group;
+}
+
 function makeHelicopter() {
+  if (Assets.has('helicopter')) return makeHelicopterFromGltf();
   const group = new THREE.Group();
 
   // Material principal amarillo SEM (lima fluorescente como en las fotos reales)
@@ -6937,6 +7080,22 @@ scene.add(helicopter);
 const helicopterShadow = helicopter.userData.shadow;
 helicopterShadow.visible = false;
 scene.add(helicopterShadow);
+
+// Como la ambulancia: se construye al cargar el script (procedural) y,
+// cuando el GLB está listo, se sustituye el CONTENIDO del Group. La sombra
+// ya está en la escena (helicopterShadow): se conserva la existente.
+function refreshHelicopterModel() {
+  if (!Assets.has('helicopter')) return;
+  const fresh = makeHelicopterFromGltf();
+  while (helicopter.children.length) {
+    const c = helicopter.children[0];
+    helicopter.remove(c);
+    disposeObj(c);
+  }
+  for (const c of [...fresh.children]) helicopter.add(c);
+  fresh.userData.shadow = helicopterShadow;
+  helicopter.userData = fresh.userData;
+}
 
 const player = {
   lane: 1,
@@ -8993,11 +9152,14 @@ function animate() {
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
   ConeInstancer.sync(activeObstacles, o => o.mesh.userData.kind === 'cone' ? o.mesh : null);
-  const coneAura = ConeInstancer.layer(1);
+  const coneAura = ConeInstancer.layer(0);
   if (coneAura) coneAura.mesh.material.opacity = 0.3 + Math.sin(Date.now() / 250) * 0.2;
   BarrierInstancer.sync(activeObstacles, o => o.mesh.userData.kind === 'barrier' ? o.mesh : null);
-  const barrierLight = BarrierInstancer.layer(1);
+  const barrierLight = BarrierInstancer.layer(0);
   if (barrierLight) barrierLight.mesh.material.color.setHex(Math.floor(Date.now() / 400) % 2 ? 0xffa500 : 0x5a3000);
+  ScooterInstancer.sync(activeObstacles, o => o.mesh.userData.kind === 'scooter' ? o.mesh : null);
+  const scooterAura = ScooterInstancer.layer(0);
+  if (scooterAura) scooterAura.mesh.material.opacity = 0.3 + Math.sin(Date.now() / 250) * 0.2;
   renderer.render(scene, camera);
   Metrics.tick(dt);
   PerfWatchdog.tick(dt);
@@ -9759,6 +9921,7 @@ function warmUpRenderer() {
 
 Promise.all([assetsReady, minSplash]).then(() => {
   refreshAmbulanceModel();
+  refreshHelicopterModel();
   generateTiles();
   warmUpRenderer();
   loading.classList.add('hidden');

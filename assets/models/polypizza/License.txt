@@ -1,0 +1,13 @@
+Modelos obtenidos vía Poly Pizza (https://poly.pizza). Licencia CC-BY 3.0:
+la atribución se muestra en los créditos del menú del juego.
+
+	scooter.glb — "Scooter" by jeremy
+	https://poly.pizza/m/aQ_Us04oiz1
+	Licencia: CC-BY 3.0 — https://creativecommons.org/licenses/by/3.0/
+
+	helicopter.glb — "Helicopter" by Poly by Google
+	https://poly.pizza/m/cTzINMr0WdS
+	Licencia: CC-BY 3.0 — https://creativecommons.org/licenses/by/3.0/
+	Colores de material ajustados en el juego (carrocería amarillo SEM).
+
+	Optimizados con tools/optimize-glb.sh (prune + dedup + quantize).
