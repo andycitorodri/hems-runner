@@ -10,7 +10,9 @@
 
 | Entorno | URL |
 |---|---|
-| Producción (Cloudflare Workers) | `https://app.hems.workers.dev` |
+| **Producción (dominio propio)** | `https://hems.jornadaimpacte.com` — subdominio de la web de la jornada, configurado el 15 sept 2026 como *custom domain* del Worker `app` |
+| Producción (URL técnica, sigue activa) | `https://app.hems.workers.dev` |
+| Web de la jornada | `https://jornadaimpacte.com` (Worker `jornada`, misma cuenta; enlaza al juego) |
 | Repositorio GitHub | `https://github.com/andycitorodri/hems-runner` |
 | Cloudflare Dashboard | `https://dash.cloudflare.com/` (cuenta `Luisrodriguezz1981@gmail.com`) |
 
@@ -24,6 +26,7 @@
 
 - **Tipo de proyecto**: Worker con assets estáticos (no Pages clásico)
 - **Nombre del Worker**: `app`
+- **Dominio**: `hems.jornadaimpacte.com` vía `routes` con `custom_domain: true` en `wrangler.jsonc` — Cloudflare creó DNS y certificado en el deploy (Version `ebae38f7`). `workers_dev: true` mantiene `app.hems.workers.dev`.
 - **Modo de deploy**: `wrangler deploy` desde el repo local (desde 15 sept 2026, bloque R0). Config en `wrangler.jsonc` (assets desde la raíz del repo) y exclusiones en `.assetsignore` (solo se publican `index.html` y `assets/`).
 - **Login**: OAuth de wrangler con la cuenta `luisrodriguezz1981@gmail.com`, credenciales en `~/Library/Preferences/.wrangler/config/default.toml`.
 - **GitHub App**: instalado con acceso solo al repo `hems-runner`, pero no se usa auto-deploy (el flujo Pages → GitHub no funcionó bien; el deploy es manual desde el Mac).
@@ -231,8 +234,8 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - [ ] Assets reales GLTF, shaders custom, post-procesado opcional *(A2-A4)*
 
 ### Lanzamiento (septiembre-octubre 2026)
-- [ ] Comprar dominio propio `.com` o `.cat` (~12€/año) — ej. `hems-runner.com`, `hemsrunner.cat`, `traumarunner2026.com`
-- [ ] Configurar dominio en Cloudflare con DNS
+- [x] ~~Comprar dominio propio~~ → se usa el de la jornada: `hems.jornadaimpacte.com` *(15 sept 2026)*
+- [x] Configurar dominio en Cloudflare con DNS *(custom domain del Worker, automático)*
 - [ ] Generar QR para materiales de la Jornada
 - [ ] Lanzamiento oficial el **14 de octubre de 2026** en la I Jornada de Trauma de Parc Taulí
 

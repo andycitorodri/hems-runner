@@ -20,13 +20,14 @@ else
 fi
 echo ""
 
-echo "▶ [2/2] Desplegando a Cloudflare (app.hems.workers.dev)..."
+echo "▶ [2/2] Desplegando a Cloudflare (hems.jornadaimpacte.com)..."
 echo "  (la primera vez se abrirá el navegador para autorizar Cloudflare)"
 echo ""
 if npx --yes wrangler@4 deploy; then
   echo ""
   echo "═══════════════════════════════════════════"
-  echo "  ✅ LISTO — https://app.hems.workers.dev"
+  echo "  ✅ LISTO — https://hems.jornadaimpacte.com"
+  echo "           (también https://app.hems.workers.dev)"
   echo ""
   echo "  Abre la web con Cmd+Shift+R (recarga forzada)."
   echo "  Comprueba que las monedas son el modelo 3D"

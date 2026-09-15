@@ -17,7 +17,7 @@
 2. En el Finder, doble clic en SUBIR.command (raíz del repo)
 3. Hace git push de la rama actual + wrangler deploy
 4. La primera vez se abre el navegador para autorizar Cloudflare (login OAuth)
-5. Cuando diga "✅ LISTO", abre https://app.hems.workers.dev con Cmd+Shift+R
+5. Cuando diga "✅ LISTO", abre https://hems.jornadaimpacte.com con Cmd+Shift+R
 ```
 
 **Opción B — terminal**:
@@ -26,6 +26,8 @@ cd ~/hems-runner
 git push origin $(git rev-parse --abbrev-ref HEAD)
 npx wrangler@4 deploy
 ```
+
+**Dónde queda**: `https://hems.jornadaimpacte.com` (dominio de la jornada) y `https://app.hems.workers.dev` (URL técnica, la misma app). Un solo deploy actualiza las dos.
 
 **Qué sube**: `index.html` + todo lo que haya en `assets/`. Nada más — el resto (docs, .git, wrangler.jsonc, SUBIR.command, Claude outputs…) está excluido en `.assetsignore`. Wrangler solo sube los archivos nuevos o modificados desde el último deploy, así que un cambio en `index.html` sube 1 archivo.
 
@@ -140,7 +142,15 @@ Las credenciales quedan en `~/Library/Preferences/.wrangler/config/default.toml`
 
 ---
 
-## Caso 8: Comprar dominio propio (cuando llegue el momento)
+## Caso 8: Dominio propio
+
+**Hecho (15 sept 2026)**: el juego vive en `hems.jornadaimpacte.com`, subdominio del dominio de la jornada (zona en la misma cuenta Cloudflare). Está declarado en `wrangler.jsonc`:
+```jsonc
+"routes": [{ "pattern": "hems.jornadaimpacte.com", "custom_domain": true }]
+```
+Cloudflare creó el registro DNS y el certificado solos en el `wrangler deploy`. Para cambiar el subdominio basta con editar el `pattern` y redesplegar (el viejo se puede borrar en Worker `app` → Settings → Domains & Routes).
+
+**Si algún día se quiere otro dominio distinto** (lo que sigue es la guía original):
 
 **Cuándo**: 1-2 meses antes del 14 octubre 2026, para tener URL pro tipo `hemsrunner.com`.
 
@@ -178,7 +188,7 @@ Las credenciales quedan en `~/Library/Preferences/.wrangler/config/default.toml`
 | Problema | Acción inmediata |
 |---|---|
 | El juego no carga (404) | Verificar que `index.html` está en la raíz del repo (Caso 2) |
-| Error SSL | Esperar 2-15 minutos, no es problema tuyo |
+| Error SSL | Esperar 2-15 minutos, no es problema tuyo (el custom domain tardó 15 s) |
 | Versión vieja sigue apareciendo | Hard reload + modo incógnito |
 | Cambios no se ven | Verificar que `wrangler deploy` acabó con "Deployed app triggers" y un Version ID |
 | Un asset da 404 | Esperar 30 s; si sigue, `--dry-run` y revisar `.assetsignore` (Caso 2) |

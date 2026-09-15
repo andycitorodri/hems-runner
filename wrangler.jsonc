@@ -5,6 +5,12 @@
   // que el juego carga assets/models/*.glb por ruta relativa).
   "name": "app",
   "compatibility_date": "2026-04-01",
+  // Dominio propio (zona jornadaimpacte.com, misma cuenta). Cloudflare crea
+  // el DNS y el certificado en el deploy. app.hems.workers.dev sigue activo.
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "hems.jornadaimpacte.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./"
   }
