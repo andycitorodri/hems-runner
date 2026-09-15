@@ -2092,6 +2092,7 @@
     <div class="metrics-panel__row"><span class="metrics-panel__key">avg 5s</span><span class="metrics-panel__val" id="m-fps-avg">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">draws</span><span class="metrics-panel__val" id="m-draws">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">tris</span><span class="metrics-panel__val" id="m-tris">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">res</span><span class="metrics-panel__val" id="m-res">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">tier</span><span class="metrics-panel__val" id="m-tier">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">why</span><span class="metrics-panel__val" id="m-tier-reason">--</span></div>
     <div class="metrics-panel__hint">F2 to toggle</div>
@@ -8459,12 +8460,56 @@ function disableUltraLow() {
 // Aplica los settings hot-swappable del tier actual al renderer.
 // antialias / MSAA NO son hot-swappable (requieren recrear el renderer)
 // y se quedan como se eligieron en boot — el toast lo avisa.
+/* ================================================================
+   RESOLUCIÓN DINÁMICA (Fase 2 — A2, rendimiento)
+   Cuando se apilan efectos (SVA + Mastery + escudo…) el iPhone se queda
+   sin fill rate y cae a ~30 FPS unos segundos. En vez de bajar el tier
+   para siempre (PerfWatchdog, < 30 FPS sostenidos), aquí se baja la
+   resolución de render un escalón (×0.85, ×0.7 sobre el cap del tier)
+   cuando los FPS pasan 1 s por debajo de 48, y se recupera cuando llevan
+   3 s por encima de 57. Un ligero suavizado durante el efecto a cambio de
+   mantener la fluidez. El factor se aplica también en applyQualitySettings.
+   ================================================================ */
+const DynamicRes = (() => {
+  const STEPS = [1.0, 0.85, 0.7];
+  const LOW_FPS = 48, HIGH_FPS = 57;
+  const WINDOW_MS = 1000, DOWN_HOLD_MS = 1000, UP_HOLD_MS = 3000, COOLDOWN_MS = 1500;
+  const samples = [];
+  let step = 0, lowSince = 0, highSince = 0, lastChange = 0;
+
+  function apply() { applyQualitySettings(); }
+
+  function tick(dt) {
+    if (!STATE.running || STATE.paused) { samples.length = 0; lowSince = highSince = 0; return; }
+    const now = performance.now();
+    samples.push({ t: now, dt });
+    while (samples.length && now - samples[0].t > WINDOW_MS) samples.shift();
+    if (samples.length < 10 || now - lastChange < COOLDOWN_MS) return;
+    const fps = samples.length / samples.reduce((a, x) => a + x.dt, 0);
+    if (fps < LOW_FPS) {
+      highSince = 0;
+      if (!lowSince) lowSince = now;
+      if (now - lowSince >= DOWN_HOLD_MS && step < STEPS.length - 1) { step++; apply(); lastChange = now; lowSince = 0; }
+    } else if (fps > HIGH_FPS) {
+      lowSince = 0;
+      if (!highSince) highSince = now;
+      if (now - highSince >= UP_HOLD_MS && step > 0) { step--; apply(); lastChange = now; highSince = 0; }
+    } else {
+      lowSince = 0; highSince = 0;
+    }
+  }
+
+  function fps1s() { return samples.length ? samples.length / samples.reduce((a, x) => a + x.dt, 0) : 0; }
+
+  return { tick, fps1s, get step() { return step; }, get factor() { return STEPS[step]; } };
+})();
+
 function applyQualitySettings() {
   const q = QUALITY_PRESETS[QUALITY_TIER];
   const cap = ULTRA_LOW_MODE
     ? ULTRA_PIXEL_RATIO
     : Math.min(window.devicePixelRatio, q.pixelRatioCap);
-  renderer.setPixelRatio(cap);
+  renderer.setPixelRatio(cap * DynamicRes.factor);  // setPixelRatio ya llama a setSize en r128
   renderer.shadowMap.enabled = q.shadows;
 }
 
@@ -8629,6 +8674,7 @@ const Metrics = (() => {
       fpsAvg: document.getElementById('m-fps-avg'),
       draws: document.getElementById('m-draws'),
       tris: document.getElementById('m-tris'),
+      res: document.getElementById('m-res'),
       tier: document.getElementById('m-tier'),
       reason: document.getElementById('m-tier-reason')
     };
@@ -8666,6 +8712,7 @@ const Metrics = (() => {
     dom.fpsAvg.textContent = avgFps || '--';
     dom.draws.textContent = lastInfo.calls;
     dom.tris.textContent = lastInfo.triangles.toLocaleString('en-US');
+    dom.res.textContent = renderer.getPixelRatio().toFixed(2) + '×' + (DynamicRes.step ? ` (−${DynamicRes.step})` : '');
     dom.tier.textContent = QUALITY_TIER;
     dom.reason.textContent = QUALITY_TIER_REASON;
   }
@@ -8898,6 +8945,7 @@ function animate() {
   renderer.render(scene, camera);
   Metrics.tick(dt);
   PerfWatchdog.tick(dt);
+  DynamicRes.tick(dt);
 }
 
 function update(dt) {
