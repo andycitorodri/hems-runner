@@ -3,8 +3,8 @@
 
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
-**Última actualización**: 2026-04-27
-**Cobertura**: 20/25 candidatos. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
+**Última actualización**: 2026-09-15
+**Cobertura**: 20/25 candidatos; **2 integrados** (moneda, ambulancia). Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -47,7 +47,27 @@
 
 ---
 
-## Pipeline ajustado tras Sesión 1 — conversión FBX→glTF
+## Pipeline real (Sesión 2 — 2026-09-15)
+
+Con Kenney no hace falta Blender: los kits traen GLB directo. Pipeline aplicado a moneda y ambulancia:
+
+```bash
+tools/optimize-glb.sh entrada.glb assets/models/<kit>/salida.glb
+```
+
+1. `gltf-transform prune --keep-attributes false` → quita TANGENT y demás atributos sin uso.
+2. `gltf-transform dedup` → une geometrías idénticas (las 4 ruedas).
+3. `gltf-transform quantize` → `KHR_mesh_quantization` (GLTFLoader r128 lo soporta sin decoders). La textura externa queda embebida.
+
+Resultado: ambulancia 246 KB → 85 KB; moneda 22 KB → 17 KB. **KTX2 descartado por ahora**: las texturas Kenney son paletas de 512² y ~12 KB; no compensa meter `KTX2Loader`.
+
+**Recolor por paleta**: el colormap de cada kit es una rejilla de muestras (8 columnas × 4 filas de 64×128 px, cada una un degradado). Para cambiar el color de una pieza sin tocar el resto se copia una muestra sobre otra con `tools/png_swatch.py src dst sx sy dx dy w h` y se reconstruye el GLB con la textura modificada. La ambulancia usa la muestra blanca (fila 3, col 7 → x 384-448, y 256-384), sustituida por la amarilla del kit (x 64-128, y 384-512).
+
+**Un directorio por kit** en `assets/models/` (cada kit tiene su propio `colormap.png`), con su `License.txt`.
+
+**Integración en código**: entrada en `MANIFEST` de `Assets` (`index.html`) con `credit`; la factoría hace `Assets.clone(key)` y conserva el fallback procedural. Detalle en `PROJECT_STATE.md` → "Cómo añadir un modelo nuevo".
+
+## Pipeline previsto en Sesión 1 — conversión FBX→glTF (solo para packs Quaternius)
 
 **Hallazgo (2026-04-27)**: la mayoría de los packs de Quaternius candidatos para A2/A3 vienen sólo en **FBX, OBJ y Blend** — no en glTF directo. Concretamente afecta a `Q-Cars`, `Q-PT`, `Q-Build`, `Q-Streets`. Solo dos packs Quaternius dan **glTF directo**: `Q-Nature` (Ultimate Stylized Nature) y `Q-PlatU` (Ultimate Platformer Pack).
 
@@ -107,13 +127,13 @@ Estados:
 
 | # | Asset | Categoría | Pack candidatos | Licencia | Estado | Notas |
 |---|---|---|---|---|---|---|
-| 1 | Moneda/medalla | GENÉRICO_JUEGO | `Q-PlatU` (1ª), `K-Plat` (2ª) | CC0 / CC0 | CANDIDATO | InstancedMesh — ataca draw calls. Verificar al descargar que existe modelo de coin/gem. |
+| 1 | Moneda/medalla | GENÉRICO_JUEGO | **`K-Plat`** (elegido) | CC0 | **INTEGRADO** | `assets/models/kenney-platformer-kit/coin-gold.glb` (17 KB). InstancedMesh (`CoinInstancer`): 2 draw calls para todas. |
 | 2 | Cono de tráfico | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | InstancedMesh. Props de calle no listados explícitamente — verificar al descargar; si no, buscar pack alternativo en Sesión 2. |
 | 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | `PP-Heli-J` (1ª), `PP-Heli-G` (2ª) | CC-BY 3.0 / CC-BY 3.0 | CANDIDATO | Sin cruz roja en el modelo — añadir decal/textura emisiva en integración. Atribución obligatoria. |
-| 4 | Ambulancia low-poly | GENÉRICO_JUEGO | `Q-PT` (1ª), `K-Cars` (2ª) | CC0 / CC0 | CANDIDATO | `Q-PT` confirma "ambulance" explícitamente. |
+| 4 | Ambulancia low-poly | GENÉRICO_JUEGO | **`K-Cars`** (elegido; `Q-PT` descartado, requería Blender) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/ambulance.glb` (85 KB, 2.8k tris, ruedas y puertas como nodos). Carrocería recoloreada a amarillo SEM vía paleta (`tools/png_swatch.py`). |
 | 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
 | 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | `Q-PlatU` (1ª) | CC0 | CANDIDATO | "Powerups" del pack es el candidato; verificar variante con lazo o aplicar textura. |
-| 7 | Coche civil 1 | GENÉRICO_JUEGO | `K-Cars` (1ª), `Q-Cars` (2ª) | CC0 / CC0 | CANDIDATO | Cobertura múltiple de un solo pack. |
+| 7 | Coche civil 1 | GENÉRICO_JUEGO | **`K-Cars`** (pack ya descargado) | CC0 | DESCARGADO | `~/Downloads/kenney_car-kit.zip` trae sedan, suv, taxi, police, van, truck, hatchback-sports… en GLB. Mismo pipeline que la ambulancia. |
 | 8 | Coche civil 2 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
 | 9 | Coche civil 3 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
 | 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |

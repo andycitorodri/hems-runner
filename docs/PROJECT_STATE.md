@@ -1,8 +1,8 @@
 # HEMS Runner — Estado del proyecto
 
 **Última actualización**: 15 de septiembre de 2026
-**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (AssetManager + moneda Kenney instanciada, desplegado); R0 (deploy multi-archivo) cerrado
-**Archivos de producción**: `index.html` (~8.400 líneas) + `assets/models/` (GLB, texturas, licencias)
+**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (AssetManager, moneda instanciada y ambulancia Kenney desplegadas; controles táctiles por zonas y tutorial de primera partida); R0 cerrado
+**Archivos de producción**: `index.html` (~8.900 líneas) + `assets/models/<kit>/` (GLB con textura embebida + License.txt)
 
 ---
 
@@ -165,7 +165,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ## Fase 2 · Sub-bloque A2 — infraestructura de assets (15 septiembre 2026)
 
-**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada y desplegada (Version `532e3b9e`); pendiente integrar el resto de modelos del catálogo (`A2_ASSETS.md`).
+**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada; moneda y ambulancia integradas y desplegadas (Version `6fdb512c`); pendiente el resto del catálogo (`A2_ASSETS.md`).
 
 ### Commits de A2 (cronológico)
 
@@ -176,10 +176,13 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `2873510` | Monedas con InstancedMesh (2 draw calls para todas) |
 | `38372ab` | Centrar el GLB de la moneda en el origen del Group |
 | `2d707f9` | Créditos de assets en el menú desde el manifest |
+| `dc6accb` | Táctil: tap por zonas (lado de la ambulancia = carril, arriba = salto) |
+| `b581aac` / `301e818` | Tutorial de la primera partida (anillos de toque, una sola vez) |
+| `110b930` | Ambulancia Kenney en amarillo SEM + assets por kit + `tools/optimize-glb.sh` |
 
 ### Cómo añadir un modelo nuevo
 
-1. Copiar el `.glb` (y sus texturas, si son externas) a `assets/models/`.
+1. `tools/optimize-glb.sh original.glb assets/models/<kit>/nombre.glb` (embebe la textura; ver pipeline en `A2_ASSETS.md`). Un directorio por kit con su `License.txt`.
 2. Añadir una entrada al `MANIFEST` de `Assets` en `index.html`: `{ url, scale, credit: { what, author, url, license } }`.
 3. En la factoría del objeto (`makeX()`), pedir `Assets.clone(key)` y mantener el fallback procedural en el `else`.
 4. Si el objeto aparece muchas veces (conos, vallas…), seguir el patrón de `CoinInstancer`: Group vacío para transform + `InstancedMesh` sincronizado antes de `renderer.render()`.
@@ -191,6 +194,11 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - **Los clones comparten geometría y materiales con el template** (`Object3D.clone()` no los copia). `disposeObj()` liberaba los buffers del template en cada moneda recogida y Three.js los re-subía en el siguiente frame — funcionaba por accidente. Ahora los nodos de los templates llevan `userData.sharedAsset` y `disposeObj()` los salta.
 - **Monedas con `InstancedMesh`**: `makeCoin()` devuelve un `Group` vacío con solo transform y `userData`; `CoinInstancer` dibuja cuerpo y halo con dos `InstancedMesh` (capacidad 320, `frustumCulled = false`) sincronizados justo antes de `renderer.render()`. El código de colisión, imán, vórtice y lluvia de monedas no cambió: sigue leyendo `mesh.position`/`rotation`. El fallback procedural también va instanciado. Si el primer frame llega antes que la precarga, el instancer se reconstruye al aparecer el GLB.
 - **Modelo centrado en el origen del Group**: el cilindro antiguo estaba centrado; el GLB de Kenney iba de y=0 a 0.6 y dejaba el centro visual 0.3 por encima del punto de hitbox/imán/halo. Se centra el bounding box del template, de forma genérica.
+- **Ambulancia: contenido, no referencia**. `const ambulance = makeAmbulance()` corre al cargar el script, antes de la precarga. `refreshAmbulanceModel()` vacía el Group y le mete los hijos de un `makeAmbulance()` nuevo cuando el GLB está listo — `ambulance` es una referencia usada por cámara, colisiones y efectos, y no se puede reasignar.
+- **Orientación**: el GLB de Kenney mira a +z; el juego avanza hacia -z. Se gira π en Y: morro delante, puertas traseras hacia la cámara. El procedural antiguo tenía cabina y faros en +z — circulaba marcha atrás sin que nadie lo notara.
+- **Sirenas**: el modelo trae su barra de luces (textura estática); nuestras dos cajas parpadeantes (`blueSiren`/`redSiren`, animadas en `animate()`) se apoyan sobre ella, más pequeñas que en el procedural. Las ruedas son los nodos `wheel-*` del GLB, giran igual que antes.
+- **Amarillo SEM por paleta, no por tinte**: `material.color` multiplicaría toda la textura (cristales y barra azul incluidos). Se copia la muestra amarilla del kit sobre la blanca en el colormap de la ambulancia (`tools/png_swatch.py`); el resto de vehículos del Car Kit usarán la paleta original.
+- **Quantización sin decoders**: `KHR_mesh_quantization` lo soporta el `GLTFLoader` de r128; Draco/meshopt habrían obligado a cargar decoders. Ojo: con atributos normalizados, `Box3.setFromObject` funciona pero leer `attributes.position` a mano exige dividir por 32767.
 - **Créditos desde el manifest**: `Assets.credits()` agrupa por autor y el menú los pinta bajo los botones. CC0 no lo exige; los CC-BY del catálogo (helicópteros Poly Pizza, Sagrada Família wareFLO) sí.
 
 ### Medido en local (Mac M3, Firefox, ~25-40 monedas en pantalla)
@@ -201,8 +209,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ### Pendiente en A2
 
-- Ambulancia (`Q-PT`, requiere pipeline FBX→GLB con Blender CLI).
-- Coches de tráfico (`K-Cars`), cono/valla/contenedor (`Q-Streets`, verificar que existen).
+- Coches de tráfico: `~/Downloads/kenney_car-kit.zip` ya descargado (sedan, suv, taxi, police, van, truck…); sustituir `makeCar()`/`makeTruck()` con el mismo patrón. Cono/valla/contenedor (`Q-Streets`, verificar que existen; el Car Kit trae `cone.glb` y `box.glb` como alternativa CC0 sin Blender).
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 
