@@ -3386,7 +3386,76 @@ sunLight.shadow.mapSize.width = 1024;
 sunLight.shadow.mapSize.height = 1024;
 scene.add(sunLight);
 
-scene.add(new THREE.AmbientLight(0x4a5a7a, 0.35));
+// (AmbientLight: ver Ambience)
+
+/* ================================================================
+   AMBIENTE (Fase 2 — A3): cúpula de cielo con degradado + sol + hemisferio
+   + ambiente + niebla + suelo, con transición suave entre presets.
+   ================================================================ */
+const skyDome = new THREE.Mesh(
+  new THREE.SphereGeometry(320, 24, 12),
+  new THREE.ShaderMaterial({
+    uniforms: { top: { value: new THREE.Color(0x2f6fd0) }, horizon: { value: new THREE.Color(0xcfe6f7) }, exponent: { value: 0.9 } },
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize((modelMatrix * vec4(position,1.0)).xyz - cameraPosition); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 horizon; uniform float exponent; varying vec3 vDir; void main(){ float h = max(vDir.y, 0.0); gl_FragColor = vec4(mix(horizon, top, pow(h, exponent)), 1.0); }',
+    side: THREE.BackSide, depthWrite: false, fog: false
+  })
+);
+skyDome.frustumCulled = false;
+skyDome.renderOrder = -1;
+scene.add(skyDome);
+
+const Ambience = (() => {
+  const ambientLight = new THREE.AmbientLight(0x8fa0b8, 0.3);
+  scene.add(ambientLight);
+  const groundMats = [];  // se registran al crear el suelo (createSideGround)
+  let from = null, to = null, t0 = 0, dur = 0;
+  const _c = new THREE.Color();
+
+  function snapshot() {
+    return {
+      skyTop: skyDome.material.uniforms.top.value.clone(), skyHorizon: skyDome.material.uniforms.horizon.value.clone(),
+      sun: sunLight.color.clone(), sunIntensity: sunLight.intensity,
+      hemiSky: hemiLight.color.clone(), hemiGround: hemiLight.groundColor.clone(), hemiIntensity: hemiLight.intensity,
+      ambient: ambientLight.color.clone(), ambientIntensity: ambientLight.intensity,
+      ground: groundMats.length ? groundMats[0].color.clone() : new THREE.Color(0x4d7a36),
+    };
+  }
+  function ofPreset(p) {
+    return {
+      skyTop: new THREE.Color(p.skyTop), skyHorizon: new THREE.Color(p.skyHorizon),
+      sun: new THREE.Color(p.sun), sunIntensity: p.sunIntensity,
+      hemiSky: new THREE.Color(p.hemiSky), hemiGround: new THREE.Color(p.hemiGround), hemiIntensity: p.hemiIntensity,
+      ambient: new THREE.Color(p.ambient), ambientIntensity: p.ambientIntensity,
+      ground: new THREE.Color(p.ground),
+    };
+  }
+  function applyMix(a, b, k) {
+    skyDome.material.uniforms.top.value.lerpColors(a.skyTop, b.skyTop, k);
+    skyDome.material.uniforms.horizon.value.lerpColors(a.skyHorizon, b.skyHorizon, k);
+    scene.background.copy(skyDome.material.uniforms.horizon.value);
+    scene.fog.color.copy(skyDome.material.uniforms.horizon.value);
+    sunLight.color.lerpColors(a.sun, b.sun, k);
+    sunLight.intensity = a.sunIntensity + (b.sunIntensity - a.sunIntensity) * k;
+    hemiLight.color.lerpColors(a.hemiSky, b.hemiSky, k);
+    hemiLight.groundColor.lerpColors(a.hemiGround, b.hemiGround, k);
+    hemiLight.intensity = a.hemiIntensity + (b.hemiIntensity - a.hemiIntensity) * k;
+    ambientLight.color.lerpColors(a.ambient, b.ambient, k);
+    ambientLight.intensity = a.ambientIntensity + (b.ambientIntensity - a.ambientIntensity) * k;
+    _c.lerpColors(a.ground, b.ground, k);
+    for (const m of groundMats) m.color.copy(_c);
+  }
+  function set(preset) { const p = ofPreset(preset); from = to = null; applyMix(p, p, 1); }
+  function transitionTo(preset, ms = 3000) { from = snapshot(); to = ofPreset(preset); t0 = performance.now(); dur = ms; }
+  function update() {
+    if (!to) return;
+    const k = Math.min(1, (performance.now() - t0) / dur);
+    applyMix(from, to, k * k * (3 - 2 * k));  // smoothstep
+    if (k >= 1) { from = to = null; }
+  }
+  function registerGround(mat) { groundMats.push(mat); }
+  return { set, transitionTo, update, registerGround };
+})();
 
 const rimLight = new THREE.DirectionalLight(0xf5a623, 0.35);
 rimLight.position.set(-20, 20, 30);
@@ -4294,11 +4363,14 @@ function pickNextWord() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// Momentos del día del bioma Eixample (A3). Cada 1000 m se pasa al
+// siguiente con una transición de 3 s (Ambience.transitionTo). `sky` es el
+// degradado de la cúpula (cenit → horizonte); la niebla toma el horizonte.
 const SCENARIOS = [
-  { name: 'Ciudad', buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878], ground: 0x2a3a2a, sky: 0x7a9ac0 },
-  { name: 'Afueras', buildingColor: [0xa0806a, 0x8a7060, 0xb89878, 0x8a8070], ground: 0x3a5a28, sky: 0x9abcd0 },
-  { name: 'Autopista', buildingColor: [0x4a5a6a, 0x6a7a8a, 0x3a4a5a, 0x5a6a7a], ground: 0x3a3a42, sky: 0x5a7a9a },
-  { name: 'Noche', buildingColor: [0x2a2830, 0x3a3842, 0x1a1822, 0x2a2a32], ground: 0x181a22, sky: 0x2a3250 },
+  { name: 'Migdia',     skyTop: 0x2f6fd0, skyHorizon: 0xcfe6f7, sun: 0xfff1d6, sunIntensity: 1.35, hemiSky: 0x9fc6ff, hemiGround: 0x8a7a5a, hemiIntensity: 0.75, ambient: 0x8fa0b8, ambientIntensity: 0.3, ground: 0x4d7a36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
+  { name: 'Capvespre',  skyTop: 0x4a3f8f, skyHorizon: 0xf4a55e, sun: 0xffb372, sunIntensity: 1.1,  hemiSky: 0xd9926f, hemiGround: 0x4a3a3a, hemiIntensity: 0.6,  ambient: 0x8a6a70, ambientIntensity: 0.3, ground: 0x5a6634, buildingColor: [0xa0806a, 0x8a7060, 0xb89878, 0x8a8070] },
+  { name: 'Nit',        skyTop: 0x0b1226, skyHorizon: 0x2a3250, sun: 0x8aa0d8, sunIntensity: 0.55, hemiSky: 0x4a5a8a, hemiGround: 0x1a1a22, hemiIntensity: 0.5,  ambient: 0x2a3040, ambientIntensity: 0.35, ground: 0x1e2a1e, buildingColor: [0x2a2830, 0x3a3842, 0x1a1822, 0x2a2a32] },
+  { name: 'Alba',       skyTop: 0x5a7fc8, skyHorizon: 0xf7c9a8, sun: 0xffd9b0, sunIntensity: 1.0,  hemiSky: 0xb9c8ea, hemiGround: 0x6a6050, hemiIntensity: 0.65, ambient: 0x8a8ea0, ambientIntensity: 0.3, ground: 0x486e36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
 ];
 
 // ========== WORD HUNT ==========
@@ -6639,6 +6711,9 @@ const groundLeft = new THREE.Mesh(
   new THREE.MeshLambertMaterial({ color: 0x2a3a2a })
 );
 const groundRight = groundLeft.clone();
+groundRight.material = groundLeft.material.clone();
+Ambience.registerGround(groundLeft.material);
+Ambience.registerGround(groundRight.material);
 
 function createSideGround() {
   groundLeft.rotation.x = -Math.PI / 2;
@@ -6827,22 +6902,8 @@ function changeScenario() {
   STATE.scenarioIndex++;
   const sc = SCENARIOS[STATE.scenarioIndex % SCENARIOS.length];
 
-  // Cambiar cielo con transición
-  const targetSky = new THREE.Color(sc.sky);
-  const startSky = scene.background.clone();
-  const duration = 2000;
-  const start = Date.now();
-  const transitionSky = () => {
-    const t = Math.min((Date.now() - start) / duration, 1);
-    scene.background.lerpColors(startSky, targetSky, t);
-    scene.fog.color.lerpColors(startSky, targetSky, t);
-    if (t < 1) requestAnimationFrame(transitionSky);
-  };
-  transitionSky();
-
-  // Cambiar ground
-  groundLeft.material.color.setHex(sc.ground);
-  groundRight.material.color.setHex(sc.ground);
+  // Cielo, sol, luces, niebla y suelo con transición de 3 s
+  Ambience.transitionTo(sc, 3000);
 
   // Cambiar edificios gradualmente (color por instancia; solo el fallback
   // procedural — los edificios GLB llevan tinte Eixample propio, ver A3)
@@ -9310,6 +9371,7 @@ function animate() {
   }
 
   LightPool.update();
+  Ambience.update();
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
@@ -9780,6 +9842,7 @@ function startGame() {
   STATE.curveDistance = 0;
   STATE.recordBroken = false;
   STATE.scenarioIndex = 0;
+  Ambience.transitionTo(SCENARIOS[0], 1200);  // de vuelta al mediodía
   // Reset de tracker caja sorpresa
   lastSurpriseBoxDistance = 0;
   // Ocultar todos los banners de modos especiales
@@ -9956,6 +10019,7 @@ backBtn.addEventListener('click', () => {
    ================================================================ */
 createRoad();
 createSideGround();
+Ambience.set(SCENARIOS[0]);  // Eixample de día
 // populateEnvironment() y generateTiles() se llaman tras la precarga de
 // assets (ver más abajo) para que edificios y monedas ya usen los GLB.
 
