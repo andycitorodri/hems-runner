@@ -3134,7 +3134,7 @@ const LightPool = (() => {
   const _v = new THREE.Vector3();
 
   function init() {
-    SIZE = { high: 8, medium: 6, low: 4 }[QUALITY_TIER] || 6;
+    SIZE = (IS_MOBILE ? { high: 6, medium: 4, low: 3 } : { high: 8, medium: 6, low: 4 })[QUALITY_TIER] || 6;
     for (let i = 0; i < SIZE; i++) {
       const l = new THREE.PointLight(0xffffff, 0, 10);
       l.userData = { pool: true, busy: false, owner: null, offset: new THREE.Vector3() };
@@ -3210,6 +3210,10 @@ const QUALITY_PRESETS = {
   medium: { pixelRatioCap: 1.5, antialias: true,  shadows: true  },
   high:   { pixelRatioCap: 2.0, antialias: true,  shadows: true  }
 };
+// Móvil: un iPhone Pro Max a ×2 son 1,6 Mpx con sombras suaves — se
+// saturaba (15 sept 2026). ×1,5 no se aprecia en 6,9" y son un 44 % menos
+// de píxeles; PCF normal en vez de PCFSoft (9 muestras → 1 por píxel).
+if (IS_MOBILE) QUALITY_PRESETS.high.pixelRatioCap = 1.5;
 
 let QUALITY_TIER = 'low';
 let QUALITY_TIER_REASON = '';
@@ -3324,7 +3328,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY_PRESETS[QUALITY_TIER].pixelRatioCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = QUALITY_PRESETS[QUALITY_TIER].shadows;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = IS_MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;  // móvil: PCF normal (ver QUALITY_PRESETS)
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -3424,6 +3428,17 @@ const Assets = (() => {
         (gltf) => {
           const tpl = gltf.scene;
           tpl.scale.setScalar(spec.scale || 1);
+          // PBR (MeshStandardMaterial, iluminación por píxel) → Lambert (por
+          // vértice): con las paletas planas de Kenney se ve igual y cuesta
+          // una fracción en móvil (9 luces × 1,6 Mpx). Es además el material
+          // del resto del juego.
+          tpl.traverse(c => {
+            if (c.isMesh && c.material && c.material.isMeshStandardMaterial) {
+              const m = c.material;
+              c.material = new THREE.MeshLambertMaterial({ map: m.map, color: m.color, side: m.side });
+              m.dispose();
+            }
+          });
           markShared(tpl);
           templates[key] = tpl;
           done++; if (onProgress) onProgress(done, total);
