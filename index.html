@@ -3115,6 +3115,80 @@ const t = I18N.t;
 
 // ========== SETUP THREE.JS ==========
 const scene = new THREE.Scene();
+
+/* ================================================================
+   LIGHT POOL (Fase 2 — A2, rendimiento)
+   En Three.js cada PointLight de la escena se evalúa en TODOS los píxeles
+   de todos los materiales, y cada cambio en el número de luces obliga a
+   recompilar todos los shaders (tirón de ~50 ms). Antes había ~29 luces
+   (farolas + pacientes + power-ups + efectos) con el recuento cambiando
+   sin parar. Ahora: un número FIJO de luces creadas al arrancar; los
+   objetos las piden con acquire(owner, …) y las devuelven solas cuando el
+   dueño sale de la escena (update() lo comprueba cada frame). Si el pool
+   se agota se devuelve una luz "dummy" fuera de la escena: el objeto
+   funciona igual, solo que no ilumina.
+   ================================================================ */
+const LightPool = (() => {
+  let SIZE = 6;  // se fija en init() según el tier (high 8 · medium 6 · low 4)
+  const lights = [];
+  const _v = new THREE.Vector3();
+
+  function init() {
+    SIZE = { high: 8, medium: 6, low: 4 }[QUALITY_TIER] || 6;
+    for (let i = 0; i < SIZE; i++) {
+      const l = new THREE.PointLight(0xffffff, 0, 10);
+      l.userData = { pool: true, busy: false, owner: null, offset: new THREE.Vector3() };
+      scene.add(l);
+      lights.push(l);
+    }
+  }
+
+  function sync(l) {
+    const o = l.userData.owner;
+    if (!o) return;
+    _v.copy(l.userData.offset).applyMatrix4(o.matrixWorld);
+    l.position.copy(_v);
+  }
+
+  // owner: Object3D al que sigue la luz (null = posición fija, la pone el caller)
+  function acquire(owner, color, intensity, distance, offset) {
+    let l = lights.find(x => !x.userData.busy);
+    if (!l) {
+      l = new THREE.PointLight(color, intensity, distance);  // dummy: no está en la escena
+      l.userData = { pool: false, dummy: true, offset: new THREE.Vector3() };
+      return l;
+    }
+    l.userData.busy = true;
+    l.userData.owner = owner || null;
+    l.userData.offset.set(offset?.x || 0, offset?.y || 0, offset?.z || 0);
+    l.color.setHex(color);
+    l.intensity = intensity;
+    l.distance = distance;
+    if (owner) { owner.updateMatrixWorld(true); sync(l); }
+    return l;
+  }
+
+  function release(l) {
+    if (!l || !l.userData.pool) return;
+    l.userData.busy = false;
+    l.userData.owner = null;
+    l.intensity = 0;
+  }
+
+  // Cada frame: seguir al dueño y auto-devolver si ya no está en la escena
+  function update() {
+    for (const l of lights) {
+      if (!l.userData.busy || !l.userData.owner) continue;
+      let p = l.userData.owner, inScene = false;
+      while (p) { if (p === scene) { inScene = true; break; } p = p.parent; }
+      if (!inScene) release(l); else sync(l);
+    }
+  }
+
+  function stats() { return { size: SIZE, busy: lights.filter(l => l.userData.busy).length }; }
+
+  return { init, acquire, release, update, stats, get size() { return SIZE; } };
+})();
 scene.background = new THREE.Color(0x1a2838);
 scene.fog = new THREE.Fog(0x1a2838, 45, 200);
 
@@ -3239,6 +3313,8 @@ try {
     qualityUserLocked = true;
   }
 } catch (_) {}
+
+LightPool.init();  // tras detectar el tier (tamaño del pool)
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-3d'),
@@ -4504,9 +4580,7 @@ function createSVAAura() {
     barGroup.userData.bulb = bulb;
 
     // Luz puntual azul parpadeante
-    const light = new THREE.PointLight(0x3b82f6, 2.5, 10);
-    light.position.y = 0.1;
-    barGroup.add(light);
+    const light = LightPool.acquire(barGroup, 0x3b82f6, 2.5, 10, { y: 0.1 });
     barGroup.userData.light = light;
     // Desfase inicial entre los dos rotativos (uno alterna con el otro)
     barGroup.userData.phase = i * Math.PI;
@@ -5677,9 +5751,7 @@ function makePatient() {
   group.userData.star = star;
 
   // Point light verde
-  const patientLight = new THREE.PointLight(0x4ade80, 1.5, 10);
-  patientLight.position.y = 1.5;
-  group.add(patientLight);
+  LightPool.acquire(group, 0x4ade80, 1.5, 10, { y: 1.5 });
 
   group.userData.kind = 'patient';
   group.userData.value = 100;
@@ -5778,9 +5850,7 @@ function makeLetter(char) {
   group.add(letterSprite);
 
   // Point light verde
-  const light = new THREE.PointLight(0x4ade80, 1.2, 6);
-  light.position.y = 1.2;
-  group.add(light);
+  LightPool.acquire(group, 0x4ade80, 1.2, 6, { y: 1.2 });
 
   group.userData.kind = 'letter';
   group.userData.char = char;
@@ -5826,9 +5896,7 @@ function makePowerUp(kind) {
   group.userData.iconMesh = iconMesh;
 
   // Luz
-  const light = new THREE.PointLight(color, 1.5, 10);
-  light.position.y = 1.2;
-  group.add(light);
+  LightPool.acquire(group, color, 1.5, 10, { y: 1.2 });
 
   group.userData.kind = 'powerup';
   group.userData.powerupKind = kind;
@@ -6189,9 +6257,7 @@ function makeSurpriseBox() {
   group.userData.halo = halo;
 
   // Luz muy potente
-  const light = new THREE.PointLight(0xffd54f, 3.0, 18);
-  light.position.y = BOX_Y;
-  group.add(light);
+  const light = LightPool.acquire(group, 0xffd54f, 3.0, 18, { y: BOX_Y });
   group.userData.light = light;
 
   // Billboard "SORPRESA" sobre la caja (sprite con canvas)
@@ -6371,11 +6437,7 @@ function populateEnvironment() {
     bulb.position.set(x - side * 1, 3.8, z);
     scene.add(bulb);
     sceneObjects.push({ mesh: bulb, type: 'light' });
-
-    const pl = new THREE.PointLight(0xffd070, 0.6, 10);
-    pl.position.set(x - side * 1, 3.8, z);
-    scene.add(pl);
-    sceneObjects.push({ mesh: pl, type: 'light' });
+    // Sin PointLight por farola (ver LightPool): la bombilla emisiva basta.
   }
 }
 
@@ -7175,9 +7237,7 @@ function applySurpriseBoxEffect(effect, position) {
       const lane = lanePattern[i];
       const zOffset = -14 - (i * 7);
       p.position.set(LANES[lane], 0, zOffset);
-      const emergencyLight = new THREE.PointLight(0xe63946, 2, 8);
-      emergencyLight.position.set(0, 3, 0);
-      p.add(emergencyLight);
+      const emergencyLight = LightPool.acquire(p, 0xe63946, 2, 8, { y: 3 });
       p.userData.emergencyLight = emergencyLight;
       p.userData.emergency = true;
       scene.add(p);
@@ -7340,9 +7400,8 @@ function flashScreen(colorHex, opacity, durationMs) {
 
 // Luz temporal en una posición 3D (que se desvanece sola)
 function addTemporaryLight(position, colorHex, intensity, durationMs) {
-  const light = new THREE.PointLight(colorHex, intensity, 25);
+  const light = LightPool.acquire(null, colorHex, intensity, 25);
   light.position.set(position.x, position.y, position.z);
-  scene.add(light);
   temporaryLights.push({
     light,
     createdAt: performance.now(),
@@ -7358,7 +7417,7 @@ function updateTemporaryLights() {
     const tl = temporaryLights[i];
     const elapsed = now - tl.createdAt;
     if (elapsed >= tl.duration) {
-      scene.remove(tl.light);
+      LightPool.release(tl.light);
       temporaryLights.splice(i, 1);
     } else {
       const t = 1 - (elapsed / tl.duration);
@@ -7417,9 +7476,7 @@ function createFeverTrail() {
   group.userData.tailFlames = tailFlames;
 
   // ========== LUZ NARANJA (intensidad reducida para no saturar) ==========
-  const light = new THREE.PointLight(0xff6b35, 4, 18);
-  light.position.set(0, 1.5, 2);  // posicionada detrás
-  group.add(light);
+  const light = LightPool.acquire(group, 0xff6b35, 4, 18, { y: 1.5, z: 2 });  // detrás
   group.userData.light = light;
 
   feverTrail = group;
@@ -7479,9 +7536,7 @@ function createMasteryAura() {
   group.userData.ring = ring;
 
   // Luz verde pulsante
-  const light = new THREE.PointLight(0x10b981, 3, 12);
-  light.position.set(0, 2, 0);
-  group.add(light);
+  const light = LightPool.acquire(group, 0x10b981, 3, 12, { y: 2 });
   group.userData.light = light;
 
   masteryAura = group;
@@ -7637,9 +7692,7 @@ function createRayoAura() {
   group.userData.sparks = sparks;
 
   // Luz amarilla intensa
-  const light = new THREE.PointLight(0xffe066, 4, 15);
-  light.position.y = 1.5;
-  group.add(light);
+  const light = LightPool.acquire(group, 0xffe066, 4, 15, { y: 1.5 });
   group.userData.light = light;
 
   rayoAura = group;
@@ -8794,6 +8847,7 @@ function animate() {
     }
   }
 
+  LightPool.update();
   CoinInstancer.sync(activeItems);
   renderer.render(scene, camera);
   Metrics.tick(dt);
@@ -9487,9 +9541,43 @@ const assetsReady = Assets.preload((done, total) => {
 });
 const minSplash = new Promise(resolve => setTimeout(resolve, 600));
 
+// Calentamiento del renderer: la primera vez que aparece cada tipo de objeto
+// Three.js compila su shader (y el de sombras) y sube su textura EN MITAD DEL
+// FRAME — medido: 7 → 27 programas en los primeros 500 m, ~50 ms de tirón por
+// compilación. Aquí se instancia una vez todo lo que puede aparecer en partida,
+// se renderiza un frame oculto bajo el overlay de carga y se retira.
+function warmUpRenderer() {
+  const t0 = performance.now();
+  const progs0 = renderer.info.programs.length;
+  const group = new THREE.Group();
+  const add = (fn, label) => { try { group.add(fn()); } catch (e) { console.warn('[warmup]', label, e); } };
+  for (const key of [...Assets.CAR_KEYS, ...Assets.TRUCK_KEYS]) add(() => Assets.clone(key), key);
+  add(makeBarrier, 'barrier'); add(makeScooter, 'scooter'); add(makeCone, 'cone');
+  add(makePatient, 'patient'); add(makeSurpriseBox, 'surprise'); add(() => makeLetter('A'), 'letter');
+  add(() => makePowerUp('magnet'), 'magnet'); add(() => makePowerUp('shield'), 'shield'); add(() => makePowerUp('x2'), 'x2');
+  // Partículas de recogida (PointsMaterial)
+  add(() => new THREE.Points(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([0, 1, 0], 3)),
+    new THREE.PointsMaterial({ color: 0xffd54f, size: 0.25, transparent: true })
+  ), 'points');
+  // Todo delante de la cámara y sin culling: que se dibuje sí o sí
+  group.position.set(0, 0, -8);
+  group.traverse(o => { o.frustumCulled = false; });
+  scene.add(group);
+  const heliWasVisible = helicopter.visible;
+  helicopter.visible = true;
+  renderer.render(scene, camera);
+  helicopter.visible = heliWasVisible;
+  scene.remove(group);
+  disposeObj(group);  // los clones de Assets se saltan (sharedAsset)
+  LightPool.update();  // devuelve las luces que pidieron los objetos de prueba
+  console.log(`[warmup] ${renderer.info.programs.length - progs0} programas nuevos (${renderer.info.programs.length} en total), ${(performance.now() - t0).toFixed(0)} ms`);
+}
+
 Promise.all([assetsReady, minSplash]).then(() => {
   refreshAmbulanceModel();
   generateTiles();
+  warmUpRenderer();
   loading.classList.add('hidden');
   ambulance.rotation.y = 0;
   ambulance.position.z = 0;
