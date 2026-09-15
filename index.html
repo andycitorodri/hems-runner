@@ -1095,6 +1095,57 @@
   }
 
   /* =============== OVERLAY PAUSA =============== */
+  /* Tutorial de la primera partida: zonas de toque dibujadas sobre el
+     juego congelado. Se muestra una sola vez (localStorage). */
+  .tutorial {
+    position: absolute; inset: 0; z-index: 60;
+    display: none;
+    background: rgba(10, 9, 8, 0.45);
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--bone);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+  }
+  .tutorial.active { display: block; }
+  .tutorial__zone {
+    position: absolute;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 12px; text-align: center;
+    border: 1px dashed rgba(245, 166, 35, 0.55);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.5;
+  }
+  .tutorial__zone--top    { top: 8px; left: 8px; right: 8px; height: calc(33% - 12px); justify-content: flex-end; padding-bottom: 14px; }  /* texto bajo el HUD */
+  .tutorial__zone--left   { top: calc(33% + 4px); left: 8px; width: calc(50% - 12px); bottom: 96px; }
+  .tutorial__zone--right  { top: calc(33% + 4px); right: 8px; width: calc(50% - 12px); bottom: 96px; }
+  .tutorial__zone--bottom { left: 8px; right: 8px; bottom: 8px; height: 80px; border-style: none; font-size: 10px; color: var(--bone-dim); }
+  .tutorial__icon { font-size: 34px; line-height: 1; }
+  .tutorial__go {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    padding: 12px 22px;
+    background: var(--amber); color: var(--black);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+    box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.6);
+    animation: tutorialPulse 1.4s ease-out infinite;
+    white-space: nowrap;
+  }
+  @keyframes tutorialPulse {
+    0% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.6); }
+    100% { box-shadow: 0 0 0 18px rgba(245, 166, 35, 0); }
+  }
+  /* Desktop: una sola tarjeta con las teclas */
+  .tutorial--keys .tutorial__zone { display: none; }
+  .tutorial__keys {
+    display: none;
+    position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%);
+    padding: 22px 30px;
+    background: rgba(10, 9, 8, 0.9);
+    border: 1px solid rgba(244, 239, 230, 0.15);
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    line-height: 2.2; text-align: center;
+  }
+  .tutorial--keys .tutorial__keys { display: block; }
+  .tutorial__keys b { color: var(--amber); font-weight: 600; }
+
   .pause-overlay {
     position: absolute;
     inset: 0;
@@ -1914,6 +1965,31 @@
   <button id="pause-btn" class="pause-btn" aria-label="Pausar">⏸</button>
 
   <!-- Overlay de pausa -->
+  <!-- Tutorial de la primera partida -->
+  <div id="tutorial" class="tutorial">
+    <div class="tutorial__zone tutorial__zone--top">
+      <span class="tutorial__icon">👆</span>
+      <span>Toca aquí<br>para saltar</span>
+    </div>
+    <div class="tutorial__zone tutorial__zone--left">
+      <span class="tutorial__icon">👈</span>
+      <span>Toca aquí<br>carril izquierdo</span>
+    </div>
+    <div class="tutorial__zone tutorial__zone--right">
+      <span class="tutorial__icon">👉</span>
+      <span>Toca aquí<br>carril derecho</span>
+    </div>
+    <div class="tutorial__zone tutorial__zone--bottom">
+      <span>Desliza ↓ para frenar · o usa los botones</span>
+    </div>
+    <div class="tutorial__keys">
+      <b>← →</b> cambiar carril<br>
+      <b>↑</b> saltar<br>
+      <b>↓</b> frenar
+    </div>
+    <div class="tutorial__go" id="tutorial-go">Toca para empezar</div>
+  </div>
+
   <div id="pause-overlay" class="pause-overlay">
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
@@ -8368,6 +8444,51 @@ function showOverlay(which) {
   if (which) which.classList.remove('hidden');
 }
 
+/* ================================================================
+   TUTORIAL DE LA PRIMERA PARTIDA
+   Congela el juego (STATE.running = false) y dibuja las zonas de toque
+   sobre la pantalla real hasta que el jugador toca o pulsa una tecla.
+   Solo la primera vez: flag en localStorage.
+   ================================================================ */
+const Tutorial = (() => {
+  const KEY = 'hems_runner_tutorial_seen';
+  const el = document.getElementById('tutorial');
+  let active = false;
+
+  function seen() { try { return localStorage.getItem(KEY) === '1'; } catch { return false; } }
+  function markSeen() { try { localStorage.setItem(KEY, '1'); } catch {} }
+
+  function maybeShow() {
+    if (seen()) return false;
+    active = true;
+    el.classList.toggle('tutorial--keys', !isMobile);
+    document.getElementById('tutorial-go').textContent = isMobile ? 'Toca para empezar' : 'Pulsa una tecla para empezar';
+    el.classList.add('active');
+    STATE.running = false;
+    document.addEventListener('keydown', dismiss, { once: true });
+    return true;
+  }
+
+  function dismiss(e) {
+    if (!active) return;
+    active = false;
+    if (e) e.preventDefault();
+    markSeen();
+    el.classList.remove('active');
+    document.removeEventListener('keydown', dismiss);
+    // El toque/tecla que cierra el tutorial no debe contar como jugada
+    INPUT.leftOnce = INPUT.rightOnce = INPUT.jumpOnce = INPUT.brakeOnce = INPUT.pauseOnce = false;
+    if (STATE.mode === 'playing') {
+      STATE.running = true;
+      clock.getDelta();  // evitar dt enorme tras la congelación
+    }
+  }
+
+  el.addEventListener('pointerdown', dismiss);
+
+  return { maybeShow, dismiss, isActive: () => active };
+})();
+
 function startGame() {
   // Limpiar
   for (const o of activeObstacles) { scene.remove(o.mesh); disposeObj(o.mesh); }
@@ -8482,6 +8603,8 @@ function startGame() {
   backBtn.classList.remove('hidden');
   if (isMobile) mobileCtrls.classList.add('active');
   updateHUD();
+
+  Tutorial.maybeShow();  // solo la primera partida
 }
 
 /* ================================================================
