@@ -1,6 +1,6 @@
 # HEMS Runner — Estado del proyecto
 
-**Última actualización**: 15 de septiembre de 2026
+**Última actualización**: 15 de septiembre de 2026 (tarde)
 **Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (AssetManager, moneda instanciada y ambulancia Kenney desplegadas; controles táctiles por zonas y tutorial de primera partida); R0 cerrado
 **Archivos de producción**: `index.html` (~8.900 líneas) + `assets/models/<kit>/` (GLB con textura embebida + License.txt)
 
@@ -215,6 +215,32 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - Coches de tráfico: `~/Downloads/kenney_car-kit.zip` ya descargado (sedan, suv, taxi, police, van, truck…); sustituir `makeCar()`/`makeTruck()` con el mismo patrón. Cono/valla/contenedor (`Q-Streets`, verificar que existen; el Car Kit trae `cone.glb` y `box.glb` como alternativa CC0 sin Blender).
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
+
+---
+
+## Idiomas (15 septiembre 2026)
+
+**Català por defecto, castellano seleccionable** (commit `b380617`). Selector `CAT · ESP` en la cabecera del menú; la elección se guarda en `localStorage` (`hems_runner_lang`).
+
+### Cómo funciona
+
+- `I18N_STRINGS` (principio del script de `index.html`): dos diccionarios planos `es` y `ca` con las **mismas claves** (~300), agrupadas por prefijo: `menu.*`, `hud.*`, `banner.*`, `toast.*`, `mission.<id>`, `codigo.<ID>.*`, `death.<tipo>.<n>`, `rank.*`, `milestone.*`, `item.*`, `gameover.*`, `lb.*`, `pause.*`, `tutorial.*`.
+- `t(clave, {vars})` devuelve el texto en el idioma activo con interpolación `{var}`; si falta la clave en `ca` cae a `es` y avisa por consola (`[i18n] falta la clave`).
+- **HTML estático**: atributos `data-i18n` (textContent), `data-i18n-html` (innerHTML, para títulos con `<em>`) y `data-i18n-placeholder`. `I18N.apply()` los repinta y llama a los listeners registrados con `I18N.onChange()` (misiones del menú, HUD, pistas táctiles, índice de palabras).
+- **Estructuras de datos** (`MISSION_POOL`, `CODIGOS`, `TRAUMA_ITEMS`, `SPEED_MILESTONES`, rangos): *getters* que llaman a `t()`; el código que las consume no sabe de idiomas.
+- **Palabras del día por idioma**: `CODIGOS[id].words` viene del diccionario. Solo cambia SÈPSIA (`SEPSIA, LACTAT, QSOFA, XOC, NORA, FOCUS`); el resto son acrónimos comunes. `WORD_TO_CODIGO` se reconstruye al cambiar de idioma.
+- El cambio de idioma solo está en el menú; el contenido generado durante la partida (toasts, banners) usa `t()` en el momento de generarse.
+
+### Cómo añadir un texto nuevo
+
+1. Añadir la clave en **los dos** diccionarios de `I18N_STRINGS`.
+2. En HTML: `<span data-i18n="mi.clave">texto en castellano</span>` (el texto inicial es solo el fallback antes de `apply()`).
+3. En JS: `t('mi.clave')` o `t('mi.clave', { n: 3 })`.
+4. Comprobar en consola que no aparece `[i18n] falta la clave`.
+
+### Pendiente de decidir
+
+- La fecha de la jornada aparece en `menu.fomo` y `lb.subtitle` (14 · 10 · 2026); la web `jornadaimpacte.com` dice 27 de octubre. Confirmar con el usuario y actualizar en los dos idiomas.
 
 ---
 
