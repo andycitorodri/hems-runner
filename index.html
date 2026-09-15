@@ -6096,8 +6096,9 @@ function makeHelicopterFromGltf() {
   const body = Assets.clone('helicopter');
   group.add(body);
   // Colores por color original (los nombres de material se pierden al
-  // optimizar): amarillo apagado → amarillo SEM; rojo oscuro → rojo del juego.
-  const RECOLOR = { 'aa8b0d': 0xf5b431, '6a0101': 0xe63946 };
+  // optimizar). El rojo oscuro es el fuselaje y la cola → amarillo SEM;
+  // el ocre es un detalle pequeño → rojo del juego. La cabina gris se queda.
+  const RECOLOR = { '6a0101': 0xf5b431, 'aa8b0d': 0xe63946 };
   const recolor = m => {
     const to = RECOLOR[m.color.getHexString()];
     if (to === undefined) return m;
