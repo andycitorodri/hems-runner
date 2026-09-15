@@ -12,3 +12,5 @@ LICENSE
 Claude outputs
 *.zip
 .DS_Store
+
+SUBIR.command
