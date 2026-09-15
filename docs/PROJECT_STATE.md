@@ -168,7 +168,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ## Fase 2 · Sub-bloque A2 — infraestructura de assets (15 septiembre 2026)
 
-**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada; moneda, ambulancia y tráfico (8 vehículos) integrados y desplegados (Version `d9c3f80d`); pendiente el resto del catálogo (`A2_ASSETS.md`).
+**Estado**: 🔧 En curso en rama `phase-2-a2`. Integrados y desplegados: moneda, ambulancia, 8 vehículos de tráfico, cono, valla, patinete, helicóptero (Version `2cd3c0b4`). Pendiente: caja sorpresa y paciente (`A2_ASSETS.md`).
 
 ### Commits de A2 (cronológico)
 
@@ -187,11 +187,12 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `15c5421`…`bc7c3af` | Rendimiento: LightPool, warm-up, Lambert, perf-mobile, DynamicRes |
 | `9352565` | Cono Kenney con `createInstancer` genérico + señales como sprites compartidos |
 | `ec819bd` | Valla Quaternius (Poly Pizza, CC0) instanciada + `tools/preview-glb.html` |
+| `cdff56a` | Patinete (jeremy) y helicóptero (Poly by Google), CC-BY, vía Poly Pizza |
 
 ### Cómo añadir un modelo nuevo
 
 1. `tools/optimize-glb.sh original.glb assets/models/<kit>/nombre.glb` (embebe la textura; ver pipeline en `A2_ASSETS.md`). Un directorio por kit con su `License.txt`.
-2. Añadir una entrada al `MANIFEST` de `Assets` en `index.html`: `{ url, scale, credit: { what, author, url, license } }`.
+2. Añadir una entrada al `MANIFEST` de `Assets` en `index.html`: `{ url, scale, ground|center|offset, credit: { what: 'credit.<clave i18n>', author, url, license } }` (añadir la clave `credit.*` en los dos idiomas).
 3. En la factoría del objeto (`makeX()`), pedir `Assets.clone(key)` y mantener el fallback procedural en el `else`.
 4. Si el objeto aparece muchas veces (vallas, contenedores…), usar `createInstancer(buildLayers, ready, MAX)` como `ConeInstancer`: Group ligero para transform + capas `InstancedMesh` sincronizadas antes de `renderer.render()`. Los carteles/señales van con `SharedSprites.make()` (una textura para todos).
 5. `npx wrangler@4 deploy` (o `SUBIR.command`).
@@ -234,7 +235,8 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 
 ### Pendiente en A2
 
-- Patinete (obstáculo `scooter`, sin candidato aún — buscar en Poly Pizza "scooter" CC0).
+- Caja sorpresa (`makeSurpriseBox`, `Q-PlatU` candidato) y paciente (sin candidato: buscar "stretcher"/"patient" en Poly Pizza).
+- Helicóptero: cruz roja / logo SEM como decal (opcional).
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 

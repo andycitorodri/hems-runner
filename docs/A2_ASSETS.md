@@ -4,7 +4,7 @@
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
 **Última actualización**: 2026-09-15
-**Cobertura**: 20/25 candidatos; **8 integrados** (moneda, ambulancia, 4 coches civiles, cono, valla) + 2 camiones de tráfico. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
+**Cobertura**: **10 integrados** (moneda, ambulancia, 4 coches civiles, cono, valla, patinete, helicóptero) + 2 camiones de tráfico. Pendientes del genérico: caja sorpresa (6) y paciente (5). Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -135,7 +135,7 @@ Estados:
 |---|---|---|---|---|---|---|
 | 1 | Moneda/medalla | GENÉRICO_JUEGO | **`K-Plat`** (elegido) | CC0 | **INTEGRADO** | `assets/models/kenney-platformer-kit/coin-gold.glb` (17 KB). InstancedMesh (`CoinInstancer`): 2 draw calls para todas. |
 | 2 | Cono de tráfico | GENÉRICO_JUEGO | **`K-Cars`** (`cone.glb`) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/cone.glb` (24 KB, 172 tris, escala 1.5). `ConeInstancer` (instanciador genérico `createInstancer`): cuerpo + aura, 2 draw calls para todos. Señales como sprites compartidos. |
-| 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | `PP-Heli-J` (1ª), `PP-Heli-G` (2ª) | CC-BY 3.0 / CC-BY 3.0 | CANDIDATO | Sin cruz roja en el modelo — añadir decal/textura emisiva en integración. Atribución obligatoria. |
+| 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | **`PP-Heli-G`** (Poly by Google) | CC-BY 3.0 | **INTEGRADO** | `assets/models/polypizza/helicopter.glb` (52 KB, 1.041 tris, escala 0.0095, `center`). Recolor amarillo SEM + cola roja; rotores agrupados en pivotes. Atribución en créditos del menú. Sin cruz roja aún. |
 | 4 | Ambulancia low-poly | GENÉRICO_JUEGO | **`K-Cars`** (elegido; `Q-PT` descartado, requería Blender) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/ambulance.glb` (85 KB, 2.8k tris, ruedas y puertas como nodos). Carrocería recoloreada a amarillo SEM vía paleta (`tools/png_swatch.py`). |
 | 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
 | 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | `Q-PlatU` (1ª) | CC0 | CANDIDATO | "Powerups" del pack es el candidato; verificar variante con lazo o aplicar textura. |
@@ -143,6 +143,7 @@ Estados:
 | 8 | Coche civil 2 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `suv.glb`, `taxi.glb`. |
 | 9 | Coche civil 3 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `van.glb`, `hatchback-sports.glb`. |
 | 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `sedan-sports.glb`. Camiones (`makeTruck()`): `delivery.glb` y `garbage-truck.glb` a escala 1.3 (`truck.glb` de Kenney es una pickup). |
+| 10b | Patinete (obstáculo `scooter`) | GENÉRICO_JUEGO | **Poly Pizza — jeremy** | CC-BY 3.0 | **INTEGRADO** | `assets/models/polypizza/scooter.glb` (28 KB, 728 tris, escala 0.083, `ground`). `ScooterInstancer` (aura + 3 mallas). Atribución en créditos. https://poly.pizza/m/aQ_Us04oiz1 |
 | 11 | Valla urbana | GENÉRICO_JUEGO | **Quaternius vía Poly Pizza** | CC0 | **INTEGRADO** | `assets/models/quaternius/traffic-barrier.glb` (20 KB, 364 tris, escala 1.3 → 2.0 × 1.04 m). Fuente: https://poly.pizza/m/cM3aJPU9NS. `BarrierInstancer` (cuerpo + luz parpadeante). |
 | 12 | Contenedor basura | GENÉRICO_JUEGO | — | — | DESCARTADO | No existe como obstáculo en el juego (los obstáculos son coche, camión, valla, patinete y cono). |
 | 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | Sketchfab — wareFLO | CC-BY | CANDIDATO | URL: https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — 42.7k tris, 21.2k verts. HERO landmark Eixample. Low-poly monocromo limpio, torres bien diferenciadas, encaja con Quaternius/Kenney. Colores vía materiales Three.js. **Atribución obligatoria.** |
