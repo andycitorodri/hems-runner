@@ -2604,8 +2604,12 @@ const Assets = (() => {
   // credit se muestra en el menú (obligatorio para CC-BY; ver docs/A2_ASSETS.md).
   const MANIFEST = {
     coin: {
-      url: 'assets/models/coin-gold.glb', scale: 1.5,
+      url: 'assets/models/kenney-platformer-kit/coin-gold.glb', scale: 1.5,
       credit: { what: 'Moneda', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
+    },
+    ambulance: {
+      url: 'assets/models/kenney-car-kit/ambulance.glb', scale: 1.1,
+      credit: { what: 'Ambulancia', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
     }
   };
   // Si la red tarda más que esto, arrancamos igualmente con fallbacks;
@@ -4381,95 +4385,119 @@ const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
    ================================================================ */
 function makeAmbulance() {
   const group = new THREE.Group();
-  const yellowMat = new THREE.MeshLambertMaterial({ color: 0xf5a623 });
   const darkYellowMat = new THREE.MeshLambertMaterial({ color: 0xc77d0a });
-  const glassMat = new THREE.MeshLambertMaterial({ color: 0x1a2a3a });
-  const tireMat = new THREE.MeshLambertMaterial({ color: 0x0a0a0a });
-  const whiteMat = new THREE.MeshLambertMaterial({ color: 0xf4efe6 });
-  const redMat = new THREE.MeshLambertMaterial({ color: 0xe63946 });
+  let wheels = [];
+  let roofY = 2.2;  // altura donde va la barra de sirenas
 
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.5), yellowMat);
-  cabin.position.set(0, 1.0, 0.9);
-  cabin.castShadow = true;
-  group.add(cabin);
+  const gltf = Assets.clone('ambulance');
+  if (gltf) {
+    // Ambulancia Kenney (A2). El modelo mira a +z; el juego avanza hacia -z,
+    // así que se gira para que el morro vaya delante y las puertas traseras
+    // queden hacia la cámara.
+    gltf.rotation.y = Math.PI;
+    gltf.traverse(c => {
+      if (c.isMesh) c.castShadow = true;
+      if (c.name && c.name.startsWith('wheel')) wheels.push(c);
+    });
+    group.add(gltf);
+    roofY = new THREE.Box3().setFromObject(gltf).max.y;
+  } else {
+    // Fallback procedural (modelo no disponible).
+    const yellowMat = new THREE.MeshLambertMaterial({ color: 0xf5a623 });
+    const glassMat = new THREE.MeshLambertMaterial({ color: 0x1a2a3a });
+    const tireMat = new THREE.MeshLambertMaterial({ color: 0x0a0a0a });
+    const whiteMat = new THREE.MeshLambertMaterial({ color: 0xf4efe6 });
+    const redMat = new THREE.MeshLambertMaterial({ color: 0xe63946 });
 
-  const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.7, 0.15), glassMat);
-  windshield.position.set(0, 1.5, 1.6);
-  windshield.rotation.x = -0.3;
-  group.add(windshield);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.5), yellowMat);
+    cabin.position.set(0, 1.0, 0.9);
+    cabin.castShadow = true;
+    group.add(cabin);
 
-  const box = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.7, 2.2), yellowMat);
-  box.position.set(0, 1.25, -0.6);
-  box.castShadow = true;
-  group.add(box);
-  group.userData.bodyMesh = box;
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.7, 0.15), glassMat);
+    windshield.position.set(0, 1.5, 1.6);
+    windshield.rotation.x = -0.3;
+    group.add(windshield);
 
-  for (let i = 0; i < 6; i++) {
-    const checker = new THREE.Mesh(
-      new THREE.BoxGeometry(0.02, 0.25, 0.32),
-      i % 2 === 0 ? redMat : whiteMat
-    );
-    checker.position.set(0.86, 0.7, -1.4 + i * 0.34);
-    group.add(checker);
-    const checkerR = checker.clone();
-    checkerR.position.x = -0.86;
-    group.add(checkerR);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.7, 2.2), yellowMat);
+    box.position.set(0, 1.25, -0.6);
+    box.castShadow = true;
+    group.add(box);
+
+    for (let i = 0; i < 6; i++) {
+      const checker = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, 0.25, 0.32),
+        i % 2 === 0 ? redMat : whiteMat
+      );
+      checker.position.set(0.86, 0.7, -1.4 + i * 0.34);
+      group.add(checker);
+      const checkerR = checker.clone();
+      checkerR.position.x = -0.86;
+      group.add(checkerR);
+    }
+
+    const rearWindow = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.5, 0.05), glassMat);
+    rearWindow.position.set(0, 1.6, -1.72);
+    group.add(rearWindow);
+
+    const sideWinR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 1.3), glassMat);
+    sideWinR.position.set(0.86, 1.6, -0.6);
+    group.add(sideWinR);
+    const sideWinL = sideWinR.clone();
+    sideWinL.position.x = -0.86;
+    group.add(sideWinL);
+
+    const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.05), whiteMat);
+    crossV.position.set(0, 1.5, -1.72);
+    group.add(crossV);
+    const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.05), whiteMat);
+    crossH.position.set(0, 1.5, -1.72);
+    group.add(crossH);
+
+    const headGeom = new THREE.SphereGeometry(0.2, 8, 8);
+    const headMat = new THREE.MeshBasicMaterial({ color: 0xfff5c0 });
+    const hL = new THREE.Mesh(headGeom, headMat);
+    hL.position.set(-0.6, 0.9, 1.66);
+    group.add(hL);
+    const hR = new THREE.Mesh(headGeom, headMat);
+    hR.position.set(0.6, 0.9, 1.66);
+    group.add(hR);
+
+    const wheelGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.25, 10);
+    wheelGeom.rotateZ(Math.PI / 2);
+    [[-0.85, 0.38, 1.2],[0.85, 0.38, 1.2],[-0.85, 0.38, -1.3],[0.85, 0.38, -1.3]].forEach(p => {
+      const w = new THREE.Mesh(wheelGeom, tireMat);
+      w.position.set(...p); w.castShadow = true;
+      group.add(w); wheels.push(w);
+    });
+  }
+  group.userData.wheels = wheels;
+
+  // Sirenas parpadeantes (animate()). El GLB ya trae su barra de luces en
+  // el techo: las luces se apoyan sobre ella, sin base propia. El fallback
+  // procedural lleva base y luces más grandes, como siempre.
+  const sirenW = gltf ? 0.28 : 0.5, sirenH = gltf ? 0.12 : 0.18, sirenD = gltf ? 0.22 : 0.35;
+  const sirenY = gltf ? roofY + sirenH / 2 - 0.03 : roofY + 0.15;
+  const sirenZ = gltf ? -0.2 : -0.5;  // GLB: borde delantero del techo del cajón, donde va su barra de luces
+  if (!gltf) {
+    const sirenBase = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 0.4), darkYellowMat);
+    sirenBase.position.set(0, roofY + 0.05, sirenZ);
+    group.add(sirenBase);
   }
 
-  const rearWindow = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.5, 0.05), glassMat);
-  rearWindow.position.set(0, 1.6, -1.72);
-  group.add(rearWindow);
-
-  const sideWinR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 1.3), glassMat);
-  sideWinR.position.set(0.86, 1.6, -0.6);
-  group.add(sideWinR);
-  const sideWinL = sideWinR.clone();
-  sideWinL.position.x = -0.86;
-  group.add(sideWinL);
-
-  const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.05), whiteMat);
-  crossV.position.set(0, 1.5, -1.72);
-  group.add(crossV);
-  const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.05), whiteMat);
-  crossH.position.set(0, 1.5, -1.72);
-  group.add(crossH);
-
-  const sirenBase = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 0.4), darkYellowMat);
-  sirenBase.position.set(0, 2.2, -0.5);
-  group.add(sirenBase);
-
-  const blueSiren = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.35), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
-  blueSiren.position.set(-0.35, 2.3, -0.5);
+  const blueSiren = new THREE.Mesh(new THREE.BoxGeometry(sirenW, sirenH, sirenD), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
+  blueSiren.position.set(-0.3, sirenY, sirenZ);
   group.add(blueSiren);
   group.userData.blueSiren = blueSiren;
 
-  const redSiren = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.35), new THREE.MeshBasicMaterial({ color: 0xe63946 }));
-  redSiren.position.set(0.35, 2.3, -0.5);
+  const redSiren = new THREE.Mesh(new THREE.BoxGeometry(sirenW, sirenH, sirenD), new THREE.MeshBasicMaterial({ color: 0xe63946 }));
+  redSiren.position.set(0.3, sirenY, sirenZ);
   group.add(redSiren);
   group.userData.redSiren = redSiren;
-
-  const headGeom = new THREE.SphereGeometry(0.2, 8, 8);
-  const headMat = new THREE.MeshBasicMaterial({ color: 0xfff5c0 });
-  const hL = new THREE.Mesh(headGeom, headMat);
-  hL.position.set(-0.6, 0.9, 1.66);
-  group.add(hL);
-  const hR = new THREE.Mesh(headGeom, headMat);
-  hR.position.set(0.6, 0.9, 1.66);
-  group.add(hR);
 
   const headLight = new THREE.PointLight(0xfff0c0, 1, 20);
   headLight.position.set(0, 1, 3);
   group.add(headLight);
-
-  const wheelGeom = new THREE.CylinderGeometry(0.38, 0.38, 0.25, 10);
-  wheelGeom.rotateZ(Math.PI / 2);
-  const wheels = [];
-  [[-0.85, 0.38, 1.2],[0.85, 0.38, 1.2],[-0.85, 0.38, -1.3],[0.85, 0.38, -1.3]].forEach(p => {
-    const w = new THREE.Mesh(wheelGeom, tireMat);
-    w.position.set(...p); w.castShadow = true;
-    group.add(w); wheels.push(w);
-  });
-  group.userData.wheels = wheels;
 
   // Aura de invencibilidad (oculta por defecto)
   const invGeom = new THREE.SphereGeometry(2.5, 16, 12);
@@ -6035,6 +6063,22 @@ function disposeObj(obj) {
    JUGADOR Y CONTROLES
    ================================================================ */
 const ambulance = makeAmbulance();
+
+// Se construye al cargar el script (antes de la precarga de assets, con el
+// fallback procedural). Cuando el GLB está listo se sustituye el CONTENIDO
+// del Group, no el objeto: `ambulance` es una referencia usada en todo el
+// código (cámara, colisiones, efectos).
+function refreshAmbulanceModel() {
+  if (!Assets.has('ambulance')) return;
+  const fresh = makeAmbulance();
+  while (ambulance.children.length) {
+    const c = ambulance.children[0];
+    ambulance.remove(c);
+    disposeObj(c);
+  }
+  for (const c of [...fresh.children]) ambulance.add(c);
+  ambulance.userData = fresh.userData;
+}
 ambulance.position.set(0, 0, 0);
 scene.add(ambulance);
 
@@ -8784,6 +8828,7 @@ const assetsReady = Assets.preload((done, total) => {
 const minSplash = new Promise(resolve => setTimeout(resolve, 600));
 
 Promise.all([assetsReady, minSplash]).then(() => {
+  refreshAmbulanceModel();
   generateTiles();
   loading.classList.add('hidden');
   ambulance.rotation.y = 0;
