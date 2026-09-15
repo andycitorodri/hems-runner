@@ -187,7 +187,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `15c5421`…`bc7c3af` | Rendimiento: LightPool, warm-up, Lambert, perf-mobile, DynamicRes |
 | `9352565` | Cono Kenney con `createInstancer` genérico + señales como sprites compartidos |
 | `ec819bd` | Valla Quaternius (Poly Pizza, CC0) instanciada + `tools/preview-glb.html` |
-| `cdff56a` | Patinete (jeremy) y helicóptero (Poly by Google), CC-BY, vía Poly Pizza |
+| `cdff56a` / `15e87d7` | Patinete (jeremy, CC-BY) y helicóptero (kazuma, CC0) vía Poly Pizza |
 
 ### Cómo añadir un modelo nuevo
 
@@ -208,6 +208,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - **Sirenas**: el modelo trae su barra de luces (textura estática); nuestras dos cajas parpadeantes (`blueSiren`/`redSiren`, animadas en `animate()`) se apoyan sobre ella, más pequeñas que en el procedural. Las ruedas son los nodos `wheel-*` del GLB, giran igual que antes.
 - **Amarillo SEM por paleta, no por tinte**: `material.color` multiplicaría toda la textura (cristales y barra azul incluidos). Se copia la muestra amarilla del kit sobre la blanca en el colormap de la ambulancia (`tools/png_swatch.py`); el resto de vehículos del Car Kit usarán la paleta original.
 - **Quantización sin decoders**: `KHR_mesh_quantization` lo soporta el `GLTFLoader` de r128; Draco/meshopt habrían obligado a cargar decoders. Ojo: con atributos normalizados, `Box3.setFromObject` funciona pero leer `attributes.position` a mano exige dividir por 32767.
+- **Modelo nuevo, nombre de archivo nuevo**: navegadores y CDN cachean por URL; al sustituir `helicopter.glb` por otro modelo con el mismo nombre el navegador siguió sirviendo el viejo. Renombrar (`helicopter-kazuma.glb`) en vez de sobrescribir.
 - **Créditos desde el manifest**: `Assets.credits()` agrupa por autor y el menú los pinta bajo los botones. CC0 no lo exige; los CC-BY del catálogo (helicópteros Poly Pizza, Sagrada Família wareFLO) sí.
 
 ### Medido en local (Mac M3, Firefox, ~25-40 monedas en pantalla)
