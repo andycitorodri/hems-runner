@@ -2479,6 +2479,7 @@ const I18N_STRINGS = {
     'credit.coin': 'Moneda',
     'credit.ambulance': 'Ambulancia',
     'credit.traffic': 'Tráfico',
+    'credit.buildings': 'Edificios',
     'credit.barrier': 'Valla',
     'credit.scooter': 'Patinete',
     'credit.helicopter': 'Helicóptero',
@@ -2796,6 +2797,7 @@ const I18N_STRINGS = {
     'credit.coin': 'Moneda',
     'credit.ambulance': 'Ambulància',
     'credit.traffic': 'Trànsit',
+    'credit.buildings': 'Edificis',
     'credit.barrier': 'Tanca',
     'credit.scooter': 'Patinet',
     'credit.helicopter': 'Helicòpter',
@@ -3436,6 +3438,14 @@ const Assets = (() => {
     url: 'assets/models/polypizza/helicopter-google.glb', scale: 0.0095, center: true,
     credit: { what: 'credit.helicopter', author: 'Poly by Google', url: 'https://poly.pizza/m/cTzINMr0WdS', license: 'CC-BY 3.0' }
   };
+  // Edificios (Kenney City Kit Commercial, CC0): capas instanciadas de Props
+  for (const v of ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'k']) {
+    MANIFEST['bld_' + v] = {
+      url: `assets/models/kenney-city-kit/building-${v}.glb`, scale: 6, ground: true,
+      credit: { what: 'credit.buildings', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
+    };
+  }
+  const BUILDING_KEYS = ['bld_a', 'bld_b', 'bld_c', 'bld_d', 'bld_f', 'bld_g', 'bld_h', 'bld_k'];
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
     credit: { what: 'credit.barrier', author: 'Quaternius', url: 'https://quaternius.com', license: 'CC0' }
@@ -3554,7 +3564,7 @@ const Assets = (() => {
   // Clave aleatoria de una lista (para variantes de tráfico)
   function pick(keys) { return keys[Math.floor(Math.random() * keys.length)]; }
 
-  return { preload, has, get, clone, credits, pick, CAR_KEYS, TRUCK_KEYS };
+  return { preload, has, get, clone, credits, pick, CAR_KEYS, TRUCK_KEYS, BUILDING_KEYS };
 })();
 
 // ========== CONSTANTES ==========
@@ -6664,6 +6674,20 @@ const Props = (() => {
   };
   const MAX = 256;
   const layers = {};
+
+  // Capa a partir de un template GLB de una sola malla (Assets): geometría y
+  // material compartidos, matriz local del template (escala + apoyo en el
+  // suelo), color por instancia como tinte sobre la textura.
+  function defineGltfLayer(name, key, opts) {
+    const tpl = Assets.get(key);
+    tpl.updateMatrixWorld(true);
+    const mesh = tpl.getObjectByProperty('isMesh', true);
+    LAYER_DEFS[name] = {
+      geometry: () => mesh.geometry, material: () => mesh.material, shared: true,
+      local: mesh.matrixWorld.clone(), shadow: true, receive: true, perColor: true,
+      recycle: opts.recycle
+    };
+  }
   const _pos = new THREE.Vector3(), _quat = new THREE.Quaternion(), _scale = new THREE.Vector3(), _m = new THREE.Matrix4(), _c = new THREE.Color();
 
   function layer(name) {
@@ -6696,7 +6720,9 @@ const Props = (() => {
     _pos.set(it.x, it.y, it.z);
     _quat.setFromAxisAngle(_yAxis, it.ry);
     _scale.set(it.sx, it.sy, it.sz);
-    L.mesh.setMatrixAt(i, _m.compose(_pos, _quat, _scale));
+    _m.compose(_pos, _quat, _scale);
+    if (L.def.local) _m.multiply(L.def.local);
+    L.mesh.setMatrixAt(i, _m);
   }
   const _yAxis = new THREE.Vector3(0, 1, 0);
 
@@ -6726,14 +6752,31 @@ const Props = (() => {
 
   function count(name) { return layers[name] ? layers[name].items.length : 0; }
 
-  return { add, update, setColor, count, layer };
+  return { add, update, setColor, count, layer, defineGltfLayer };
 })();
+
+// Tintes cálidos "Eixample" para los edificios GLB (multiplican la textura)
+const EIXAMPLE_TINTS = [0xf5e6c8, 0xe9d2a8, 0xf2d9b1, 0xd9b98a, 0xefe0cc, 0xe4c9a0];
 
 function populateEnvironment() {
   const sc = SCENARIOS[STATE.scenarioIndex % SCENARIOS.length];
+  const gltfBuildings = Assets.BUILDING_KEYS.filter(k => Assets.has(k));
 
-  // Edificios (caja unitaria escalada + tejado + ventanas)
-  for (let i = 0; i < 50; i++) {
+  if (gltfBuildings.length) {
+    // Edificios Kenney (A3): una capa instanciada por variante, fachada
+    // (+z del modelo) orientada hacia la calle, tinte cálido por instancia.
+    for (const k of gltfBuildings) Props.defineGltfLayer(k, k, { recycle: { limit: 20, span: 400 } });
+    for (let i = 0; i < 50; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const z = -i * 8 - 5;
+      const x = side * (LANE_WIDTH * 1.5 + 6 + Math.random() * 4);
+      const k = gltfBuildings[Math.floor(Math.random() * gltfBuildings.length)];
+      Props.add(k, { x, y: 0, z, ry: side < 0 ? Math.PI / 2 : -Math.PI / 2, color: EIXAMPLE_TINTS[Math.floor(Math.random() * EIXAMPLE_TINTS.length)] });
+    }
+  }
+
+  // Edificios procedurales (fallback sin GLB: caja escalada + tejado + ventanas)
+  for (let i = 0; i < (gltfBuildings.length ? 0 : 50); i++) {
     const side = i % 2 === 0 ? -1 : 1;
     const z = -i * 8 - 5;
     const h = 4 + Math.random() * 8;
@@ -6801,7 +6844,8 @@ function changeScenario() {
   groundLeft.material.color.setHex(sc.ground);
   groundRight.material.color.setHex(sc.ground);
 
-  // Cambiar edificios gradualmente (color por instancia)
+  // Cambiar edificios gradualmente (color por instancia; solo el fallback
+  // procedural — los edificios GLB llevan tinte Eixample propio, ver A3)
   const nBuildings = Props.count('building');
   for (let i = 0; i < nBuildings; i++) {
     setTimeout(() => {
@@ -9912,9 +9956,8 @@ backBtn.addEventListener('click', () => {
    ================================================================ */
 createRoad();
 createSideGround();
-populateEnvironment();
-// generateTiles() se llama tras la precarga de assets (ver más abajo) para
-// que las monedas del fondo del menú ya usen los modelos GLB.
+// populateEnvironment() y generateTiles() se llaman tras la precarga de
+// assets (ver más abajo) para que edificios y monedas ya usen los GLB.
 
 // Render inicial del panel de misiones en el menú
 renderMenuMissions();
@@ -10038,6 +10081,7 @@ function warmUpRenderer() {
 Promise.all([assetsReady, minSplash]).then(() => {
   refreshAmbulanceModel();
   refreshHelicopterModel();
+  populateEnvironment();
   generateTiles();
   warmUpRenderer();
   loading.classList.add('hidden');
