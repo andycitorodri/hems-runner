@@ -1,7 +1,7 @@
 # HEMS Runner — Estado del proyecto
 
 **Última actualización**: 15 de septiembre de 2026
-**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (spike GLTFLoader + moneda Kenney desplegado); R0 (deploy multi-archivo) cerrado
+**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (AssetManager + moneda Kenney instanciada, desplegado); R0 (deploy multi-archivo) cerrado
 **Archivos de producción**: `index.html` (~8.400 líneas) + `assets/models/` (GLB, texturas, licencias)
 
 ---
@@ -160,6 +160,51 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - ✅ **Mac M3 / Firefox**: tier=high (Apple M-series), no-regresión confirmada tras los 2 fixes. Panel F2, selector, persistencia, bug bonus → todo OK.
 - ✅ **iPhone 16 Pro Max / Safari**: tier=high asignado correctamente por la heurística iOS (antes caía erróneamente en low por `hardwareConcurrency=4`/`deviceMemory=4`). 3 micro-stutters casi imperceptibles en 2 min de juego — el watchdog no actúa porque no llega a `<30 FPS sostenidos`, comportamiento correcto. **Bug 1 RESUELTO.**
 - ✅ **Galaxy XCover5 / Chrome**: boot en tier `low`, ultra-low se activa nada más empezar (FPS bajos sostenidos), toast aparece, recortes verificados visualmente (niebla más cercana, imagen blanda por subsampling 0.85). **Bug 2 RESUELTO.** El XCover5 sigue siendo lento incluso en ultra-low — el cuello de botella está en geometría/draw calls (deuda de A2 con `InstancedMesh`), no en efectos. Documentado como **"dispositivo bajo el target razonable"**: rugged industrial de gama baja de 2021 con Mali-G52, queda **fuera de los 3 dispositivos de referencia oficiales** del `GRAPHICS_STRATEGY.md`. El sistema hace todo lo que puede y avisa al usuario.
+
+---
+
+## Fase 2 · Sub-bloque A2 — infraestructura de assets (15 septiembre 2026)
+
+**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada y desplegada (Version `532e3b9e`); pendiente integrar el resto de modelos del catálogo (`A2_ASSETS.md`).
+
+### Commits de A2 (cronológico)
+
+| SHA | Título |
+|---|---|
+| `1c608aa` | Spike: GLTFLoader + Kenney coin-gold sustituye al cilindro procedural |
+| `d035cea` | AssetManager con precarga en pantalla de carga |
+| `2873510` | Monedas con InstancedMesh (2 draw calls para todas) |
+| `38372ab` | Centrar el GLB de la moneda en el origen del Group |
+| `2d707f9` | Créditos de assets en el menú desde el manifest |
+
+### Cómo añadir un modelo nuevo
+
+1. Copiar el `.glb` (y sus texturas, si son externas) a `assets/models/`.
+2. Añadir una entrada al `MANIFEST` de `Assets` en `index.html`: `{ url, scale, credit: { what, author, url, license } }`.
+3. En la factoría del objeto (`makeX()`), pedir `Assets.clone(key)` y mantener el fallback procedural en el `else`.
+4. Si el objeto aparece muchas veces (conos, vallas…), seguir el patrón de `CoinInstancer`: Group vacío para transform + `InstancedMesh` sincronizado antes de `renderer.render()`.
+5. `npx wrangler@4 deploy` (o `SUBIR.command`).
+
+### Decisiones clave
+
+- **Precarga en pantalla de carga, no en gameplay**: `Assets.preload()` corre bajo el overlay `#loading` con barra de progreso real y el menú aparece cuando acaba (mínimo 600 ms de splash). Timeout de 8 s: si la red va lenta se arranca con fallbacks y los modelos que lleguen después se usan en los siguientes spawns. `generateTiles()` inicial pasa a ejecutarse tras la precarga para que el fondo del menú ya use los GLB.
+- **Los clones comparten geometría y materiales con el template** (`Object3D.clone()` no los copia). `disposeObj()` liberaba los buffers del template en cada moneda recogida y Three.js los re-subía en el siguiente frame — funcionaba por accidente. Ahora los nodos de los templates llevan `userData.sharedAsset` y `disposeObj()` los salta.
+- **Monedas con `InstancedMesh`**: `makeCoin()` devuelve un `Group` vacío con solo transform y `userData`; `CoinInstancer` dibuja cuerpo y halo con dos `InstancedMesh` (capacidad 320, `frustumCulled = false`) sincronizados justo antes de `renderer.render()`. El código de colisión, imán, vórtice y lluvia de monedas no cambió: sigue leyendo `mesh.position`/`rotation`. El fallback procedural también va instanciado. Si el primer frame llega antes que la precarga, el instancer se reconstruye al aparecer el GLB.
+- **Modelo centrado en el origen del Group**: el cilindro antiguo estaba centrado; el GLB de Kenney iba de y=0 a 0.6 y dejaba el centro visual 0.3 por encima del punto de hitbox/imán/halo. Se centra el bounding box del template, de forma genérica.
+- **Créditos desde el manifest**: `Assets.credits()` agrupa por autor y el menú los pinta bajo los botones. CC0 no lo exige; los CC-BY del catálogo (helicópteros Poly Pizza, Sagrada Família wareFLO) sí.
+
+### Medido en local (Mac M3, Firefox, ~25-40 monedas en pantalla)
+
+- Antes: cada moneda = 2 draw calls (cuerpo + halo) → ~50-80 draws solo de monedas.
+- Ahora: 2 draw calls en total para todas las monedas. `draws` totales ~400-470 según escena; el resto es geometría de edificios/árboles/farolas no instanciada (siguiente candidato cuando entren los GLB de A3).
+- Recogida de 65 monedas seguidas sin ningún `dispose()` sobre el template (verificado con spy).
+
+### Pendiente en A2
+
+- Ambulancia (`Q-PT`, requiere pipeline FBX→GLB con Blender CLI).
+- Coches de tráfico (`K-Cars`), cono/valla/contenedor (`Q-Streets`, verificar que existen).
+- Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
+- Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 
 ---
 
