@@ -350,6 +350,22 @@
     color: var(--green);
   }
 
+  /* Créditos de assets (bajo los botones del menú). Se rellena desde
+     el manifest de Assets; las licencias CC-BY exigen esta atribución. */
+  .credits {
+    margin-top: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    text-align: center;
+    line-height: 1.8;
+  }
+  .credits:empty { display: none; }
+  .credits a { color: var(--bone-dim); text-decoration: none; }
+  .credits a:hover { color: var(--amber); }
+
   .missions-footer {
     margin-top: 14px;
     font-family: 'IBM Plex Mono', monospace;
@@ -2203,6 +2219,7 @@
       </button>
       <button id="btn-leaderboard" class="btn btn--ghost">Ranking</button>
     </div>
+    <div id="menu-credits" class="credits"></div>
   </div>
 
   <!-- GAME OVER -->
@@ -2483,9 +2500,13 @@ scene.add(rimLight);
    que se marcan con userData.sharedAsset y disposeObj() no los libera.
    ================================================================ */
 const Assets = (() => {
-  // Clave → { url, scale }. Añadir aquí cada modelo nuevo de A2.
+  // Clave → { url, scale, credit }. Añadir aquí cada modelo nuevo de A2.
+  // credit se muestra en el menú (obligatorio para CC-BY; ver docs/A2_ASSETS.md).
   const MANIFEST = {
-    coin: { url: 'assets/models/coin-gold.glb', scale: 1.5 }
+    coin: {
+      url: 'assets/models/coin-gold.glb', scale: 1.5,
+      credit: { what: 'Moneda', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
+    }
   };
   // Si la red tarda más que esto, arrancamos igualmente con fallbacks;
   // los modelos que lleguen después se usan en los siguientes spawns.
@@ -2546,6 +2567,18 @@ const Assets = (() => {
 
   function has(key) { return !!templates[key]; }
 
+  // Créditos deduplicados por autor: [{ author, url, license, what: [...] }]
+  function credits() {
+    const byAuthor = new Map();
+    for (const spec of Object.values(MANIFEST)) {
+      const c = spec.credit;
+      if (!c) continue;
+      if (!byAuthor.has(c.author)) byAuthor.set(c.author, { author: c.author, url: c.url, license: c.license, what: [] });
+      byAuthor.get(c.author).what.push(c.what);
+    }
+    return [...byAuthor.values()];
+  }
+
   // Template compartido (NO añadir a la escena; usar para InstancedMesh).
   function get(key) { return templates[key] || null; }
 
@@ -2554,7 +2587,7 @@ const Assets = (() => {
     return tpl ? tpl.clone(true) : null;
   }
 
-  return { preload, has, get, clone };
+  return { preload, has, get, clone, credits };
 })();
 
 // ========== CONSTANTES ==========
@@ -8551,6 +8584,13 @@ populateEnvironment();
 
 // Render inicial del panel de misiones en el menú
 renderMenuMissions();
+
+// Créditos de assets 3D (atribución de licencias)
+document.getElementById('menu-credits').innerHTML = Assets.credits().map(c => {
+  const a = document.createElement('a');
+  a.href = c.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = c.author;
+  return `${c.what.join(', ')}: ${a.outerHTML} · ${c.license}`;
+}).join('<br>');
 
 ambulance.position.z = -2;
 ambulance.rotation.y = -0.2;
