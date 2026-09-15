@@ -1,0 +1,11 @@
+{
+  // HEMS Runner — Worker con assets estáticos.
+  // Deploy:  npx wrangler deploy
+  // Sustituye al drag & drop de index.html en el dashboard (necesario desde
+  // que el juego carga assets/models/*.glb por ruta relativa).
+  "name": "app",
+  "compatibility_date": "2026-04-01",
+  "assets": {
+    "directory": "./"
+  }
+}

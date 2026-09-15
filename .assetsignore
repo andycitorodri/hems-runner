@@ -1,0 +1,14 @@
+# Todo lo que NO debe subirse a producción.
+# Solo deben publicarse index.html y assets/.
+.git
+.gitignore
+.assetsignore
+.claude
+node_modules
+wrangler.jsonc
+docs
+README.md
+LICENSE
+Claude outputs
+*.zip
+.DS_Store
