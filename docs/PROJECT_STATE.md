@@ -251,7 +251,8 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 - `Props` (index.html): cada tipo de prop (edificio, tejado, ventana, tronco, copa, poste, brazo, bombilla) es un `InstancedMesh` con geometría unitaria; cada prop es `{x,y,z,sx,sy,sz,ry,color}` y `Props.update(moveZ)` mueve, recicla (mismos umbrales que antes) y reescribe matrices cada frame. Color por instancia en edificios y copas; `changeScenario()` recolorea por instancia.
 - Resultado: **draws 380-480 → 94-143** (media 128) sin cambio visual. Objetivo `GRAPHICS_STRATEGY.md`: <100.
 - Nota r128: `InstancedMesh.setColorAt()` crea `instanceColor` con tamaño `mesh.count` (0 al crear) → crear el buffer a mano con capacidad máxima.
-- Siguiente: biomas (Eixample / Costa) sobre este sistema — los edificios GLB entran como capas de `Props` (una capa por malla del modelo, como `gltfLayers`), landmarks (Sagrada Família ya sourceada), cielo/niebla por bioma, transición.
+- **A3.1 (`8fc1149`, `50dea1a`)**: edificios Kenney City Kit Commercial (CC0, `~/Downloads/kenney_city-kit-commercial.zip`, 8 variantes en `assets/models/kenney-city-kit/`) como capas GLB de `Props` (`Props.defineGltfLayer`), fachada hacia la calle, tinte cálido por instancia (`EIXAMPLE_TINTS`). Cielo: cúpula con degradado (`skyDome`) + `Ambience` (sol, hemisferio, ambiente, niebla, suelo) con presets = momentos del día (Migdia, Capvespre, Nit, Alba) cada 1000 m y transición de 3 s. Arranque y partida nueva: mediodía. Draws ~110-130; tris ~100k (antes 20k) — pendiente variante low-detail (el kit las trae, `low-detail-building-*`) para tier low.
+- Siguiente: Sagrada Família como landmark hero al fondo (ya sourceada, CC-BY, 42k tris → hay que decimar), bioma Costa Barceloneta (palmeras, mar, W Hotel) y transición entre biomas cada 1500 m.
 
 ---
 
