@@ -2546,12 +2546,15 @@ const Assets = (() => {
 
   function has(key) { return !!templates[key]; }
 
+  // Template compartido (NO añadir a la escena; usar para InstancedMesh).
+  function get(key) { return templates[key] || null; }
+
   function clone(key) {
     const tpl = templates[key];
     return tpl ? tpl.clone(true) : null;
   }
 
-  return { preload, has, clone };
+  return { preload, has, get, clone };
 })();
 
 // ========== CONSTANTES ==========
@@ -4593,39 +4596,97 @@ function makeCone() {
    RECOGIBLES
    ================================================================ */
 function makeCoin() {
+  // Solo transform + metadatos. El cuerpo y el halo los dibuja
+  // CoinInstancer (InstancedMesh); el Group vacío mantiene intacto el
+  // código de colisión/imán/vórtice que lee mesh.position y rotation.
   const group = new THREE.Group();
-
-  const gltfCoin = Assets.clone('coin');
-  if (gltfCoin) {
-    // Moneda Kenney GLB (A2), clonada del template precargado.
-    group.add(gltfCoin);
-  } else {
-    // Fallback procedural (modelo no disponible).
-    const coin = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16),
-      new THREE.MeshLambertMaterial({
-        color: 0xffd54f,
-        emissive: 0x6a4010,
-        emissiveIntensity: 0.4
-      })
-    );
-    coin.rotation.x = Math.PI / 2;
-    group.add(coin);
-  }
-
-  // Halo
-  const halo = new THREE.Mesh(
-    new THREE.CircleGeometry(0.7, 16),
-    new THREE.MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.3, side: THREE.DoubleSide })
-  );
-  halo.rotation.x = -Math.PI / 2;
-  halo.position.y = -1.15;
-  group.add(halo);
-
   group.userData.kind = 'coin';
   group.userData.value = 10;
   return group;
 }
+
+/* ---- Monedas instanciadas (A2) ----
+   Dos InstancedMesh (cuerpo + halo) para todas las monedas activas:
+   2 draw calls en pantalla en vez de 2 por moneda. sync() se llama cada
+   frame justo antes de renderer.render() con las monedas de activeItems. */
+const CoinInstancer = (() => {
+  const MAX = 320;  // lluvia de monedas (60) + tiles en carretera (~50), con margen
+  let body = null, halo = null, warned = false, usingGltf = false;
+  const bodyLocal = new THREE.Matrix4();  // transform del mesh dentro del template
+  const haloLocal = new THREE.Matrix4().makeRotationX(-Math.PI / 2).setPosition(0, -1.15, 0);
+  const tmp = new THREE.Matrix4();
+
+  function ensure() {
+    const tpl = Assets.get('coin');
+    // El primer frame puede llegar antes que la precarga: si se construyó
+    // con el fallback y después aparece el GLB, se reconstruye.
+    if (body && (usingGltf || !tpl)) return;
+    if (body) {
+      scene.remove(body);
+      scene.remove(halo);
+      body.geometry.dispose(); body.material.dispose();  // fallback procedural, no compartido
+      halo.geometry.dispose(); halo.material.dispose();
+      body = halo = null;
+    }
+    let geom, mat;
+    if (tpl) {
+      usingGltf = true;
+      // Moneda Kenney GLB: geometría/material compartidos con el template.
+      tpl.updateMatrixWorld(true);
+      const mesh = tpl.getObjectByProperty('isMesh', true);
+      geom = mesh.geometry;
+      mat = mesh.material;
+      bodyLocal.copy(mesh.matrixWorld);
+    } else {
+      // Fallback procedural (modelo no disponible).
+      geom = new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16);
+      mat = new THREE.MeshLambertMaterial({
+        color: 0xffd54f,
+        emissive: 0x6a4010,
+        emissiveIntensity: 0.4
+      });
+      bodyLocal.makeRotationX(Math.PI / 2);
+    }
+    body = new THREE.InstancedMesh(geom, mat, MAX);
+    halo = new THREE.InstancedMesh(
+      new THREE.CircleGeometry(0.7, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.3, side: THREE.DoubleSide }),
+      MAX
+    );
+    // Las instancias se reparten por toda la carretera: el bounding de la
+    // geometría base no sirve para el culling.
+    body.frustumCulled = false;
+    halo.frustumCulled = false;
+    body.count = 0;
+    halo.count = 0;
+    scene.add(body);
+    scene.add(halo);
+  }
+
+  function sync(items) {
+    ensure();
+    let n = 0;
+    for (const it of items) {
+      if (it.kind !== 'coin') continue;
+      if (n >= MAX) {
+        if (!warned) { console.warn(`[CoinInstancer] más de ${MAX} monedas activas, se omiten`); warned = true; }
+        break;
+      }
+      it.mesh.updateMatrix();  // Group hijo directo de scene → matrix == mundo
+      body.setMatrixAt(n, tmp.multiplyMatrices(it.mesh.matrix, bodyLocal));
+      halo.setMatrixAt(n, tmp.multiplyMatrices(it.mesh.matrix, haloLocal));
+      n++;
+    }
+    body.count = n;
+    halo.count = n;
+    if (n > 0) {
+      body.instanceMatrix.needsUpdate = true;
+      halo.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  return { sync };
+})();
 
 // PACIENTE CON FIGURA HUMANOIDE RECONOCIBLE
 function makePatient() {
@@ -7891,6 +7952,7 @@ function animate() {
     }
   }
 
+  CoinInstancer.sync(activeItems);
   renderer.render(scene, camera);
   Metrics.tick(dt);
   PerfWatchdog.tick(dt);
