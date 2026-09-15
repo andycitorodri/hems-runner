@@ -3428,8 +3428,8 @@ const Assets = (() => {
     credit: { what: 'credit.scooter', author: 'jeremy', url: 'https://poly.pizza/m/aQ_Us04oiz1', license: 'CC-BY 3.0' }
   };
   MANIFEST.helicopter = {
-    url: 'assets/models/polypizza/helicopter-kazuma.glb', scale: 1.4, center: true, rotateY: Math.PI,  // morro en +z → -z
-    credit: { what: 'credit.helicopter', author: 'kazuma', url: 'https://poly.pizza/m/EQJ2MECUbx', license: 'CC0' }
+    url: 'assets/models/polypizza/helicopter-google.glb', scale: 0.0095, center: true,
+    credit: { what: 'credit.helicopter', author: 'Poly by Google', url: 'https://poly.pizza/m/cTzINMr0WdS', license: 'CC-BY 3.0' }
   };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
@@ -6098,9 +6098,10 @@ function makeHelicopterFromGltf() {
   const body = Assets.clone('helicopter');
   group.add(body);
   // Colores por color original (los nombres de material se pierden al
-  // optimizar). Modelo kazuma: negro (fuselaje) y rojo (franja) → amarillo
-  // SEM, como el EC135 del SEM; el cristal blanco y el rotor gris se quedan.
-  const RECOLOR = { '030000': 0xf5b431, '620506': 0xf5b431 };
+  // optimizar). Modelo Poly by Google: rojo oscuro (fuselaje/cola) y gris
+  // (cabina/patines) → amarillo SEM, como el EC135 del SEM; el ocre
+  // (detalle pequeño) → rojo. El negro (rotor, ventanas) se queda.
+  const RECOLOR = { '6a0101': 0xf5b431, 'a3a3a3': 0xf5b431, 'aa8b0d': 0xe63946 };
   const recolor = m => {
     const to = RECOLOR[m.color.getHexString()];
     if (to === undefined) return m;
