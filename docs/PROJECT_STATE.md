@@ -212,6 +212,15 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - Ahora: 2 draw calls en total para todas las monedas. `draws` totales ~400-470 según escena; el resto es geometría de edificios/árboles/farolas no instanciada (siguiente candidato cuando entren los GLB de A3).
 - Recogida de 65 monedas seguidas sin ningún `dispose()` sobre el template (verificado con spy).
 
+### Rendimiento: luces y shaders (15 sept 2026, `15c5421`)
+
+Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de frames > 40 ms: coincidían con **compilaciones de shaders en mitad del frame** (7 → 39 programas en los primeros 500 m). Causa raíz: ~29 `PointLight` en escena (una por farola, más pacientes, power-ups, letras, cajas, auras y luces temporales) con el recuento cambiando constantemente — en Three.js cada cambio en el número de luces recompila todos los materiales, y cada luz se evalúa en todos los píxeles.
+
+- **`LightPool`**: 8/6/4 luces según tier, creadas al arrancar (número constante → cero recompilaciones). `LightPool.acquire(owner, color, intensidad, distancia, offset)` devuelve una luz que sigue al dueño; se devuelve sola cuando el dueño sale de la escena (`LightPool.update()` cada frame). Pool agotado → luz dummy fuera de escena (el objeto funciona, no ilumina). Las farolas ya no llevan luz (bombilla emisiva).
+- **`warmUpRenderer()`**: bajo la pantalla de carga instancia una vez cada objeto del juego y renderiza un frame oculto → compila shaders (incluidos los de sombras) y sube texturas antes de jugar (~300 ms en Mac).
+- **Regla para código nuevo**: nunca `new THREE.PointLight` + `scene.add` en gameplay; pedirla al pool. Y todo objeto nuevo que pueda aparecer en partida, añadirlo a `warmUpRenderer()`.
+- Resultado local: 640 m con todos los efectos, 0 frames > 40 ms; luces 29 → 9. **Pendiente medir en el XCover5**: menos luces por píxel debería notarse mucho ahí.
+
 ### Pendiente en A2
 
 - Cono/valla/contenedor: el Car Kit trae `cone.glb` y `box.glb` (CC0, sin Blender); `Q-Streets` como alternativa. Los conos aparecen muchas veces → patrón `CoinInstancer`.
