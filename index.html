@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -363,6 +363,21 @@
     line-height: 1.8;
   }
   .credits:empty { display: none; }
+
+  /* Selector de idioma (menú) */
+  .lang-switch {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-bottom: 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em;
+  }
+  .lang-switch__btn {
+    background: none; border: 1px solid transparent; padding: 5px 7px; cursor: pointer;
+    color: var(--bone-faint); font: inherit; letter-spacing: inherit; text-transform: uppercase;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .lang-switch__btn:hover { color: var(--bone); }
+  .lang-switch__btn.active { color: var(--amber); border-color: rgba(245, 166, 35, 0.5); }
+  .lang-switch__sep { color: var(--bone-faint); }
   .credits a { color: var(--bone-dim); text-decoration: none; }
   .credits a:hover { color: var(--amber); }
 
@@ -1677,13 +1692,18 @@
   /* Overlays */
   .overlay {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     padding: 24px; z-index: 50;
     background: rgba(10, 9, 8, 0.92);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     transition: opacity 0.4s ease;
     overflow-y: auto;
   }
+  /* Centrado vertical que NO recorta el principio cuando el contenido es más
+     alto que la pantalla (justify-content:center lo hacía inalcanzable en
+     móvil): los márgenes automáticos centran si sobra sitio y ceden si no. */
+  .overlay > :first-child { margin-top: auto; }
+  .overlay > :last-child { margin-bottom: auto; }
   .overlay.hidden { opacity: 0; pointer-events: none; }
 
   .overlay__eyebrow {
@@ -1991,7 +2011,7 @@
     <div class="loading__status" id="loading-status"></div>
   </div>
 
-  <button id="back-btn" class="back-btn hidden">← Menú</button>
+  <button id="back-btn" class="back-btn hidden" data-i18n="btn.back_menu">← Menú</button>
 
   <!-- Botón pausa -->
   <button id="pause-btn" class="pause-btn" aria-label="Pausar">⏸</button>
@@ -1999,52 +2019,52 @@
   <!-- Overlay de pausa -->
   <!-- Tutorial de la primera partida -->
   <div id="tutorial" class="tutorial">
-    <div class="tutorial__tap tutorial__tap--jump">↑<span>Saltar</span></div>
-    <div class="tutorial__tap tutorial__tap--left">←<span>Carril izquierdo</span></div>
-    <div class="tutorial__tap tutorial__tap--right">→<span>Carril derecho</span></div>
+    <div class="tutorial__tap tutorial__tap--jump">↑<span data-i18n="tutorial.jump">Saltar</span></div>
+    <div class="tutorial__tap tutorial__tap--left">←<span data-i18n="tutorial.lane_left">Carril izquierdo</span></div>
+    <div class="tutorial__tap tutorial__tap--right">→<span data-i18n="tutorial.lane_right">Carril derecho</span></div>
     <div class="tutorial__keys">
-      <b>← →</b>cambiar carril<br>
-      <b>↑</b>saltar<br>
-      <b>↓</b>frenar
+      <b>← →</b><span data-i18n="tutorial.keys_lane">cambiar carril</span><br>
+      <b>↑</b><span data-i18n="tutorial.keys_jump">saltar</span><br>
+      <b>↓</b><span data-i18n="tutorial.keys_brake">frenar</span>
     </div>
     <div class="tutorial__cta">
-      <div class="tutorial__eyebrow">Cómo se juega</div>
+      <div class="tutorial__eyebrow" data-i18n="tutorial.how">Cómo se juega</div>
       <div class="tutorial__go" id="tutorial-go">Toca para empezar</div>
-      <div class="tutorial__hint">Desliza ↓ para frenar · o usa los botones</div>
+      <div class="tutorial__hint" data-i18n="tutorial.brake_hint">Desliza ↓ para frenar · o usa los botones</div>
     </div>
   </div>
 
   <div id="pause-overlay" class="pause-overlay">
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
-      <span class="overlay__eyebrow-text">Pausa</span>
+      <span class="overlay__eyebrow-text" data-i18n="pause.eyebrow">Pausa</span>
     </div>
-    <h1 class="pause-overlay__title">Respira</h1>
+    <h1 class="pause-overlay__title" data-i18n="pause.title">Respira</h1>
     <div class="pause-overlay__stats">
       <div>
         <span class="pause-overlay__stat-value" id="pause-score">0</span>
-        Puntuación
+        <span data-i18n="pause.score">Puntuación</span>
       </div>
       <div>
         <span class="pause-overlay__stat-value" id="pause-distance">0m</span>
-        Distancia
+        <span data-i18n="pause.distance">Distancia</span>
       </div>
     </div>
     <div class="pause-overlay__quality">
-      <div class="pause-overlay__quality-label">Calidad gráfica · <span id="pause-q-current">auto</span></div>
+      <div class="pause-overlay__quality-label"><span data-i18n="pause.quality">Calidad gráfica ·</span> <span id="pause-q-current">auto</span></div>
       <div class="pause-overlay__quality-options">
-        <button class="pause-q-btn" data-quality="auto">Auto</button>
-        <button class="pause-q-btn" data-quality="low">Baja</button>
-        <button class="pause-q-btn" data-quality="medium">Media</button>
-        <button class="pause-q-btn" data-quality="high">Alta</button>
+        <button class="pause-q-btn" data-quality="auto" data-i18n="pause.q_auto">Auto</button>
+        <button class="pause-q-btn" data-quality="low" data-i18n="pause.q_low">Baja</button>
+        <button class="pause-q-btn" data-quality="medium" data-i18n="pause.q_medium">Media</button>
+        <button class="pause-q-btn" data-quality="high" data-i18n="pause.q_high">Alta</button>
       </div>
     </div>
     <div class="btn-row">
       <button id="btn-resume" class="btn btn-big">
-        <span>Continuar</span>
+        <span data-i18n="pause.resume">Continuar</span>
         <span class="btn-arrow">→</span>
       </button>
-      <button id="btn-quit" class="btn btn--ghost">Salir al menú</button>
+      <button id="btn-quit" class="btn btn--ghost" data-i18n="pause.quit">Salir al menú</button>
     </div>
   </div>
 
@@ -2067,11 +2087,11 @@
   <!-- HUD REDISEÑADO -->
   <div id="hud" class="hud" style="display:none">
     <div class="hud-block">
-      <span class="hud__label">Puntuación</span>
+      <span class="hud__label" data-i18n="hud.score">Puntuación</span>
       <span class="hud__value hud__value--amber" id="hud-score">0</span>
     </div>
     <div class="hud-block hud-block--center">
-      <span class="hud__label">Distancia · Velocidad</span>
+      <span class="hud__label" data-i18n="hud.dist_speed">Distancia · Velocidad</span>
       <span class="hud__value hud__value--small">
         <span id="hud-distance">0 m</span>
         <span style="color:var(--bone-faint);margin:0 8px">·</span>
@@ -2085,7 +2105,7 @@
       </div>
     </div>
     <div class="hud-block hud-block--right">
-      <span class="hud__label">Monedas · Pacientes</span>
+      <span class="hud__label" data-i18n="hud.coins_patients">Monedas · Pacientes</span>
       <span class="hud__value hud__value--small">
         <span id="hud-coins" style="color:var(--gold)">0</span>
         <span style="color:var(--bone-faint);margin:0 8px">·</span>
@@ -2104,34 +2124,34 @@
 
   <!-- Word Hunt panel -->
   <div id="word-hunt" class="word-hunt">
-    <div class="word-hunt__label">Palabra del día</div>
+    <div class="word-hunt__label" data-i18n="hud.word_of_day">Palabra del día</div>
     <div id="word-hunt-letters" class="word-hunt__letters"></div>
   </div>
 
   <!-- Banners de modos especiales (fullscreen overlay) -->
   <div id="codigo-rojo-banner" class="mode-banner mode-banner--codigo-rojo">
-    <div class="mode-banner__title">CÓDIGO ROJO</div>
-    <div id="codigo-rojo-timer" class="mode-banner__timer">8s · Prioridad absoluta</div>
+    <div class="mode-banner__title" data-i18n="banner.codigo_rojo">CÓDIGO ROJO</div>
+    <div id="codigo-rojo-timer" class="mode-banner__timer" data-i18n="banner.codigo_rojo_sub">8s · Prioridad absoluta</div>
   </div>
   <div id="fever-banner" class="mode-banner mode-banner--fever">
-    <div class="mode-banner__title">FEVER MODE</div>
-    <div id="fever-timer" class="mode-banner__timer">10s · ×3 puntos</div>
+    <div class="mode-banner__title" data-i18n="banner.fever">FEVER MODE</div>
+    <div id="fever-timer" class="mode-banner__timer" data-i18n="banner.fever_sub">10s · ×3 puntos</div>
   </div>
   <div id="jetpack-banner" class="mode-banner mode-banner--jetpack">
-    <div class="mode-banner__title">JETPACK</div>
-    <div id="jetpack-timer" class="mode-banner__timer">5s · Volando</div>
+    <div class="mode-banner__title" id="jetpack-banner-title" data-i18n="banner.jetpack">JETPACK</div>
+    <div id="jetpack-timer" class="mode-banner__timer" data-i18n="banner.jetpack_sub">5s · Volando</div>
   </div>
   <div id="rayo-banner" class="mode-banner mode-banner--rayo">
-    <div class="mode-banner__title">⚡ RELÁMPAGO ⚡</div>
-    <div id="rayo-timer" class="mode-banner__timer">6s · Monedas ×5</div>
+    <div class="mode-banner__title" data-i18n="banner.rayo">⚡ RELÁMPAGO ⚡</div>
+    <div id="rayo-timer" class="mode-banner__timer" data-i18n="banner.rayo_sub">6s · Monedas ×5</div>
   </div>
   <div id="mastery-banner" class="mode-banner mode-banner--mastery">
-    <div class="mode-banner__title">⚡ MASTERY MODE ⚡</div>
-    <div id="mastery-timer" class="mode-banner__timer">15s · Monedas ×5 · Bonus ×2</div>
+    <div class="mode-banner__title" data-i18n="banner.mastery">⚡ MASTERY MODE ⚡</div>
+    <div id="mastery-timer" class="mode-banner__timer" data-i18n="banner.mastery_sub">15s · Monedas ×5 · Bonus ×2</div>
   </div>
   <div id="sva-banner" class="mode-banner mode-banner--sva">
-    <div class="mode-banner__title">🚨 SVA ACTIVADO 🚨</div>
-    <div id="sva-timer" class="mode-banner__timer">8s · Escudo · ×2 puntos</div>
+    <div class="mode-banner__title" data-i18n="banner.sva">🚨 SVA ACTIVADO 🚨</div>
+    <div id="sva-timer" class="mode-banner__timer" data-i18n="banner.sva_sub">8s · Escudo · ×2 puntos</div>
   </div>
 
   <!-- Vignette verde para modo Mastery -->
@@ -2140,19 +2160,19 @@
   <!-- Pantalla de liquidación al terminar Mastery (se muestra 3s) -->
   <div id="mastery-liquidation" class="mastery-liquidation">
     <div class="mastery-liquidation__inner">
-      <div class="mastery-liquidation__title">⚡ MASTERY COMPLETO</div>
+      <div class="mastery-liquidation__title" data-i18n="banner.mastery_done">⚡ MASTERY COMPLETO</div>
       <div class="mastery-liquidation__rows">
         <div class="mastery-liquidation__row">
-          <span class="mastery-liquidation__label">Ganado:</span>
+          <span class="mastery-liquidation__label" data-i18n="banner.earned">Ganado:</span>
           <span class="mastery-liquidation__value" id="mastery-liq-earned">0</span>
         </div>
         <div class="mastery-liquidation__row">
-          <span class="mastery-liquidation__label">Bonus ×2:</span>
+          <span class="mastery-liquidation__label" data-i18n="banner.bonus">Bonus ×2:</span>
           <span class="mastery-liquidation__value mastery-liquidation__value--bonus" id="mastery-liq-bonus">+0</span>
         </div>
         <div class="mastery-liquidation__divider"></div>
         <div class="mastery-liquidation__row mastery-liquidation__row--total">
-          <span class="mastery-liquidation__label">TOTAL</span>
+          <span class="mastery-liquidation__label" data-i18n="banner.total">TOTAL</span>
           <span class="mastery-liquidation__value" id="mastery-liq-total">+0</span>
         </div>
       </div>
@@ -2164,7 +2184,7 @@
 
   <!-- DEBUG: panel de testing con atajos de teclado -->
   <div id="debug-panel" class="debug-panel">
-    <div class="debug-panel__title">DEBUG · Teclas de prueba</div>
+    <div class="debug-panel__title" data-i18n="hud.debug_keys">DEBUG · Teclas de prueba</div>
     <div class="debug-panel__list">
       <span><b>1</b> 🚁 HEMS</span>
       <span><b>2</b> 💰 Monedas</span>
@@ -2182,15 +2202,15 @@
   <!-- Combo display -->
   <div id="combo-display" class="combo-display">
     <div class="combo-display__value" id="combo-value">×2</div>
-    <div class="combo-display__label">Combo</div>
+    <div class="combo-display__label" data-i18n="hud.combo">Combo</div>
   </div>
 
   <!-- Contador HEMS (solo visible durante modo HEMS) -->
   <div id="hems-counter" class="hems-counter">
     <div class="hems-counter__inner">
-      <div class="hems-counter__label">⌬ RESCATADOS</div>
+      <div class="hems-counter__label" data-i18n="hud.rescued">⌬ RESCATADOS</div>
       <div class="hems-counter__value" id="hems-counter-value">0</div>
-      <div class="hems-counter__points">+<span id="hems-counter-points">0</span> pts</div>
+      <div class="hems-counter__points">+<span id="hems-counter-points">0</span> <span data-i18n="hud.pts">pts</span></div>
       <div class="hems-counter__bar"><div class="hems-counter__bar-fill" id="hems-counter-bar"></div></div>
     </div>
   </div>
@@ -2216,12 +2236,12 @@
   <!-- Milestone -->
   <div id="milestone" class="milestone">
     <div class="milestone__title" id="milestone-title">500m</div>
-    <div class="milestone__subtitle" id="milestone-subtitle">Bien hecho</div>
+    <div class="milestone__subtitle" id="milestone-subtitle" data-i18n="hud.milestone_sub">Bien hecho</div>
   </div>
 
   <!-- Speed notify -->
   <div id="speed-notify" class="speed-notify">
-    <div class="speed-notify__text" id="speed-notify-text">¡Velocidad +1!</div>
+    <div class="speed-notify__text" id="speed-notify-text" data-i18n="hud.speed_up">¡Velocidad +1!</div>
   </div>
 
   <!-- Controles móviles -->
@@ -2239,45 +2259,50 @@
 
   <!-- MENU -->
   <div id="menu-overlay" class="overlay">
+    <div class="lang-switch" id="lang-switch">
+      <button class="lang-switch__btn" data-lang="ca">CAT</button>
+      <span class="lang-switch__sep">·</span>
+      <button class="lang-switch__btn" data-lang="es">ESP</button>
+    </div>
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
-      <span class="overlay__eyebrow-text">Jornada de Trauma · Edició 01</span>
+      <span class="overlay__eyebrow-text" data-i18n="menu.eyebrow">Jornada de Trauma · Edició 01</span>
     </div>
     <h1 class="overlay__title">HEMS <em>Runner</em></h1>
-    <p class="overlay__subtitle">Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.</p>
+    <p class="overlay__subtitle" data-i18n="menu.subtitle">Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.</p>
 
     <div class="fomo-banner">
       <span class="fomo-dot"></span>
-      <span class="fomo-text">Premios a los Top del Ranking · 14 · 10 · 2026</span>
+      <span class="fomo-text" data-i18n="menu.fomo">Premios a los Top del Ranking · 14 · 10 · 2026</span>
     </div>
 
     <div class="start-card">
-      <span class="start-card__label">Controles</span>
+      <span class="start-card__label" data-i18n="menu.controls">Controles</span>
       <div class="start-card__controls">
         <div class="control-hint">
           <span class="control-hint__key">← →</span>
-          <span class="control-hint__desc">Cambiar carril</span>
+          <span class="control-hint__desc" data-i18n="menu.ctrl_lane">Cambiar carril</span>
         </div>
         <div class="control-hint">
           <span class="control-hint__key">↑</span>
-          <span class="control-hint__desc">Saltar</span>
+          <span class="control-hint__desc" data-i18n="menu.ctrl_jump">Saltar</span>
         </div>
         <div class="control-hint">
           <span class="control-hint__key">↓</span>
-          <span class="control-hint__desc">Frenar</span>
+          <span class="control-hint__desc" data-i18n="menu.ctrl_brake">Frenar</span>
         </div>
       </div>
     </div>
 
     <!-- Banner nuevo día (aparece solo si es un día nuevo) -->
     <div id="newday-banner" class="newday-banner">
-      <div class="newday-banner__title">¡Nuevo día!</div>
-      <div class="newday-banner__sub">Multiplicador reseteado · Nuevas misiones</div>
+      <div class="newday-banner__title" data-i18n="menu.newday">¡Nuevo día!</div>
+      <div class="newday-banner__sub" data-i18n="menu.newday_sub">Multiplicador reseteado · Nuevas misiones</div>
     </div>
 
     <!-- Código destacado del día -->
     <div id="menu-codigo-card" class="codigo-card">
-      <div class="codigo-card__label">Código destacado de hoy</div>
+      <div class="codigo-card__label" data-i18n="menu.code_today">Código destacado de hoy</div>
       <div id="menu-codigo-name" class="codigo-card__name">CÓDIGO TRAUMA</div>
       <div id="menu-codigo-sub" class="codigo-card__sub">Paciente politraumatizado</div>
     </div>
@@ -2285,9 +2310,9 @@
     <!-- Panel de misiones (meta-juego) -->
     <div id="menu-missions-panel" class="missions-panel">
       <div class="missions-panel__header">
-        <span class="missions-panel__label">Misiones de hoy</span>
+        <span class="missions-panel__label" data-i18n="menu.missions_today">Misiones de hoy</span>
         <div class="multiplier-badge">
-          <span class="multiplier-badge__label">Mult. hoy</span>
+          <span class="multiplier-badge__label" data-i18n="menu.mult_today">Mult. hoy</span>
           <span class="multiplier-badge__value" id="menu-multiplier">×1</span>
         </div>
       </div>
@@ -2298,15 +2323,15 @@
       <!-- Stats históricos -->
       <div class="history-stats">
         <div class="history-stat">
-          <div class="history-stat__label">Racha</div>
+          <div class="history-stat__label" data-i18n="menu.streak">Racha</div>
           <div class="history-stat__value history-stat__value--green" id="history-streak">1</div>
         </div>
         <div class="history-stat">
-          <div class="history-stat__label">Mult. récord</div>
+          <div class="history-stat__label" data-i18n="menu.record_mult">Mult. récord</div>
           <div class="history-stat__value history-stat__value--amber" id="history-max-mult">×1</div>
         </div>
         <div class="history-stat">
-          <div class="history-stat__label">Misiones totales</div>
+          <div class="history-stat__label" data-i18n="menu.total_missions">Misiones totales</div>
           <div class="history-stat__value" id="history-total-missions">0</div>
         </div>
       </div>
@@ -2314,10 +2339,10 @@
 
     <div class="btn-row">
       <button id="btn-play" class="btn btn-big">
-        <span>Empezar misión</span>
+        <span data-i18n="menu.start">Empezar misión</span>
         <span class="btn-arrow">→</span>
       </button>
-      <button id="btn-leaderboard" class="btn btn--ghost">Ranking</button>
+      <button id="btn-leaderboard" class="btn btn--ghost" data-i18n="menu.ranking">Ranking</button>
     </div>
     <div id="menu-credits" class="credits"></div>
   </div>
@@ -2326,31 +2351,31 @@
   <div id="gameover-overlay" class="overlay hidden">
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
-      <span class="overlay__eyebrow-text">Misión abortada</span>
+      <span class="overlay__eyebrow-text" data-i18n="gameover.eyebrow">Misión abortada</span>
     </div>
-    <h1 class="overlay__title">Fin de <em>servicio</em></h1>
-    <p class="death-message" id="death-message">Impacto registrado.</p>
+    <h1 class="overlay__title" data-i18n-html="gameover.title">Fin de <em>servicio</em></h1>
+    <p class="death-message" id="death-message" data-i18n="gameover.default_death">Impacto registrado.</p>
 
     <!-- Revive section -->
     <div id="revive-section" class="revive-section" style="display:none">
       <div class="revive-countdown" id="revive-countdown">5</div>
-      <div class="revive-label">Continuar partida en</div>
+      <div class="revive-label" data-i18n="gameover.revive_in">Continuar partida en</div>
       <button id="btn-revive" class="btn btn--revive" style="margin-top:10px">
-        <span>✚ Continuar</span>
+        <span data-i18n="gameover.revive_btn">✚ Continuar</span>
       </button>
     </div>
 
     <div class="gameover-stats">
       <div class="stat-box">
-        <div class="stat-box__label">Puntuación</div>
+        <div class="stat-box__label" data-i18n="gameover.score">Puntuación</div>
         <div class="stat-box__value stat-box__value--amber" id="go-score">0</div>
       </div>
       <div class="stat-box">
-        <div class="stat-box__label">Monedas</div>
+        <div class="stat-box__label" data-i18n="gameover.coins">Monedas</div>
         <div class="stat-box__value stat-box__value--gold" id="go-coins">0</div>
       </div>
       <div class="stat-box">
-        <div class="stat-box__label">Pacientes</div>
+        <div class="stat-box__label" data-i18n="gameover.patients">Pacientes</div>
         <div class="stat-box__value" id="go-patients">0</div>
       </div>
     </div>
@@ -2359,16 +2384,16 @@
 
     <!-- Banner multiplicador subido (se muestra condicionalmente) -->
     <div id="multiplier-up-banner" class="multiplier-up-banner" style="display:none">
-      <div class="multiplier-up-banner__title">¡Multiplicador <span id="mu-new-value">×2</span>!</div>
-      <div class="multiplier-up-banner__sub">Todas tus puntuaciones × <span id="mu-new-value-sub">2</span> a partir de ahora</div>
+      <div class="multiplier-up-banner__title" data-i18n-html="gameover.mult_up">¡Multiplicador <span id="mu-new-value">×2</span>!</div>
+      <div class="multiplier-up-banner__sub" data-i18n-html="gameover.mult_up_sub">Todas tus puntuaciones × <span id="mu-new-value-sub">2</span> a partir de ahora</div>
     </div>
 
     <!-- Panel misiones en game over -->
     <div id="go-missions-panel" class="missions-panel">
       <div class="missions-panel__header">
-        <span class="missions-panel__label">Progreso de hoy</span>
+        <span class="missions-panel__label" data-i18n="gameover.progress_today">Progreso de hoy</span>
         <div class="multiplier-badge">
-          <span class="multiplier-badge__label">Mult. hoy</span>
+          <span class="multiplier-badge__label" data-i18n="menu.mult_today">Mult. hoy</span>
           <span class="multiplier-badge__value" id="go-multiplier">×1</span>
         </div>
       </div>
@@ -2379,14 +2404,14 @@
     </div>
 
     <div class="score-form">
-      <input type="text" id="player-name" class="score-form__input" placeholder="Tu nombre (máx 16)" maxlength="16" autocomplete="off">
-      <input type="email" id="player-email" class="score-form__input" placeholder="Email (opcional, para el premio)" autocomplete="off">
-      <button id="btn-save" class="btn">Guardar en ranking</button>
+      <input type="text" id="player-name" class="score-form__input" placeholder="Tu nombre (máx 16)" data-i18n-placeholder="gameover.name_ph" maxlength="16" autocomplete="off">
+      <input type="email" id="player-email" class="score-form__input" placeholder="Email (opcional, para el premio)" data-i18n-placeholder="gameover.email_ph" autocomplete="off">
+      <button id="btn-save" class="btn" data-i18n="gameover.save">Guardar en ranking</button>
     </div>
 
     <div class="btn-row" style="margin-top:4px">
-      <button id="btn-retry" class="btn btn--ghost">Reintentar</button>
-      <button id="btn-menu" class="btn btn--ghost">Menú</button>
+      <button id="btn-retry" class="btn btn--ghost" data-i18n="gameover.retry">Reintentar</button>
+      <button id="btn-menu" class="btn btn--ghost" data-i18n="btn.menu">Menú</button>
     </div>
   </div>
 
@@ -2394,16 +2419,16 @@
   <div id="leaderboard-overlay" class="overlay hidden">
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
-      <span class="overlay__eyebrow-text">Top jugadores</span>
+      <span class="overlay__eyebrow-text" data-i18n="lb.eyebrow">Top jugadores</span>
     </div>
-    <h1 class="overlay__title">Ranking <em>global</em></h1>
-    <p class="overlay__subtitle">Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 14 de octubre de 2026.</p>
+    <h1 class="overlay__title" data-i18n-html="lb.title">Ranking <em>global</em></h1>
+    <p class="overlay__subtitle" data-i18n="lb.subtitle">Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 14 de octubre de 2026.</p>
 
     <div id="leaderboard-content" class="leaderboard"></div>
 
     <div class="btn-row">
-      <button id="btn-lb-play" class="btn">Jugar</button>
-      <button id="btn-lb-back" class="btn btn--ghost">Menú</button>
+      <button id="btn-lb-play" class="btn" data-i18n="btn.play">Jugar</button>
+      <button id="btn-lb-back" class="btn btn--ghost" data-i18n="btn.menu">Menú</button>
     </div>
   </div>
 </div>
@@ -2412,6 +2437,665 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
+/* ================================================================
+   I18N — català (per defecte) · castellano
+   t(clave, {vars}) devuelve el texto en el idioma activo. Los textos del
+   HTML estático llevan data-i18n / data-i18n-html / data-i18n-placeholder
+   y se repintan con I18N.apply(). Las estructuras de datos (misiones,
+   códigos, rangos…) usan getters que llaman a t(), así el resto del
+   código no sabe de idiomas. Idioma guardado en localStorage.
+   ================================================================ */
+const I18N_STRINGS = {
+  es: {
+    'meta.title': 'HEMS Runner · Jornada de Trauma 2026',
+    'loading.models': 'Cargando modelos · {done}/{total}',
+    'btn.back_menu': '← Menú',
+    'btn.menu': 'Menú',
+    'btn.play': 'Jugar',
+    'lang.ca': 'CAT',
+    'lang.es': 'ESP',
+
+    // Tutorial primera partida
+    'tutorial.jump': 'Saltar',
+    'tutorial.lane_left': 'Carril izquierdo',
+    'tutorial.lane_right': 'Carril derecho',
+    'tutorial.keys_lane': 'cambiar carril',
+    'tutorial.keys_jump': 'saltar',
+    'tutorial.keys_brake': 'frenar',
+    'tutorial.how': 'Cómo se juega',
+    'tutorial.tap_start': 'Toca para empezar',
+    'tutorial.key_start': 'Pulsa una tecla para empezar',
+    'tutorial.brake_hint': 'Desliza ↓ para frenar · o usa los botones',
+
+    // Pausa
+    'pause.eyebrow': 'Pausa',
+    'pause.title': 'Respira',
+    'pause.score': 'Puntuación',
+    'pause.distance': 'Distancia',
+    'pause.quality': 'Calidad gráfica ·',
+    'pause.q_auto': 'Auto',
+    'pause.q_low': 'Baja',
+    'pause.q_medium': 'Media',
+    'pause.q_high': 'Alta',
+    'pause.resume': 'Continuar',
+    'pause.quit': 'Salir al menú',
+    'confirm.quit': '¿Abandonar la partida?',
+
+    // HUD
+    'hud.score': 'Puntuación',
+    'hud.dist_speed': 'Distancia · Velocidad',
+    'hud.coins_patients': 'Monedas · Pacientes',
+    'hud.word_of_day': 'Palabra del día',
+    'hud.combo': 'Combo',
+    'hud.rescued': '⌬ RESCATADOS',
+    'hud.pts': 'pts',
+    'hud.streak': '¡RACHA!',
+    'hud.milestone_sub': 'Bien hecho',
+    'hud.speed_up': '¡Velocidad +1!',
+    'hud.debug_keys': 'DEBUG · Teclas de prueba',
+
+    // Banners de modos especiales
+    'banner.codigo_rojo': 'CÓDIGO ROJO',
+    'banner.codigo_rojo_sub': '8s · Prioridad absoluta',
+    'banner.codigo_rojo_timer': '{secs}s · Prioridad absoluta',
+    'banner.fever': 'FEVER MODE',
+    'banner.fever_sub': '10s · ×3 puntos',
+    'banner.fever_timer': '{secs}s · ×3 puntos · combo {combo}',
+    'banner.jetpack': 'JETPACK',
+    'banner.jetpack_sub': '5s · Volando',
+    'banner.jetpack_timer': '{secs}s · Rescate aéreo',
+    'banner.hems_title': 'MODO HEMS',
+    'banner.rayo': '⚡ RELÁMPAGO ⚡',
+    'banner.rayo_sub': '6s · Monedas ×5',
+    'banner.mastery': '⚡ MASTERY MODE ⚡',
+    'banner.mastery_sub': '15s · Monedas ×5 · Bonus ×2',
+    'banner.mastery_timer': '{secs}s · Monedas ×5 · +{pts}',
+    'banner.sva': '🚨 SVA ACTIVADO 🚨',
+    'banner.sva_sub': '8s · Escudo · ×2 puntos',
+    'banner.sva_timer': '{secs}s · Escudo · ×2 puntos',
+    'banner.mastery_done': '⚡ MASTERY COMPLETO',
+    'banner.earned': 'Ganado:',
+    'banner.bonus': 'Bonus ×2:',
+    'banner.total': 'TOTAL',
+
+    // Power-ups (etiqueta del indicador)
+    'powerup.magnet': 'Imán',
+    'powerup.shield': 'Escudo',
+    'powerup.x2': 'Doble puntos',
+
+    // Menú
+    'menu.eyebrow': 'Jornada de Trauma · Edició 01',
+    'menu.subtitle': 'Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.',
+    'menu.fomo': 'Premios a los Top del Ranking · 14 · 10 · 2026',
+    'menu.controls': 'Controles',
+    'menu.ctrl_lane': 'Cambiar carril',
+    'menu.ctrl_jump': 'Saltar',
+    'menu.ctrl_brake': 'Frenar',
+    'menu.touch_lane': 'Toca a un lado de la ambulancia',
+    'menu.touch_jump': 'Toca arriba o desliza ↑',
+    'menu.touch_brake': 'Desliza ↓ para frenar',
+    'menu.newday': '¡Nuevo día!',
+    'menu.newday_sub': 'Multiplicador reseteado · Nuevas misiones',
+    'menu.code_today': 'Código destacado de hoy',
+    'menu.missions_today': 'Misiones de hoy',
+    'menu.mult_today': 'Mult. hoy',
+    'menu.streak': 'Racha',
+    'menu.record_mult': 'Mult. récord',
+    'menu.total_missions': 'Misiones totales',
+    'menu.start': 'Empezar misión',
+    'menu.ranking': 'Ranking',
+    'menu.day': 'día',
+    'menu.days': 'días',
+
+    // Misiones
+    'missions.footer': 'Completa <span class="missions-footer__highlight">{n} {word}</span> más para subir a ×{mult} · Caduca a medianoche',
+    'missions.one': 'misión',
+    'missions.many': 'misiones',
+    'missions.done_toast': '¡MISIÓN CUMPLIDA!',
+    'mission.dist_500': 'Llega a 500m en un turno',
+    'mission.dist_1000': 'Llega a 1000m en un turno',
+    'mission.dist_1500': 'Llega a 1500m en un turno',
+    'mission.dist_2500': 'Llega a 2500m en un turno',
+    'mission.coins_50': 'Recoge 50 monedas',
+    'mission.coins_100': 'Recoge 100 monedas',
+    'mission.coins_200': 'Recoge 200 monedas',
+    'mission.pat_2': 'Salva 2 pacientes en un turno',
+    'mission.pat_5': 'Salva 5 pacientes en un turno',
+    'mission.pat_10': 'Salva 10 pacientes en un turno',
+    'mission.word_1': 'Completa 1 palabra del día',
+    'mission.word_2': 'Completa 2 palabras del día',
+    'mission.combo_15': 'Consigue un combo x15',
+    'mission.combo_30': 'Consigue un combo x30',
+    'mission.jumps_10': 'Esquiva 10 obstáculos saltando',
+    'mission.jumps_25': 'Esquiva 25 obstáculos saltando',
+    'mission.pure_1000': 'Llega a 1000m sin usar revive',
+    'mission.score_5k': 'Consigue 5.000 puntos en un turno',
+    'mission.score_15k': 'Consigue 15.000 puntos en un turno',
+
+    // Game over
+    'gameover.eyebrow': 'Misión abortada',
+    'gameover.title': 'Fin de <em>servicio</em>',
+    'gameover.default_death': 'Impacto registrado.',
+    'gameover.revive_in': 'Continuar partida en',
+    'gameover.revive_btn': '✚ Continuar',
+    'gameover.score': 'Puntuación',
+    'gameover.coins': 'Monedas',
+    'gameover.patients': 'Pacientes',
+    'gameover.mult_up': '¡Multiplicador <span id="mu-new-value">×2</span>!',
+    'gameover.mult_up_sub': 'Todas tus puntuaciones × <span id="mu-new-value-sub">2</span> a partir de ahora',
+    'gameover.progress_today': 'Progreso de hoy',
+    'gameover.name_ph': 'Tu nombre (máx 16)',
+    'gameover.email_ph': 'Email (opcional, para el premio)',
+    'gameover.save': 'Guardar en ranking',
+    'gameover.retry': 'Reintentar',
+    'gameover.record': ' · ¡Nuevo récord personal!',
+    'death.default': 'Misión abortada.',
+    'death.car.0': 'Impacto lateral. No cedieron prioridad.',
+    'death.car.1': 'Colisión múltiple. Hay que reactivar el código.',
+    'death.car.2': 'Accidente de tráfico. Ahora llamamos a otra ambulancia.',
+    'death.truck.0': 'Camión parado. Siempre en doble fila.',
+    'death.truck.1': 'Carga mal distribuida. Impacto frontal.',
+    'death.truck.2': 'Vehículo pesado sin señalizar. Mala suerte.',
+    'death.barrier.0': 'Obra sin balizar. Las emergencias también tienen derechos.',
+    'death.barrier.1': 'Señalización deficiente. Parte al 112.',
+    'death.barrier.2': 'Zona de obras. Nadie avisó.',
+    'death.scooter.0': 'Patinete eléctrico sin luces. Víctima probable.',
+    'death.scooter.1': 'Movilidad personal sin casco. Trauma craneal casi asegurado.',
+    'death.scooter.2': 'VMP abandonado en carril. Denuncia pendiente.',
+    'death.cone.0': 'Conos mal colocados. Trampa para emergencias.',
+    'death.cone.1': 'Balizamiento incorrecto. Parte a protección civil.',
+    'death.cone.2': 'Obra nocturna sin señalización visible.',
+
+    // Ranking
+    'lb.eyebrow': 'Top jugadores',
+    'lb.title': 'Ranking <em>global</em>',
+    'lb.subtitle': 'Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 14 de octubre de 2026.',
+    'lb.empty': 'Aún no hay scores. Sé el primero.',
+    'lb.anon': 'Anónimo',
+
+    // Rangos (por puntuación)
+    'rank.0': 'Primer interviniente',
+    'rank.1': 'SVB',
+    'rank.2': 'SVA',
+    'rank.3': 'PHTLS',
+    'rank.4': 'ATLS',
+    'rank.5': 'ETC',
+    'rank.6': 'Médico HEMS',
+    'rank.7': 'Trauma Leader',
+    'rank.8': 'Leyenda',
+    'rank.label.0': '« Primer interviniente »',
+    'rank.label.1': '« SVB · Soporte Vital Básico »',
+    'rank.label.2': '« SVA · Soporte Vital Avanzado »',
+    'rank.label.3': '« PHTLS · Prehospital Trauma »',
+    'rank.label.4': '« ATLS · Advanced Trauma Life Support »',
+    'rank.label.5': '« ETC · European Trauma Course »',
+    'rank.label.6': '« Médico HEMS · Helitransporte »',
+    'rank.label.7': '« Trauma Team Leader · Leyenda »',
+
+    // Hitos de velocidad y distancia
+    'speed.0': 'Urgencia activada',
+    'speed.1': 'Prioridad 1',
+    'speed.2': 'Código Rojo',
+    'speed.3': 'Golden Hour',
+    'speed.4': 'Zona extrema',
+    'speed.5': 'Leyenda',
+    'speed.6': 'Sobrehumano',
+    'milestone.0': 'Vía aérea asegurada',
+    'milestone.1': 'Triángulo de seguridad',
+    'milestone.2': 'Hemorragia controlada',
+    'milestone.3': 'Vía intraósea colocada',
+    'milestone.4': 'Activación código trauma',
+    'milestone.5': 'Politraumatizado estabilizado',
+    'milestone.6': 'Golden Hour dominada',
+    'milestone.7': 'Leyenda del trauma',
+
+    // Códigos clínicos (palabra del día)
+    'codigo.TRAUMA.name': 'CÓDIGO TRAUMA',
+    'codigo.TRAUMA.subtitle': 'Paciente politraumatizado',
+    'codigo.TRAUMA.words': ['TRAUMA', 'ATLS', 'ABCDE', 'REBOA', 'DAMAGE', 'GOLDEN', 'FAST'],
+    'codigo.TRAUMA.msg.TRAUMA': 'Politraumatizado estabilizado',
+    'codigo.TRAUMA.msg.ATLS': 'Primary survey completado',
+    'codigo.TRAUMA.msg.ABCDE': 'Evaluación sistemática',
+    'codigo.TRAUMA.msg.REBOA': 'Oclusión aórtica endovascular',
+    'codigo.TRAUMA.msg.DAMAGE': 'Damage Control Surgery',
+    'codigo.TRAUMA.msg.GOLDEN': 'Golden Hour dominada',
+    'codigo.TRAUMA.msg.FAST': 'Ecografía de trauma positiva',
+    'codigo.INFARTO.name': 'CÓDIGO INFARTO',
+    'codigo.INFARTO.subtitle': 'Síndrome coronario agudo',
+    'codigo.INFARTO.words': ['IAM', 'STEMI', 'TROPO', 'ANGIO', 'STENT', 'KILLIP'],
+    'codigo.INFARTO.msg.IAM': 'Infarto Agudo de Miocardio',
+    'codigo.INFARTO.msg.STEMI': 'ST-elevation MI · hemodinámica',
+    'codigo.INFARTO.msg.TROPO': 'Troponina elevada',
+    'codigo.INFARTO.msg.ANGIO': 'Angioplastia primaria',
+    'codigo.INFARTO.msg.STENT': 'Stent coronario colocado',
+    'codigo.INFARTO.msg.KILLIP': 'Clasificación Killip aplicada',
+    'codigo.SEPSIS.name': 'CÓDIGO SEPSIS',
+    'codigo.SEPSIS.subtitle': 'Paciente séptico',
+    'codigo.SEPSIS.words': ['SEPSIS', 'LACTATO', 'QSOFA', 'SHOCK', 'NORA', 'FOCO'],
+    'codigo.SEPSIS.msg.SEPSIS': 'Bundle primera hora cumplido',
+    'codigo.SEPSIS.msg.LACTATO': 'Hiperlactatemia detectada',
+    'codigo.SEPSIS.msg.QSOFA': 'Quick SOFA positivo',
+    'codigo.SEPSIS.msg.SHOCK': 'Shock séptico resuelto',
+    'codigo.SEPSIS.msg.NORA': 'Noradrenalina iniciada',
+    'codigo.SEPSIS.msg.FOCO': 'Control del foco infeccioso',
+    'codigo.ICTUS.name': 'CÓDIGO ICTUS',
+    'codigo.ICTUS.subtitle': 'Accidente cerebrovascular',
+    'codigo.ICTUS.words': ['ICTUS', 'TROMBO', 'NIHSS', 'RTPA', 'TICI', 'ASPECTS'],
+    'codigo.ICTUS.msg.ICTUS': 'Código ictus activado',
+    'codigo.ICTUS.msg.TROMBO': 'Trombectomía mecánica',
+    'codigo.ICTUS.msg.NIHSS': 'Escala NIHSS valorada',
+    'codigo.ICTUS.msg.RTPA': 'Trombolisis iv administrada',
+    'codigo.ICTUS.msg.TICI': 'Recanalización TICI 3',
+    'codigo.ICTUS.msg.ASPECTS': 'ASPECTS >7 · ventana terapéutica',
+    'codigo.word_done': '¡{word} COMPLETADO!',
+    'codigo.activated': '¡{name}!',
+    'codigo.activated_sub': '{subtitle} · 8s',
+
+    // Material de trauma (caja sorpresa)
+    'item.blood': 'Sangre O-',
+    'item.sam_sling': 'Faja pélvica SAM',
+    'item.cat_tourniquet': 'Torniquete CAT',
+    'item.txa': 'TXA',
+    'item.cervical': 'Collarín Philadelphia',
+    'item.ezio': 'EZ-IO',
+    'item.chest_needle': 'Aguja 14G',
+    'item.bandage': 'Vendaje israelí',
+
+    // Toasts
+    'toast.jump': '¡SALTO!',
+    'toast.combo10': '¡RACHA!',
+    'toast.combo10_sub': '10 monedas seguidas',
+    'toast.combo25': '¡EN FUEGO!',
+    'toast.combo25_sub': '25 combo',
+    'toast.combo50': '¡IMPARABLE!',
+    'toast.combo50_sub': '50 combo',
+    'toast.combo80': '¡INCREÍBLE!',
+    'toast.combo80_sub': '80 combo · a por el Mastery',
+    'toast.combo100': '¡100 COMBO!',
+    'toast.combo100_sub': '20 más para el Mastery...',
+    'toast.combo120': '¡120 COMBO!',
+    'toast.combo120_sub': '⚡ activando MASTERY...',
+    'toast.combo150': '¡LEYENDA!',
+    'toast.combo150_sub': '150 combo',
+    'toast.combo200': '¡INHUMANO!',
+    'toast.combo200_sub': '200 combo',
+    'toast.patient': '¡PACIENTE SALVADO!',
+    'toast.coin_rain': '¡LLUVIA DE MONEDAS!',
+    'toast.coin_rain_sub': '+60 monedas doradas',
+    'toast.patients_flood': '¡ALUVIÓN DE PACIENTES!',
+    'toast.patients_flood_sub': '6 pacientes críticos',
+    'toast.lightning': '⚡ ¡RELÁMPAGO!',
+    'toast.lightning_sub': '6s · Monedas ×5',
+    'toast.vortex': '🌀 ¡VÓRTICE ASPIRADOR!',
+    'toast.vortex_sub': '5s · absorbe todo',
+    'toast.magnet': '¡IMÁN DE MONEDAS!',
+    'toast.magnet_sub': '10 segundos',
+    'toast.shield': '¡ESCUDO!',
+    'toast.shield_sub': 'invencible 8s',
+    'toast.x2': '¡x2 PUNTOS!',
+    'toast.x2_sub': '12 segundos',
+    'toast.record': '¡RÉCORD PERSONAL!',
+    'toast.record_sub': 'has superado tu mejor marca',
+    'toast.fever_ext': '¡FEVER EXTENDIDO!',
+    'toast.fever_chain': '🔥 ¡FEVER ENCADENADO!',
+    'toast.fever_chain_sub': 'Combo ×120 + {modes} · 10s',
+    'toast.fever': '🔥 ¡FEVER MODE!',
+    'toast.fever_sub_fixed': '10s · Monedas ×3 · duración fija',
+    'toast.fever_sub_combo': '10s · Monedas ×3 · por combo ×120',
+    'toast.mastery': '⚡ ¡MASTERY MODE!',
+    'toast.mastery_sub': '15s · Monedas ×5 · Bonus final ×2',
+    'toast.sva': '🚨 ¡SVA ACTIVADO!',
+    'toast.sva_sub': '8s · Escudo · Imán · Puntos ×2',
+    'toast.hems': '¡MODO HEMS!',
+    'toast.hems_sub': '8s · Rescate aéreo activado',
+    'toast.perf_ultra': '⚙️ Modo rendimiento máximo activado',
+    'toast.perf_ultra_sub': 'recortando efectos para mejorar fluidez ({fps} FPS)',
+    'toast.perf_tier': '⚙️ Modo gráfico ajustado',
+    'toast.perf_tier_sub': 'optimizando para tu dispositivo ({tier}){aa}',
+    'toast.quality': 'Calidad gráfica',
+    'toast.quality_aa': ' · AA cambia al recargar',
+  },
+
+  ca: {
+    'meta.title': 'HEMS Runner · Jornada de Trauma 2026',
+    'loading.models': 'Carregant models · {done}/{total}',
+    'btn.back_menu': '← Menú',
+    'btn.menu': 'Menú',
+    'btn.play': 'Jugar',
+    'lang.ca': 'CAT',
+    'lang.es': 'ESP',
+
+    'tutorial.jump': 'Saltar',
+    'tutorial.lane_left': 'Carril esquerre',
+    'tutorial.lane_right': 'Carril dret',
+    'tutorial.keys_lane': 'canviar de carril',
+    'tutorial.keys_jump': 'saltar',
+    'tutorial.keys_brake': 'frenar',
+    'tutorial.how': 'Com es juga',
+    'tutorial.tap_start': 'Toca per començar',
+    'tutorial.key_start': 'Prem una tecla per començar',
+    'tutorial.brake_hint': 'Llisca ↓ per frenar · o fes servir els botons',
+
+    'pause.eyebrow': 'Pausa',
+    'pause.title': 'Respira',
+    'pause.score': 'Puntuació',
+    'pause.distance': 'Distància',
+    'pause.quality': 'Qualitat gràfica ·',
+    'pause.q_auto': 'Auto',
+    'pause.q_low': 'Baixa',
+    'pause.q_medium': 'Mitjana',
+    'pause.q_high': 'Alta',
+    'pause.resume': 'Continuar',
+    'pause.quit': 'Sortir al menú',
+    'confirm.quit': 'Vols abandonar la partida?',
+
+    'hud.score': 'Puntuació',
+    'hud.dist_speed': 'Distància · Velocitat',
+    'hud.coins_patients': 'Monedes · Pacients',
+    'hud.word_of_day': 'Paraula del dia',
+    'hud.combo': 'Combo',
+    'hud.rescued': '⌬ RESCATATS',
+    'hud.pts': 'pts',
+    'hud.streak': 'RATXA!',
+    'hud.milestone_sub': 'Ben fet',
+    'hud.speed_up': 'Velocitat +1!',
+    'hud.debug_keys': 'DEBUG · Tecles de prova',
+
+    'banner.codigo_rojo': 'CODI VERMELL',
+    'banner.codigo_rojo_sub': '8s · Prioritat absoluta',
+    'banner.codigo_rojo_timer': '{secs}s · Prioritat absoluta',
+    'banner.fever': 'FEVER MODE',
+    'banner.fever_sub': '10s · ×3 punts',
+    'banner.fever_timer': '{secs}s · ×3 punts · combo {combo}',
+    'banner.jetpack': 'JETPACK',
+    'banner.jetpack_sub': '5s · Volant',
+    'banner.jetpack_timer': '{secs}s · Rescat aeri',
+    'banner.hems_title': 'MODE HEMS',
+    'banner.rayo': '⚡ LLAMP ⚡',
+    'banner.rayo_sub': '6s · Monedes ×5',
+    'banner.mastery': '⚡ MASTERY MODE ⚡',
+    'banner.mastery_sub': '15s · Monedes ×5 · Bonus ×2',
+    'banner.mastery_timer': '{secs}s · Monedes ×5 · +{pts}',
+    'banner.sva': '🚨 SVA ACTIVAT 🚨',
+    'banner.sva_sub': '8s · Escut · ×2 punts',
+    'banner.sva_timer': '{secs}s · Escut · ×2 punts',
+    'banner.mastery_done': '⚡ MASTERY COMPLET',
+    'banner.earned': 'Guanyat:',
+    'banner.bonus': 'Bonus ×2:',
+    'banner.total': 'TOTAL',
+
+    'powerup.magnet': 'Imant',
+    'powerup.shield': 'Escut',
+    'powerup.x2': 'Punts dobles',
+
+    'menu.eyebrow': 'Jornada de Trauma · Edició 01',
+    'menu.subtitle': 'Condueix l\'ambulància. Recull monedes, salva pacients, atrapa power-ups i esquiva obstacles. La teva millor puntuació t\'acosta a la jornada.',
+    'menu.fomo': 'Premis per als Top del Rànquing · 14 · 10 · 2026',
+    'menu.controls': 'Controls',
+    'menu.ctrl_lane': 'Canviar de carril',
+    'menu.ctrl_jump': 'Saltar',
+    'menu.ctrl_brake': 'Frenar',
+    'menu.touch_lane': 'Toca a un costat de l\'ambulància',
+    'menu.touch_jump': 'Toca a dalt o llisca ↑',
+    'menu.touch_brake': 'Llisca ↓ per frenar',
+    'menu.newday': 'Nou dia!',
+    'menu.newday_sub': 'Multiplicador reiniciat · Noves missions',
+    'menu.code_today': 'Codi destacat d\'avui',
+    'menu.missions_today': 'Missions d\'avui',
+    'menu.mult_today': 'Mult. avui',
+    'menu.streak': 'Ratxa',
+    'menu.record_mult': 'Mult. rècord',
+    'menu.total_missions': 'Missions totals',
+    'menu.start': 'Començar missió',
+    'menu.ranking': 'Rànquing',
+    'menu.day': 'dia',
+    'menu.days': 'dies',
+
+    'missions.footer': 'Completa <span class="missions-footer__highlight">{n} {word}</span> més per pujar a ×{mult} · Caduca a mitjanit',
+    'missions.one': 'missió',
+    'missions.many': 'missions',
+    'missions.done_toast': 'MISSIÓ COMPLERTA!',
+    'mission.dist_500': 'Arriba a 500m en un torn',
+    'mission.dist_1000': 'Arriba a 1000m en un torn',
+    'mission.dist_1500': 'Arriba a 1500m en un torn',
+    'mission.dist_2500': 'Arriba a 2500m en un torn',
+    'mission.coins_50': 'Recull 50 monedes',
+    'mission.coins_100': 'Recull 100 monedes',
+    'mission.coins_200': 'Recull 200 monedes',
+    'mission.pat_2': 'Salva 2 pacients en un torn',
+    'mission.pat_5': 'Salva 5 pacients en un torn',
+    'mission.pat_10': 'Salva 10 pacients en un torn',
+    'mission.word_1': 'Completa 1 paraula del dia',
+    'mission.word_2': 'Completa 2 paraules del dia',
+    'mission.combo_15': 'Aconsegueix un combo x15',
+    'mission.combo_30': 'Aconsegueix un combo x30',
+    'mission.jumps_10': 'Esquiva 10 obstacles saltant',
+    'mission.jumps_25': 'Esquiva 25 obstacles saltant',
+    'mission.pure_1000': 'Arriba a 1000m sense fer servir revive',
+    'mission.score_5k': 'Aconsegueix 5.000 punts en un torn',
+    'mission.score_15k': 'Aconsegueix 15.000 punts en un torn',
+
+    'gameover.eyebrow': 'Missió avortada',
+    'gameover.title': 'Fi de <em>servei</em>',
+    'gameover.default_death': 'Impacte registrat.',
+    'gameover.revive_in': 'Continuar la partida en',
+    'gameover.revive_btn': '✚ Continuar',
+    'gameover.score': 'Puntuació',
+    'gameover.coins': 'Monedes',
+    'gameover.patients': 'Pacients',
+    'gameover.mult_up': 'Multiplicador <span id="mu-new-value">×2</span>!',
+    'gameover.mult_up_sub': 'Totes les teves puntuacions × <span id="mu-new-value-sub">2</span> a partir d\'ara',
+    'gameover.progress_today': 'Progrés d\'avui',
+    'gameover.name_ph': 'El teu nom (màx 16)',
+    'gameover.email_ph': 'Email (opcional, per al premi)',
+    'gameover.save': 'Desar al rànquing',
+    'gameover.retry': 'Tornar-hi',
+    'gameover.record': ' · Nou rècord personal!',
+    'death.default': 'Missió avortada.',
+    'death.car.0': 'Impacte lateral. No van cedir la prioritat.',
+    'death.car.1': 'Col·lisió múltiple. Cal reactivar el codi.',
+    'death.car.2': 'Accident de trànsit. Ara truquem una altra ambulància.',
+    'death.truck.0': 'Camió aturat. Sempre en doble fila.',
+    'death.truck.1': 'Càrrega mal distribuïda. Impacte frontal.',
+    'death.truck.2': 'Vehicle pesant sense senyalitzar. Mala sort.',
+    'death.barrier.0': 'Obra sense abalisar. Les emergències també tenen drets.',
+    'death.barrier.1': 'Senyalització deficient. Comunicat al 112.',
+    'death.barrier.2': 'Zona d\'obres. Ningú no va avisar.',
+    'death.scooter.0': 'Patinet elèctric sense llums. Víctima probable.',
+    'death.scooter.1': 'Mobilitat personal sense casc. Trauma cranial gairebé segur.',
+    'death.scooter.2': 'VMP abandonat al carril. Denúncia pendent.',
+    'death.cone.0': 'Cons mal col·locats. Trampa per a emergències.',
+    'death.cone.1': 'Abalisament incorrecte. Comunicat a protecció civil.',
+    'death.cone.2': 'Obra nocturna sense senyalització visible.',
+
+    'lb.eyebrow': 'Top jugadors',
+    'lb.title': 'Rànquing <em>global</em>',
+    'lb.subtitle': 'Els Top del Rànquing rebran premis el dia de la I Jornada de Trauma, el 14 d\'octubre de 2026.',
+    'lb.empty': 'Encara no hi ha puntuacions. Sigues el primer.',
+    'lb.anon': 'Anònim',
+
+    'rank.0': 'Primer intervinent',
+    'rank.1': 'SVB',
+    'rank.2': 'SVA',
+    'rank.3': 'PHTLS',
+    'rank.4': 'ATLS',
+    'rank.5': 'ETC',
+    'rank.6': 'Metge HEMS',
+    'rank.7': 'Trauma Leader',
+    'rank.8': 'Llegenda',
+    'rank.label.0': '« Primer intervinent »',
+    'rank.label.1': '« SVB · Suport Vital Bàsic »',
+    'rank.label.2': '« SVA · Suport Vital Avançat »',
+    'rank.label.3': '« PHTLS · Prehospital Trauma »',
+    'rank.label.4': '« ATLS · Advanced Trauma Life Support »',
+    'rank.label.5': '« ETC · European Trauma Course »',
+    'rank.label.6': '« Metge HEMS · Helitransport »',
+    'rank.label.7': '« Trauma Team Leader · Llegenda »',
+
+    'speed.0': 'Urgència activada',
+    'speed.1': 'Prioritat 1',
+    'speed.2': 'Codi Vermell',
+    'speed.3': 'Golden Hour',
+    'speed.4': 'Zona extrema',
+    'speed.5': 'Llegenda',
+    'speed.6': 'Sobrehumà',
+    'milestone.0': 'Via aèria assegurada',
+    'milestone.1': 'Triangle de seguretat',
+    'milestone.2': 'Hemorràgia controlada',
+    'milestone.3': 'Via intraòssia col·locada',
+    'milestone.4': 'Activació codi trauma',
+    'milestone.5': 'Politraumatitzat estabilitzat',
+    'milestone.6': 'Golden Hour dominada',
+    'milestone.7': 'Llegenda del trauma',
+
+    'codigo.TRAUMA.name': 'CODI TRAUMA',
+    'codigo.TRAUMA.subtitle': 'Pacient politraumatitzat',
+    'codigo.TRAUMA.words': ['TRAUMA', 'ATLS', 'ABCDE', 'REBOA', 'DAMAGE', 'GOLDEN', 'FAST'],
+    'codigo.TRAUMA.msg.TRAUMA': 'Politraumatitzat estabilitzat',
+    'codigo.TRAUMA.msg.ATLS': 'Primary survey completat',
+    'codigo.TRAUMA.msg.ABCDE': 'Avaluació sistemàtica',
+    'codigo.TRAUMA.msg.REBOA': 'Oclusió aòrtica endovascular',
+    'codigo.TRAUMA.msg.DAMAGE': 'Damage Control Surgery',
+    'codigo.TRAUMA.msg.GOLDEN': 'Golden Hour dominada',
+    'codigo.TRAUMA.msg.FAST': 'Ecografia de trauma positiva',
+    'codigo.INFARTO.name': 'CODI INFART',
+    'codigo.INFARTO.subtitle': 'Síndrome coronària aguda',
+    'codigo.INFARTO.words': ['IAM', 'STEMI', 'TROPO', 'ANGIO', 'STENT', 'KILLIP'],
+    'codigo.INFARTO.msg.IAM': 'Infart Agut de Miocardi',
+    'codigo.INFARTO.msg.STEMI': 'ST-elevation MI · hemodinàmica',
+    'codigo.INFARTO.msg.TROPO': 'Troponina elevada',
+    'codigo.INFARTO.msg.ANGIO': 'Angioplàstia primària',
+    'codigo.INFARTO.msg.STENT': 'Stent coronari col·locat',
+    'codigo.INFARTO.msg.KILLIP': 'Classificació Killip aplicada',
+    'codigo.SEPSIS.name': 'CODI SÈPSIA',
+    'codigo.SEPSIS.subtitle': 'Pacient sèptic',
+    'codigo.SEPSIS.words': ['SEPSIA', 'LACTAT', 'QSOFA', 'XOC', 'NORA', 'FOCUS'],
+    'codigo.SEPSIS.msg.SEPSIA': 'Bundle primera hora complert',
+    'codigo.SEPSIS.msg.LACTAT': 'Hiperlactatèmia detectada',
+    'codigo.SEPSIS.msg.QSOFA': 'Quick SOFA positiu',
+    'codigo.SEPSIS.msg.XOC': 'Xoc sèptic resolt',
+    'codigo.SEPSIS.msg.NORA': 'Noradrenalina iniciada',
+    'codigo.SEPSIS.msg.FOCUS': 'Control del focus infecciós',
+    'codigo.ICTUS.name': 'CODI ICTUS',
+    'codigo.ICTUS.subtitle': 'Accident cerebrovascular',
+    'codigo.ICTUS.words': ['ICTUS', 'TROMBO', 'NIHSS', 'RTPA', 'TICI', 'ASPECTS'],
+    'codigo.ICTUS.msg.ICTUS': 'Codi ictus activat',
+    'codigo.ICTUS.msg.TROMBO': 'Trombectomia mecànica',
+    'codigo.ICTUS.msg.NIHSS': 'Escala NIHSS valorada',
+    'codigo.ICTUS.msg.RTPA': 'Trombòlisi iv administrada',
+    'codigo.ICTUS.msg.TICI': 'Recanalització TICI 3',
+    'codigo.ICTUS.msg.ASPECTS': 'ASPECTS >7 · finestra terapèutica',
+    'codigo.word_done': '{word} COMPLETAT!',
+    'codigo.activated': '{name}!',
+    'codigo.activated_sub': '{subtitle} · 8s',
+
+    'item.blood': 'Sang O-',
+    'item.sam_sling': 'Faixa pèlvica SAM',
+    'item.cat_tourniquet': 'Torniquet CAT',
+    'item.txa': 'TXA',
+    'item.cervical': 'Collaret Philadelphia',
+    'item.ezio': 'EZ-IO',
+    'item.chest_needle': 'Agulla 14G',
+    'item.bandage': 'Embenat israelià',
+
+    'toast.jump': 'SALT!',
+    'toast.combo10': 'RATXA!',
+    'toast.combo10_sub': '10 monedes seguides',
+    'toast.combo25': 'EN FLAMES!',
+    'toast.combo25_sub': '25 combo',
+    'toast.combo50': 'IMPARABLE!',
+    'toast.combo50_sub': '50 combo',
+    'toast.combo80': 'INCREÏBLE!',
+    'toast.combo80_sub': '80 combo · a pel Mastery',
+    'toast.combo100': '100 COMBO!',
+    'toast.combo100_sub': '20 més per al Mastery...',
+    'toast.combo120': '120 COMBO!',
+    'toast.combo120_sub': '⚡ activant MASTERY...',
+    'toast.combo150': 'LLEGENDA!',
+    'toast.combo150_sub': '150 combo',
+    'toast.combo200': 'INHUMÀ!',
+    'toast.combo200_sub': '200 combo',
+    'toast.patient': 'PACIENT SALVAT!',
+    'toast.coin_rain': 'PLUJA DE MONEDES!',
+    'toast.coin_rain_sub': '+60 monedes daurades',
+    'toast.patients_flood': 'ALLAU DE PACIENTS!',
+    'toast.patients_flood_sub': '6 pacients crítics',
+    'toast.lightning': '⚡ LLAMP!',
+    'toast.lightning_sub': '6s · Monedes ×5',
+    'toast.vortex': '🌀 VÒRTEX ASPIRADOR!',
+    'toast.vortex_sub': '5s · ho absorbeix tot',
+    'toast.magnet': 'IMANT DE MONEDES!',
+    'toast.magnet_sub': '10 segons',
+    'toast.shield': 'ESCUT!',
+    'toast.shield_sub': 'invencible 8s',
+    'toast.x2': 'x2 PUNTS!',
+    'toast.x2_sub': '12 segons',
+    'toast.record': 'RÈCORD PERSONAL!',
+    'toast.record_sub': 'has superat la teva millor marca',
+    'toast.fever_ext': 'FEVER ESTÈS!',
+    'toast.fever_chain': '🔥 FEVER ENCADENAT!',
+    'toast.fever_chain_sub': 'Combo ×120 + {modes} · 10s',
+    'toast.fever': '🔥 FEVER MODE!',
+    'toast.fever_sub_fixed': '10s · Monedes ×3 · durada fixa',
+    'toast.fever_sub_combo': '10s · Monedes ×3 · per combo ×120',
+    'toast.mastery': '⚡ MASTERY MODE!',
+    'toast.mastery_sub': '15s · Monedes ×5 · Bonus final ×2',
+    'toast.sva': '🚨 SVA ACTIVAT!',
+    'toast.sva_sub': '8s · Escut · Imant · Punts ×2',
+    'toast.hems': 'MODE HEMS!',
+    'toast.hems_sub': '8s · Rescat aeri activat',
+    'toast.perf_ultra': '⚙️ Mode rendiment màxim activat',
+    'toast.perf_ultra_sub': 'retallant efectes per millorar la fluïdesa ({fps} FPS)',
+    'toast.perf_tier': '⚙️ Mode gràfic ajustat',
+    'toast.perf_tier_sub': 'optimitzant per al teu dispositiu ({tier}){aa}',
+    'toast.quality': 'Qualitat gràfica',
+    'toast.quality_aa': ' · AA canvia en recarregar',
+  },
+};
+
+const I18N = (() => {
+  const KEY = 'hems_runner_lang';
+  const DEFAULT = 'ca';
+  const listeners = [];
+  let lang = DEFAULT;
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved && I18N_STRINGS[saved]) lang = saved;
+  } catch {}
+
+  function t(key, vars) {
+    let s = I18N_STRINGS[lang][key];
+    if (s === undefined) s = I18N_STRINGS.es[key];
+    if (s === undefined) { console.warn('[i18n] falta la clave', key); return key; }
+    if (Array.isArray(s)) return s;
+    if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(vars[k]);
+    return s;
+  }
+
+  // Repinta el HTML estático y avisa a quien renderiza contenido dinámico.
+  function apply() {
+    document.documentElement.lang = lang;
+    document.title = t('meta.title');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.querySelectorAll('[data-lang]').forEach(el => { el.classList.toggle('active', el.dataset.lang === lang); });
+    for (const fn of listeners) { try { fn(); } catch (e) { console.warn('[i18n] listener', e); } }
+  }
+
+  function set(next) {
+    if (!I18N_STRINGS[next] || next === lang) return;
+    lang = next;
+    try { localStorage.setItem(KEY, lang); } catch {}
+    apply();
+  }
+
+  function onChange(fn) { listeners.push(fn); }
+
+  return { t, apply, set, onChange, get lang() { return lang; } };
+})();
+const t = I18N.t;
+
 /* ================================================================
    HEMS RUNNER 3D v4 — Engagement Edition
    - Power-ups tipo Subway Surfers
@@ -2716,38 +3400,38 @@ function computeSpeedAt(distance) {
 // Hitos narrativos (notificación cuando los cruzas)
 // Alineados con los nuevos thresholds de dificultad
 const SPEED_MILESTONES = [
-  { threshold: 250,  label: 'Urgencia activada' },
-  { threshold: 800,  label: 'Prioridad 1' },
-  { threshold: 2000, label: 'Código Rojo' },
-  { threshold: 3500, label: 'Golden Hour' },
-  { threshold: 5500, label: 'Zona extrema' },
-  { threshold: 8000, label: 'Leyenda' },
-  { threshold: 12000, label: 'Sobrehumano' },
+  { threshold: 250,  get label() { return t('speed.0'); } },
+  { threshold: 800,  get label() { return t('speed.1'); } },
+  { threshold: 2000, get label() { return t('speed.2'); } },
+  { threshold: 3500, get label() { return t('speed.3'); } },
+  { threshold: 5500, get label() { return t('speed.4'); } },
+  { threshold: 8000, get label() { return t('speed.5'); } },
+  { threshold: 12000, get label() { return t('speed.6'); } },
 ];
 
 // ========== ESTADO ==========
 // ========== META-ESTADO (multiplicador + misiones persistentes) ==========
 // Pool de misiones temáticas médicas
 const MISSION_POOL = [
-  { id: 'dist_500',    type: 'distance',  target: 500,  label: 'Llega a 500m en un turno' },
-  { id: 'dist_1000',   type: 'distance',  target: 1000, label: 'Llega a 1000m en un turno' },
-  { id: 'dist_1500',   type: 'distance',  target: 1500, label: 'Llega a 1500m en un turno' },
-  { id: 'dist_2500',   type: 'distance',  target: 2500, label: 'Llega a 2500m en un turno' },
-  { id: 'coins_50',    type: 'coins',     target: 50,   label: 'Recoge 50 monedas' },
-  { id: 'coins_100',   type: 'coins',     target: 100,  label: 'Recoge 100 monedas' },
-  { id: 'coins_200',   type: 'coins',     target: 200,  label: 'Recoge 200 monedas' },
-  { id: 'pat_2',       type: 'patients',  target: 2,    label: 'Salva 2 pacientes en un turno' },
-  { id: 'pat_5',       type: 'patients',  target: 5,    label: 'Salva 5 pacientes en un turno' },
-  { id: 'pat_10',      type: 'patients',  target: 10,   label: 'Salva 10 pacientes en un turno' },
-  { id: 'word_1',      type: 'words',     target: 1,    label: 'Completa 1 palabra del día' },
-  { id: 'word_2',      type: 'words',     target: 2,    label: 'Completa 2 palabras del día' },
-  { id: 'combo_15',    type: 'combo',     target: 15,   label: 'Consigue un combo x15' },
-  { id: 'combo_30',    type: 'combo',     target: 30,   label: 'Consigue un combo x30' },
-  { id: 'jumps_10',    type: 'jumps',     target: 10,   label: 'Esquiva 10 obstáculos saltando' },
-  { id: 'jumps_25',    type: 'jumps',     target: 25,   label: 'Esquiva 25 obstáculos saltando' },
-  { id: 'pure_1000',   type: 'pure',      target: 1000, label: 'Llega a 1000m sin usar revive' },
-  { id: 'score_5k',    type: 'score',     target: 5000, label: 'Consigue 5.000 puntos en un turno' },
-  { id: 'score_15k',   type: 'score',     target: 15000, label: 'Consigue 15.000 puntos en un turno' },
+  { id: 'dist_500',    type: 'distance',  target: 500,  get label() { return t('mission.dist_500'); } },
+  { id: 'dist_1000',   type: 'distance',  target: 1000, get label() { return t('mission.dist_1000'); } },
+  { id: 'dist_1500',   type: 'distance',  target: 1500, get label() { return t('mission.dist_1500'); } },
+  { id: 'dist_2500',   type: 'distance',  target: 2500, get label() { return t('mission.dist_2500'); } },
+  { id: 'coins_50',    type: 'coins',     target: 50,   get label() { return t('mission.coins_50'); } },
+  { id: 'coins_100',   type: 'coins',     target: 100,  get label() { return t('mission.coins_100'); } },
+  { id: 'coins_200',   type: 'coins',     target: 200,  get label() { return t('mission.coins_200'); } },
+  { id: 'pat_2',       type: 'patients',  target: 2,    get label() { return t('mission.pat_2'); } },
+  { id: 'pat_5',       type: 'patients',  target: 5,    get label() { return t('mission.pat_5'); } },
+  { id: 'pat_10',      type: 'patients',  target: 10,   get label() { return t('mission.pat_10'); } },
+  { id: 'word_1',      type: 'words',     target: 1,    get label() { return t('mission.word_1'); } },
+  { id: 'word_2',      type: 'words',     target: 2,    get label() { return t('mission.word_2'); } },
+  { id: 'combo_15',    type: 'combo',     target: 15,   get label() { return t('mission.combo_15'); } },
+  { id: 'combo_30',    type: 'combo',     target: 30,   get label() { return t('mission.combo_30'); } },
+  { id: 'jumps_10',    type: 'jumps',     target: 10,   get label() { return t('mission.jumps_10'); } },
+  { id: 'jumps_25',    type: 'jumps',     target: 25,   get label() { return t('mission.jumps_25'); } },
+  { id: 'pure_1000',   type: 'pure',      target: 1000, get label() { return t('mission.pure_1000'); } },
+  { id: 'score_5k',    type: 'score',     target: 5000, get label() { return t('mission.score_5k'); } },
+  { id: 'score_15k',   type: 'score',     target: 15000, get label() { return t('mission.score_15k'); } },
 ];
 
 const META_KEY = 'hems_runner_meta';
@@ -2999,7 +3683,7 @@ function renderMenuMissions() {
   const progress = META.missionsCompleted % 3;
   const footer = document.getElementById('menu-missions-footer');
   const remaining = 3 - progress;
-  footer.innerHTML = `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1} · Caduca a medianoche`;
+  footer.innerHTML = t('missions.footer', { n: remaining, word: t(remaining === 1 ? 'missions.one' : 'missions.many'), mult: META.multiplier + 1 });
 
   const list = document.getElementById('menu-missions-list');
   let html = '';
@@ -3014,7 +3698,7 @@ function renderMenuMissions() {
 
   // Stats históricos
   const h = META.history || {};
-  document.getElementById('history-streak').textContent = (h.streak || 1) + (h.streak > 1 ? ' días' : ' día');
+  document.getElementById('history-streak').textContent = (h.streak || 1) + ' ' + t(h.streak > 1 ? 'menu.days' : 'menu.day');
   document.getElementById('history-max-mult').textContent = '×' + (h.maxMultiplierEver || 1);
   document.getElementById('history-total-missions').textContent = h.totalMissionsCompleted || 0;
 
@@ -3061,7 +3745,7 @@ function renderGameOverMissions(commitResult) {
   const progress = META.missionsCompleted % 3;
   const remaining = 3 - progress;
   document.getElementById('go-missions-footer').innerHTML =
-    `Completa <span class="missions-footer__highlight">${remaining} misión${remaining === 1 ? '' : 'es'}</span> más para subir a ×${META.multiplier + 1} · Caduca a medianoche`;
+    t('missions.footer', { n: remaining, word: t(remaining === 1 ? 'missions.one' : 'missions.many'), mult: META.multiplier + 1 });
 
   // Lista: las misiones ACTUALES (ya reemplazadas las completadas). Las completadas este run se muestran con animación newly-done si están en el set "completedThisRun" antes del commit... mejor mostramos las activas + un pequeño summary
   const list = document.getElementById('go-missions-list');
@@ -3165,79 +3849,39 @@ const STATE = {
 
 // ========== SISTEMA DE CÓDIGOS CLÍNICOS ==========
 // Cada palabra activa su código correspondiente al completarse
-const CODIGOS = {
-  TRAUMA: {
-    id: 'TRAUMA',
-    name: 'CÓDIGO TRAUMA',
-    subtitle: 'Paciente politraumatizado',
-    color: 0xe63946,           // Rojo profundo (sangre)
-    colorHex: '#e63946',
-    words: ['TRAUMA', 'ATLS', 'ABCDE', 'REBOA', 'DAMAGE', 'GOLDEN', 'FAST'],
-    messages: {
-      'TRAUMA':  'Politraumatizado estabilizado',
-      'ATLS':    'Primary survey completado',
-      'ABCDE':   'Evaluación sistemática',
-      'REBOA':   'Oclusión aórtica endovascular',
-      'DAMAGE':  'Damage Control Surgery',
-      'GOLDEN':  'Golden Hour dominada',
-      'FAST':    'Ecografía de trauma positiva',
+const CODIGOS = {};
+for (const [id, color, colorHex] of [
+  ['TRAUMA',  0xe63946, '#e63946'],   // Rojo profundo (sangre)
+  ['INFARTO', 0xffb347, '#ffb347'],   // Ámbar/amarillo (alarma cardiaca)
+  ['SEPSIS',  0x4ade80, '#4ade80'],   // Verde (reanimación)
+  ['ICTUS',   0xa855f7, '#a855f7'],   // Púrpura (vascular/cerebro)
+]) {
+  // Textos y palabras por idioma (I18N_STRINGS → 'codigo.<ID>.*'). messages
+  // se resuelve por palabra del idioma activo.
+  CODIGOS[id] = {
+    id, color, colorHex,
+    get name() { return t(`codigo.${id}.name`); },
+    get subtitle() { return t(`codigo.${id}.subtitle`); },
+    get words() { return t(`codigo.${id}.words`); },
+    get messages() {
+      const m = {};
+      for (const w of this.words) m[w] = t(`codigo.${id}.msg.${w}`);
+      return m;
     },
-  },
-  INFARTO: {
-    id: 'INFARTO',
-    name: 'CÓDIGO INFARTO',
-    subtitle: 'Síndrome coronario agudo',
-    color: 0xffb347,           // Ámbar/amarillo (alarma cardiaca)
-    colorHex: '#ffb347',
-    words: ['IAM', 'STEMI', 'TROPO', 'ANGIO', 'STENT', 'KILLIP'],
-    messages: {
-      'IAM':     'Infarto Agudo de Miocardio',
-      'STEMI':   'ST-elevation MI · hemodinámica',
-      'TROPO':   'Troponina elevada',
-      'ANGIO':   'Angioplastia primaria',
-      'STENT':   'Stent coronario colocado',
-      'KILLIP':  'Clasificación Killip aplicada',
-    },
-  },
-  SEPSIS: {
-    id: 'SEPSIS',
-    name: 'CÓDIGO SEPSIS',
-    subtitle: 'Paciente séptico',
-    color: 0x4ade80,           // Verde (reanimación)
-    colorHex: '#4ade80',
-    words: ['SEPSIS', 'LACTATO', 'QSOFA', 'SHOCK', 'NORA', 'FOCO'],
-    messages: {
-      'SEPSIS':  'Bundle primera hora cumplido',
-      'LACTATO': 'Hiperlactatemia detectada',
-      'QSOFA':   'Quick SOFA positivo',
-      'SHOCK':   'Shock séptico resuelto',
-      'NORA':    'Noradrenalina iniciada',
-      'FOCO':    'Control del foco infeccioso',
-    },
-  },
-  ICTUS: {
-    id: 'ICTUS',
-    name: 'CÓDIGO ICTUS',
-    subtitle: 'Accidente cerebrovascular',
-    color: 0xa855f7,           // Púrpura (vascular/cerebro)
-    colorHex: '#a855f7',
-    words: ['ICTUS', 'TROMBO', 'NIHSS', 'RTPA', 'TICI', 'ASPECTS'],
-    messages: {
-      'ICTUS':   'Código ictus activado',
-      'TROMBO':  'Trombectomía mecánica',
-      'NIHSS':   'Escala NIHSS valorada',
-      'RTPA':    'Trombolisis iv administrada',
-      'TICI':    'Recanalización TICI 3',
-      'ASPECTS': 'ASPECTS >7 · ventana terapéutica',
-    },
-  },
-};
+  };
+}
 
 // Lookup inverso: palabra → código al que pertenece
+// Se reconstruye al cambiar de idioma (las palabras dependen del idioma).
 const WORD_TO_CODIGO = {};
-for (const [codKey, cod] of Object.entries(CODIGOS)) {
-  for (const w of cod.words) WORD_TO_CODIGO[w] = codKey;
+function rebuildWordIndex() {
+  for (const k of Object.keys(WORD_TO_CODIGO)) delete WORD_TO_CODIGO[k];
+  for (const [codKey, cod] of Object.entries(CODIGOS)) {
+    for (const w of cod.words) WORD_TO_CODIGO[w] = codKey;
+  }
 }
+rebuildWordIndex();
+I18N.onChange(rebuildWordIndex);
 
 /* ================================================================
    CATÁLOGO DE ITEMS DE TRAUMA
@@ -3247,7 +3891,7 @@ for (const [codKey, cod] of Object.entries(CODIGOS)) {
 const TRAUMA_ITEMS = [
   {
     id: 'blood',
-    name: 'Sangre O-',
+    get name() { return t('item.blood'); },
     points: 500,
     color: 0x991b1b,   // rojo oscuro (sangre venosa)
     glow: 0xe63946,
@@ -3256,7 +3900,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'sam_sling',
-    name: 'Faja pélvica SAM',
+    get name() { return t('item.sam_sling'); },
     points: 400,
     color: 0xf97316,   // naranja SAM
     glow: 0xffa940,
@@ -3265,7 +3909,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'cat_tourniquet',
-    name: 'Torniquete CAT',
+    get name() { return t('item.cat_tourniquet'); },
     points: 350,
     color: 0xdc2626,   // rojo CAT
     glow: 0xff6b6b,
@@ -3274,7 +3918,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'txa',
-    name: 'TXA',
+    get name() { return t('item.txa'); },
     points: 300,
     color: 0x10b981,   // verde farmacia (vial)
     glow: 0x6ee7b7,
@@ -3283,7 +3927,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'cervical',
-    name: 'Collarín Philadelphia',
+    get name() { return t('item.cervical'); },
     points: 250,
     color: 0xf4efe6,   // blanco hueso
     glow: 0xffffff,
@@ -3292,7 +3936,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'ezio',
-    name: 'EZ-IO',
+    get name() { return t('item.ezio'); },
     points: 200,
     color: 0x2563eb,   // azul EZ-IO
     glow: 0x60a5fa,
@@ -3301,7 +3945,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'chest_needle',
-    name: 'Aguja 14G',
+    get name() { return t('item.chest_needle'); },
     points: 200,
     color: 0xa8a29e,   // plateado metálico
     glow: 0xd6d3d1,
@@ -3310,7 +3954,7 @@ const TRAUMA_ITEMS = [
   },
   {
     id: 'bandage',
-    name: 'Vendaje israelí',
+    get name() { return t('item.bandage'); },
     points: 150,
     color: 0xd4c4a0,   // beige clínico
     glow: 0xefe4c7,
@@ -3523,7 +4167,7 @@ function completeWordHunt() {
   const codKey = WORD_TO_CODIGO[word];
   const cod = CODIGOS[codKey] || CODIGOS.TRAUMA;
   const msg = cod.messages[word] || 'Palabra completada';
-  showToast(`¡${word} COMPLETADO!`, `+${earned} · ${msg}`, cod.color);
+  showToast(t('codigo.word_done', { word }), `+${earned} · ${msg}`, cod.color);
   // Animación de celebración en UI
   const panel = document.getElementById('word-hunt');
   panel.classList.add('completed');
@@ -3555,7 +4199,7 @@ function activateCodigo(codKey) {
   STATE.invincible = true;
   STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 8 * 60);
   setTimeout(() => {
-    showToast('¡' + cod.name + '!', cod.subtitle + ' · 8s', cod.color);
+    showToast(t('codigo.activated', { name: cod.name }), t('codigo.activated_sub', { subtitle: cod.subtitle }), cod.color);
   }, 700);
   // Activar banner visual con el código correspondiente
   updateCodigoBanner(codKey, true);
@@ -3612,14 +4256,14 @@ function activateFever(fromBox) {
   let title, subtitle;
   if (otherModes.length > 0) {
     // Fever activada en medio de otro modo → dejar claro que es COMBO
-    title = '🔥 ¡FEVER ENCADENADO!';
-    subtitle = `Combo ×120 + ${otherModes.join(' + ')} · 10s`;
+    title = t('toast.fever_chain');
+    subtitle = t('toast.fever_chain_sub', { modes: otherModes.join(' + ') });
   } else if (fromBox) {
-    title = '🔥 ¡FEVER MODE!';
-    subtitle = '10s · Monedas ×3 · duración fija';
+    title = t('toast.fever');
+    subtitle = t('toast.fever_sub_fixed');
   } else {
-    title = '🔥 ¡FEVER MODE!';
-    subtitle = '10s · Monedas ×3 · por combo ×120';
+    title = t('toast.fever');
+    subtitle = t('toast.fever_sub_combo');
   }
   showToast(title, subtitle, 0xff6b35);
 
@@ -3679,7 +4323,7 @@ function activateMasteryMode() {
   STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 15 * 60);
 
   // Toast + banner + visuales
-  showToast('⚡ ¡MASTERY MODE!', '15s · Monedas ×5 · Bonus final ×2', 0x10b981);
+  showToast(t('toast.mastery'), t('toast.mastery_sub'), 0x10b981);
   const banner = document.getElementById('mastery-banner');
   if (banner) banner.classList.add('active');
   // Vignette verde en los bordes
@@ -3747,7 +4391,7 @@ function activateSVA() {
   createSVAAura();
 
   // Toast + efectos iniciales
-  showToast('🚨 ¡SVA ACTIVADO!', '8s · Escudo · Imán · Puntos ×2', 0x3b82f6);
+  showToast(t('toast.sva'), t('toast.sva_sub'), 0x3b82f6);
   flashScreen('#3b82f6', 0.35, 450);
   addTemporaryLight(
     { x: ambulance.position.x, y: 2, z: ambulance.position.z - 2 },
@@ -3993,12 +4637,12 @@ function activateModoHEMS() {
   helicopter.visible = true;
   helicopterShadow.visible = true;
   player.jumpY = 3.5;
-  showToast('¡MODO HEMS!', '8s · Rescate aéreo activado', 0xf5c000);
+  showToast(t('toast.hems'), t('toast.hems_sub'), 0xf5c000);
   const banner = document.getElementById('jetpack-banner');
   if (banner) {
     banner.classList.add('active');
     const titleEl = banner.querySelector('.mode-banner__title');
-    if (titleEl) titleEl.textContent = 'MODO HEMS';
+    if (titleEl) titleEl.textContent = t('banner.hems_title');
   }
   // Mostrar contador "RESCATADOS"
   showHemsCounter();
@@ -6187,7 +6831,7 @@ function checkCollisions() {
         o.jumped = true;
         addScore(30);
         STATE.runStats.obstaclesJumped++;
-        showToast('¡SALTO!', '+' + Math.round(30 * (STATE.x2Score ? 2 : 1) * META.multiplier), 0xf5a623);
+        showToast(t('toast.jump'), '+' + Math.round(30 * (STATE.x2Score ? 2 : 1) * META.multiplier), 0xf5a623);
       }
       continue;
     }
@@ -6357,19 +7001,19 @@ function collectItem(it) {
     spawnCollectParticles(it.mesh.position, 0xffd54f, 8);
 
     // Textos motivacionales por combo (en toast central, muy visible)
-    if (STATE.combo === 10) showToast('¡RACHA!', '10 monedas seguidas', 0xffd54f);
-    else if (STATE.combo === 25) showToast('¡EN FUEGO!', '25 combo', 0xff6b35);
-    else if (STATE.combo === 50) showToast('¡IMPARABLE!', '50 combo', 0xff3300);
-    else if (STATE.combo === 80) showToast('¡INCREÍBLE!', '80 combo · a por el Mastery', 0x10b981);
-    else if (STATE.combo === 100) showToast('¡100 COMBO!', '20 más para el Mastery...', 0x06b6d4);
+    if (STATE.combo === 10) showToast(t('toast.combo10'), t('toast.combo10_sub'), 0xffd54f);
+    else if (STATE.combo === 25) showToast(t('toast.combo25'), t('toast.combo25_sub'), 0xff6b35);
+    else if (STATE.combo === 50) showToast(t('toast.combo50'), t('toast.combo50_sub'), 0xff3300);
+    else if (STATE.combo === 80) showToast(t('toast.combo80'), t('toast.combo80_sub'), 0x10b981);
+    else if (STATE.combo === 100) showToast(t('toast.combo100'), t('toast.combo100_sub'), 0x06b6d4);
     else if (STATE.combo === 120) {
       // Toast de logro PRIMERO, luego MASTERY MODE a los 600ms (efecto "build-up")
       // IMPORTANTE: mastery es distinto de fever — mecánica propia, solo por combo
-      showToast('¡120 COMBO!', '⚡ activando MASTERY...', 0x10b981);
+      showToast(t('toast.combo120'), t('toast.combo120_sub'), 0x10b981);
       setTimeout(() => { if (STATE.combo >= 120) activateMasteryMode(); }, 600);
     }
-    else if (STATE.combo === 150) showToast('¡LEYENDA!', '150 combo', 0xa855f7);
-    else if (STATE.combo === 200) showToast('¡INHUMANO!', '200 combo', 0xa855f7);
+    else if (STATE.combo === 150) showToast(t('toast.combo150'), t('toast.combo150_sub'), 0xa855f7);
+    else if (STATE.combo === 200) showToast(t('toast.combo200'), t('toast.combo200_sub'), 0xa855f7);
 
     updateComboDisplay();
     // Contador HEMS: cuenta coin capturada durante modo HEMS
@@ -6378,7 +7022,7 @@ function collectItem(it) {
   else if (it.kind === 'patient') {
     STATE.patients++;
     const earned = addScore(100);
-    showToast('¡PACIENTE SALVADO!', '+' + earned, 0xe63946);
+    showToast(t('toast.patient'), '+' + earned, 0xe63946);
     spawnCollectParticles(it.mesh.position, 0xe63946, 40);
     spawnCollectParticles(it.mesh.position, 0x4ade80, 25);
     if (STATE.jetpack) bumpHemsCounter(earned, worldPos);
@@ -6463,7 +7107,7 @@ function applySurpriseBoxEffect(effect, position) {
     activateModoHEMS();
   }
   else if (effect === 'coin_rain') {
-    showToast('¡LLUVIA DE MONEDAS!', '+60 monedas doradas', 0xffd54f);
+    showToast(t('toast.coin_rain'), t('toast.coin_rain_sub'), 0xffd54f);
     for (let i = 0; i < 20; i++) {
       for (let lane = 0; lane < 3; lane++) {
         const coin = makeCoin();
@@ -6482,7 +7126,7 @@ function applySurpriseBoxEffect(effect, position) {
     addTemporaryLight(position, 0xffd54f, 4, 800);
   }
   else if (effect === 'mega_patients') {
-    showToast('¡ALUVIÓN DE PACIENTES!', '6 pacientes críticos', 0xe63946);
+    showToast(t('toast.patients_flood'), t('toast.patients_flood_sub'), 0xe63946);
     const lanePattern = [1, 0, 1, 2, 1, 1];
     for (let i = 0; i < 6; i++) {
       const p = makePatient();
@@ -6507,7 +7151,7 @@ function applySurpriseBoxEffect(effect, position) {
     STATE.rayoTimer = 6 * 60;
     STATE.invincible = true;
     STATE.invincibleTimer = Math.max(STATE.invincibleTimer, 6 * 60);
-    showToast('⚡ ¡RELÁMPAGO!', '6s · Monedas ×5', 0xffe066);
+    showToast(t('toast.lightning'), t('toast.lightning_sub'), 0xffe066);
     // Banner amarillo propio
     const banner = document.getElementById('rayo-banner');
     if (banner) banner.classList.add('active');
@@ -6535,7 +7179,7 @@ function applySurpriseBoxEffect(effect, position) {
     // ASPIRADOR gigante: 5s atrayendo TODO desde 30m de radio
     STATE.vortex = true;
     STATE.vortexTimer = 5 * 60;
-    showToast('🌀 ¡VÓRTICE ASPIRADOR!', '5s · absorbe todo', 0xa855f7);
+    showToast(t('toast.vortex'), t('toast.vortex_sub'), 0xa855f7);
     flashScreen(0xa855f7, 0.6, 400);
     spawnVortexRings();  // anillos iniciales
     createVortexVisuals(); // espiral visible encima de la ambulancia
@@ -6554,23 +7198,23 @@ function activatePowerup(kind, position) {
   if (kind === 'magnet') {
     STATE.magnet = true;
     STATE.magnetTimer = 600;
-    showToast('¡IMÁN DE MONEDAS!', '10 segundos', 0xa855f7);
+    showToast(t('toast.magnet'), t('toast.magnet_sub'), 0xa855f7);
     spawnCollectParticles(position, 0xa855f7, 30);
-    showPowerupUI('🧲', 'Imán', 0xa855f7, 10);
+    showPowerupUI('🧲', t('powerup.magnet'), 0xa855f7, 10);
   }
   else if (kind === 'shield') {
     STATE.invincible = true;
     STATE.invincibleTimer = 480;
-    showToast('¡ESCUDO!', 'invencible 8s', 0x4ade80);
+    showToast(t('toast.shield'), t('toast.shield_sub'), 0x4ade80);
     spawnCollectParticles(position, 0x4ade80, 30);
-    showPowerupUI('🛡', 'Escudo', 0x4ade80, 8);
+    showPowerupUI('🛡', t('powerup.shield'), 0x4ade80, 8);
   }
   else if (kind === 'x2') {
     STATE.x2Score = true;
     STATE.x2Timer = 720;
-    showToast('¡x2 PUNTOS!', '12 segundos', 0xff6b35);
+    showToast(t('toast.x2'), t('toast.x2_sub'), 0xff6b35);
     spawnCollectParticles(position, 0xff6b35, 30);
-    showPowerupUI('✨', 'Doble puntos', 0xff6b35, 12);
+    showPowerupUI('✨', t('powerup.x2'), 0xff6b35, 12);
   }
 }
 
@@ -7352,17 +7996,8 @@ function checkMilestones() {
   if (m > STATE.lastMilestone) {
     STATE.lastMilestone = m;
     const meters = m * 500;
-    const messages = [
-      'Vía aérea asegurada',          // 500m
-      'Triángulo de seguridad',       // 1000m
-      'Hemorragia controlada',        // 1500m
-      'Vía intraósea colocada',       // 2000m
-      'Activación código trauma',     // 2500m
-      'Politraumatizado estabilizado',// 3000m
-      'Golden Hour dominada',         // 3500m
-      'Leyenda del trauma'            // 4000m+
-    ];
-    const msg = messages[Math.min(m - 1, messages.length - 1)];
+    // 500m, 1000m, … 4000m+ → I18N_STRINGS 'milestone.0'…'milestone.7'
+    const msg = t(`milestone.${Math.min(m - 1, 7)}`);
     showMilestone(`${meters}m`, msg);
 
     // Cambio de escenario cada 1000m
@@ -7376,7 +8011,7 @@ function checkMilestones() {
     const pb = parseInt(localStorage.getItem('hems_runner_pb') || '0', 10);
     if (pb > 100 && STATE.score > pb) {
       STATE.recordBroken = true;
-      showToast('¡RÉCORD PERSONAL!', 'has superado tu mejor marca', 0xf5a623);
+      showToast(t('toast.record'), t('toast.record_sub'), 0xf5a623);
     }
   }
 }
@@ -7403,39 +8038,12 @@ function showSpeedNotify(text) {
 /* ================================================================
    GAME OVER Y REVIVE
    ================================================================ */
-const DEATH_MSGS = {
-  car: [
-    'Impacto lateral. No cedieron prioridad.',
-    'Colisión múltiple. Hay que reactivar el código.',
-    'Accidente de tráfico. Ahora llamamos a otra ambulancia.',
-  ],
-  truck: [
-    'Camión parado. Siempre en doble fila.',
-    'Carga mal distribuida. Impacto frontal.',
-    'Vehículo pesado sin señalizar. Mala suerte.',
-  ],
-  barrier: [
-    'Obra sin balizar. Las emergencias también tienen derechos.',
-    'Señalización deficiente. Parte al 112.',
-    'Zona de obras. Nadie avisó.',
-  ],
-  scooter: [
-    'Patinete eléctrico sin luces. Víctima probable.',
-    'Movilidad personal sin casco. Trauma craneal casi asegurado.',
-    'VMP abandonado en carril. Denuncia pendiente.',
-  ],
-  cone: [
-    'Conos mal colocados. Trampa para emergencias.',
-    'Balizamiento incorrecto. Parte a protección civil.',
-    'Obra nocturna sin señalización visible.',
-  ],
-};
+// Mensajes de muerte por tipo de obstáculo (3 por tipo, I18N_STRINGS 'death.<kind>.<i>')
+const DEATH_KINDS = ['car', 'truck', 'barrier', 'scooter', 'cone'];
 
 function getDeathMessage(kind) {
-  const msgs = DEATH_MSGS[kind];
-  if (!msgs) return 'Misión abortada.';
-  if (Array.isArray(msgs)) return msgs[Math.floor(Math.random() * msgs.length)];
-  return msgs;
+  if (!DEATH_KINDS.includes(kind)) return t('death.default');
+  return t(`death.${kind}.${Math.floor(Math.random() * 3)}`);
 }
 
 /* ================================================================
@@ -7531,7 +8139,7 @@ function triggerGameOver(kind) {
   let recordMsg = '';
   if (STATE.score > personalBest && STATE.score > 100) {
     localStorage.setItem('hems_runner_pb', STATE.score);
-    recordMsg = ` · ¡Nuevo récord personal!`;
+    recordMsg = t('gameover.record');
   }
   if (recordMsg) {
     document.getElementById('death-message').textContent = deathMsg + recordMsg;
@@ -7639,27 +8247,23 @@ function doRevive() {
 }
 
 function getRankLabel(score) {
-  if (score < 300) return '« Primer interviniente »';
-  if (score < 800) return '« SVB · Soporte Vital Básico »';
-  if (score < 1500) return '« SVA · Soporte Vital Avanzado »';
-  if (score < 2500) return '« PHTLS · Prehospital Trauma »';
-  if (score < 4000) return '« ATLS · Advanced Trauma Life Support »';
-  if (score < 6500) return '« ETC · European Trauma Course »';
-  if (score < 10000) return '« Médico HEMS · Helitransporte »';
-  return '« Trauma Team Leader · Leyenda »';
+  const cuts = [300, 800, 1500, 2500, 4000, 6500, 10000];
+  let i = 0;
+  while (i < cuts.length && score >= cuts[i]) i++;
+  return t(`rank.label.${i}`);
 }
 
 function getRankInfo(score) {
   const ranks = [
-    { name: 'Primer interviniente', min: 0, max: 300 },
-    { name: 'SVB', min: 300, max: 800 },
-    { name: 'SVA', min: 800, max: 1500 },
-    { name: 'PHTLS', min: 1500, max: 2500 },
-    { name: 'ATLS', min: 2500, max: 4000 },
-    { name: 'ETC', min: 4000, max: 6500 },
-    { name: 'Médico HEMS', min: 6500, max: 10000 },
-    { name: 'Trauma Leader', min: 10000, max: 15000 },
-    { name: 'Leyenda', min: 15000, max: 99999 },
+    { name: t('rank.0'), min: 0, max: 300 },
+    { name: t('rank.1'), min: 300, max: 800 },
+    { name: t('rank.2'), min: 800, max: 1500 },
+    { name: t('rank.3'), min: 1500, max: 2500 },
+    { name: t('rank.4'), min: 2500, max: 4000 },
+    { name: t('rank.5'), min: 4000, max: 6500 },
+    { name: t('rank.6'), min: 6500, max: 10000 },
+    { name: t('rank.7'), min: 10000, max: 15000 },
+    { name: t('rank.8'), min: 15000, max: 99999 },
   ];
   for (const r of ranks) {
     if (score >= r.min && score < r.max) {
@@ -7785,7 +8389,7 @@ const PerfWatchdog = (() => {
       if (ULTRA_LOW_MODE) return;
       enableUltraLow();
       lastDowngrade = now;
-      showToast('⚙️ Modo rendimiento máximo activado', `recortando efectos para mejorar fluidez (${avgFps.toFixed(0)} FPS)`, 0x9ca3af);
+      showToast(t('toast.perf_ultra'), t('toast.perf_ultra_sub', { fps: avgFps.toFixed(0) }), 0x9ca3af);
       return;
     }
 
@@ -7798,7 +8402,7 @@ const PerfWatchdog = (() => {
     const aaNote = (QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias)
       ? ' · AA cambia al recargar'
       : '';
-    showToast('⚙️ Modo gráfico ajustado', `optimizando para tu dispositivo (${QUALITY_TIER})${aaNote}`, 0x9ca3af);
+    showToast(t('toast.perf_tier'), t('toast.perf_tier_sub', { tier: QUALITY_TIER, aa: aaNote }), 0x9ca3af);
   }
 
   return { tick };
@@ -7853,7 +8457,7 @@ const QualityOverride = (() => {
 
     const aaChanged = QUALITY_PRESETS[previousTier].antialias !== QUALITY_PRESETS[QUALITY_TIER].antialias;
     const sub = value === 'auto' ? `auto (${QUALITY_TIER})` : value;
-    showToast('Calidad gráfica', `${sub}${aaChanged ? ' · AA cambia al recargar' : ''}`, 0xf5a623);
+    showToast(t('toast.quality'), `${sub}${aaChanged ? t('toast.quality_aa') : ''}`, 0xf5a623);
   }
 
   function init() {
@@ -8315,7 +8919,7 @@ function update(dt) {
     if (STATE.codigoRojoTimer % 10 === 0) {
       const secs = Math.ceil(STATE.codigoRojoTimer / 60);
       const el = document.getElementById('codigo-rojo-timer');
-      if (el) el.textContent = `${secs}s · Prioridad absoluta`;
+      if (el) el.textContent = t('banner.codigo_rojo_timer', { secs });
     }
     if (STATE.codigoRojoTimer <= 0) {
       deactivateCodigoRojo();
@@ -8331,7 +8935,7 @@ function update(dt) {
     if (STATE.feverTimer % 10 === 0) {
       const secs = Math.ceil(STATE.feverTimer / 60);
       const el = document.getElementById('fever-timer');
-      if (el) el.textContent = `${secs}s · ×3 puntos · combo ${STATE.combo}`;
+      if (el) el.textContent = t('banner.fever_timer', { secs, combo: STATE.combo });
     }
     if (STATE.feverFromBox) {
       // Caja o debug: duración fija, no se corta ni se extiende
@@ -8343,7 +8947,7 @@ function update(dt) {
       } else if (STATE.feverTimer <= 0) {
         if (STATE.combo >= STATE.feverComboAtStart) {
           STATE.feverTimer = 10 * 60;
-          showToast('¡FEVER EXTENDIDO!', '+10s', 0xff6b35);
+          showToast(t('toast.fever_ext'), '+10s', 0xff6b35);
         } else {
           deactivateFever();
         }
@@ -8358,7 +8962,7 @@ function update(dt) {
     if (STATE.masteryTimer % 10 === 0) {
       const secs = Math.ceil(STATE.masteryTimer / 60);
       const el = document.getElementById('mastery-timer');
-      if (el) el.textContent = `${secs}s · Monedas ×5 · +${STATE.masteryPointsEarned.toLocaleString('es-ES')}`;
+      if (el) el.textContent = t('banner.mastery_timer', { secs, pts: STATE.masteryPointsEarned.toLocaleString('es-ES') });
     }
     if (STATE.masteryTimer <= 0) {
       deactivateMasteryMode(false);  // false = no murió, aplica bonus
@@ -8371,7 +8975,7 @@ function update(dt) {
     if (STATE.svaTimer % 10 === 0) {
       const secs = Math.ceil(STATE.svaTimer / 60);
       const el = document.getElementById('sva-timer');
-      if (el) el.textContent = `${secs}s · Escudo · ×2 puntos`;
+      if (el) el.textContent = t('banner.sva_timer', { secs });
     }
     if (STATE.svaTimer <= 0) {
       deactivateSVA();
@@ -8385,7 +8989,7 @@ function update(dt) {
     if (STATE.jetpackTimer % 10 === 0) {
       const secs = Math.ceil(STATE.jetpackTimer / 60);
       const el = document.getElementById('jetpack-timer');
-      if (el) el.textContent = `${secs}s · Rescate aéreo`;
+      if (el) el.textContent = t('banner.jetpack_timer', { secs });
     }
     if (STATE.jetpackTimer <= 0) {
       STATE.jetpack = false;
@@ -8445,7 +9049,7 @@ function update(dt) {
   // Chequear misiones
   const newlyDone = checkMissions();
   for (const m of newlyDone) {
-    showToast('¡MISIÓN CUMPLIDA!', m.label, 0x4ade80);
+    showToast(t('missions.done_toast'), m.label, 0x4ade80);
     spawnCollectParticles(
       { x: ambulance.position.x, y: ambulance.position.y + 1.5, z: ambulance.position.z - 3 },
       0x4ade80, 25
@@ -8530,7 +9134,7 @@ const Tutorial = (() => {
     if (seen()) return false;
     active = true;
     el.classList.toggle('tutorial--keys', !isMobile);
-    document.getElementById('tutorial-go').textContent = isMobile ? 'Toca para empezar' : 'Pulsa una tecla para empezar';
+    document.getElementById('tutorial-go').textContent = t(isMobile ? 'tutorial.tap_start' : 'tutorial.key_start');
     el.classList.add('active');
     STATE.running = false;
     document.addEventListener('keydown', dismiss, { once: true });
@@ -8694,7 +9298,7 @@ function renderLB() {
   const lb = loadLB();
   const c = document.getElementById('leaderboard-content');
   if (lb.length === 0) {
-    c.innerHTML = '<div class="leaderboard__empty">Aún no hay scores. Sé el primero.</div>';
+    c.innerHTML = `<div class="leaderboard__empty">${t('lb.empty')}</div>`;
     return;
   }
   let html = `<div class="leaderboard__row leaderboard__row--header">
@@ -8721,9 +9325,9 @@ function escapeHtml(s) {
 const BAD_WORDS = ['puta','puto','mierda','coño','cabron','cabrón','fuck','shit','bitch','nazi'];
 function sanitizeName(name) {
   let clean = name.trim();
-  if (!clean) return 'Anónimo';
+  if (!clean) return t('lb.anon');
   const lower = clean.toLowerCase();
-  for (const w of BAD_WORDS) if (lower.includes(w)) return 'Anónimo';
+  for (const w of BAD_WORDS) if (lower.includes(w)) return t('lb.anon');
   return clean;
 }
 
@@ -8774,7 +9378,7 @@ document.getElementById('btn-menu').addEventListener('click', () => {
 
 backBtn.addEventListener('click', () => {
   if (STATE.mode === 'playing' || STATE.paused) {
-    if (!confirm('¿Abandonar la partida?')) return;
+    if (!confirm(t('confirm.quit'))) return;
   }
   quitToMenu();
 });
@@ -8792,11 +9396,13 @@ populateEnvironment();
 renderMenuMissions();
 
 // En táctil, la tarjeta "Controles" explica toques y deslizamientos
-if (isMobile) {
+// (se re-aplica al cambiar de idioma, después del repintado estático).
+function applyTouchControlHints() {
+  if (!isMobile) return;
   const hints = [
-    ['👈 👉', 'Toca a un lado de la ambulancia'],
-    ['👆', 'Toca arriba o desliza ↑'],
-    ['👇', 'Desliza ↓ para frenar']
+    ['👈 👉', t('menu.touch_lane')],
+    ['👆', t('menu.touch_jump')],
+    ['👇', t('menu.touch_brake')]
   ];
   document.querySelectorAll('.start-card .control-hint').forEach((el, i) => {
     if (!hints[i]) return;
@@ -8804,6 +9410,14 @@ if (isMobile) {
     el.querySelector('.control-hint__desc').textContent = hints[i][1];
   });
 }
+I18N.onChange(applyTouchControlHints);
+
+// Idioma: repintar HTML estático y contenido dinámico del menú
+I18N.onChange(() => { renderMenuMissions(); updateHUD(); });
+document.querySelectorAll('#lang-switch [data-lang]').forEach(btn => {
+  btn.addEventListener('click', () => I18N.set(btn.dataset.lang));
+});
+I18N.apply();
 
 // Créditos de assets 3D (atribución de licencias)
 document.getElementById('menu-credits').innerHTML = Assets.credits().map(c => {
@@ -8823,7 +9437,7 @@ const loadingStatus = document.getElementById('loading-status');
 const assetsReady = Assets.preload((done, total) => {
   loadingBarFill.classList.add('determinate');
   loadingBarFill.style.width = Math.round((done / total) * 100) + '%';
-  loadingStatus.textContent = `Cargando modelos · ${done}/${total}`;
+  loadingStatus.textContent = t('loading.models', { done, total });
 });
 const minSplash = new Promise(resolve => setTimeout(resolve, 600));
 
