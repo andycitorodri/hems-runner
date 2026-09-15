@@ -232,7 +232,7 @@ Esto se queda en builds de desarrollo, **NO en producción**. En producción se 
 | Iluminación + post-procesado | Agosto 2026 | Bloom (tier high) + cubemap reflexiones |
 | Pulido + optimización exhaustiva | Septiembre 2026 | Testing en 5+ dispositivos reales |
 | Buffer / contingencia | Primera mitad octubre 2026 | Fixes finales |
-| **LAUNCH** | **14 octubre 2026** | I Jornada de Trauma Parc Taulí |
+| **LAUNCH** | **27 octubre 2026** | I Jornada de Trauma Parc Taulí |
 
 ---
 

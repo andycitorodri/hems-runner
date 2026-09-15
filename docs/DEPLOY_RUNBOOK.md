@@ -152,7 +152,7 @@ Cloudflare creó el registro DNS y el certificado solos en el `wrangler deploy`.
 
 **Si algún día se quiere otro dominio distinto** (lo que sigue es la guía original):
 
-**Cuándo**: 1-2 meses antes del 14 octubre 2026, para tener URL pro tipo `hemsrunner.com`.
+**Cuándo**: 1-2 meses antes del 27 octubre 2026, para tener URL pro tipo `hemsrunner.com`.
 
 **Pasos**:
 ```

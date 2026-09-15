@@ -240,7 +240,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ### Pendiente de decidir
 
-- La fecha de la jornada aparece en `menu.fomo` y `lb.subtitle` (14 · 10 · 2026); la web `jornadaimpacte.com` dice 27 de octubre. Confirmar con el usuario y actualizar en los dos idiomas.
+- ~~Fecha de la jornada~~: confirmada el **27 de octubre de 2026** (15 sept 2026); actualizada en `menu.fomo` y `lb.subtitle` en los dos idiomas.
 
 ---
 
@@ -263,7 +263,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - [x] ~~Comprar dominio propio~~ → se usa el de la jornada: `hems.jornadaimpacte.com` *(15 sept 2026)*
 - [x] Configurar dominio en Cloudflare con DNS *(custom domain del Worker, automático)*
 - [ ] Generar QR para materiales de la Jornada
-- [ ] Lanzamiento oficial el **14 de octubre de 2026** en la I Jornada de Trauma de Parc Taulí
+- [ ] Lanzamiento oficial el **27 de octubre de 2026** en la I Jornada IMPACTE de Parc Taulí (fecha cambiada del 14 al 27 de octubre)
 
 ---
 
@@ -308,6 +308,6 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 ## Contacto y contexto del proyecto
 
 **Proyecto**: HEMS Runner — endless runner 3D para la **I Jornada de Trauma 2026** del Parc Taulí (Sabadell, Catalunya)
-**Fecha del evento**: 14 de octubre de 2026
+**Fecha del evento**: 27 de octubre de 2026 (antes 14 de octubre; web: jornadaimpacte.com)
 **Audiencia**: residentes y especialistas en medicina de urgencias, ICU, HEMS, trauma
 **Objetivo del juego**: combinar entretenimiento con educación médica (códigos clínicos, palabras del día, mecánicas relacionadas con trauma/HEMS)

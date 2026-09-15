@@ -2,7 +2,7 @@
 ## HEMS Runner — Plan ejecutivo de Fase 2
 
 **Versión**: 1.0 · Generado el 24 abril 2026
-**Lanzamiento objetivo**: 14 octubre 2026 (I Jornada de Trauma Parc Taulí)
+**Lanzamiento objetivo**: 27 octubre 2026 (I Jornada de Trauma Parc Taulí)
 **Filosofía**: prototipo completo end-to-end primero, expansión modular después
 **Herramienta principal**: Claude Code en Mac M3 local
 **Despliegue**: Cloudflare Pages (`app.hems.workers.dev`) — sin cambios
