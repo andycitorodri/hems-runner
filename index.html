@@ -5856,7 +5856,7 @@ function makePatient() {
   // Cuerpo principal (tronco tapado por manta)
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.75, 0.28, 1.3),
-    new THREE.MeshLambertMaterial({ color: 0xe63946 }) // manta roja
+    new THREE.MeshLambertMaterial({ color: 0x9dc3e6 }) // manta azul hospital
   );
   body.position.y = 0.75;
   body.position.z = 0.1;
@@ -5866,7 +5866,7 @@ function makePatient() {
   // Piernas (más estrechas, elevadas ligeramente)
   const legs = new THREE.Mesh(
     new THREE.BoxGeometry(0.6, 0.22, 0.55),
-    new THREE.MeshLambertMaterial({ color: 0xe63946 })
+    new THREE.MeshLambertMaterial({ color: 0x9dc3e6 })
   );
   legs.position.y = 0.72;
   legs.position.z = -0.6;
@@ -5893,6 +5893,14 @@ function makePatient() {
   head.castShadow = true;
   bed.add(head);
 
+  // Pelo: casquete esférico sobre la coronilla (+z) y algo de flequillo arriba
+  const hairMat = new THREE.MeshLambertMaterial({ color: 0x3a2a1e });
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.235, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.2), hairMat);
+  hair.rotation.x = -Math.PI / 2 + 0.35;  // coronilla hacia +z, inclinado hacia la frente
+  hair.position.copy(head.position);
+  hair.scale.copy(head.scale);
+  bed.add(hair);
+
   // Almohada blanca bajo la cabeza
   const pillow = new THREE.Mesh(
     new THREE.BoxGeometry(0.65, 0.1, 0.45),
@@ -5905,14 +5913,14 @@ function makePatient() {
   // Cruz blanca sobre la manta (como identificador médico)
   const crossBlanketV = new THREE.Mesh(
     new THREE.BoxGeometry(0.1, 0.03, 0.35),
-    new THREE.MeshLambertMaterial({ color: 0xf4efe6 })
+    new THREE.MeshLambertMaterial({ color: 0xe63946 })
   );
   crossBlanketV.position.y = 0.91;
   crossBlanketV.position.z = 0.1;
   bed.add(crossBlanketV);
   const crossBlanketH = new THREE.Mesh(
     new THREE.BoxGeometry(0.35, 0.03, 0.1),
-    new THREE.MeshLambertMaterial({ color: 0xf4efe6 })
+    new THREE.MeshLambertMaterial({ color: 0xe63946 })
   );
   crossBlanketH.position.y = 0.91;
   crossBlanketH.position.z = 0.1;
