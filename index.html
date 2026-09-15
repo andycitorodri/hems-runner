@@ -556,9 +556,12 @@
     color: #d8b4ff;
   }
 
+  /* Varios modos a la vez (Mastery + HEMS, SVA + Fever…): cada banner
+     activo recibe --banner-slot (0, 1, 2…) desde layoutModeBanners() y su
+     título/temporizador bajan un escalón por hueco en vez de pisarse. */
   .mode-banner__title {
     position: absolute;
-    top: 44%;
+    top: calc(44% + var(--banner-slot, 0) * (10vh + 44px));  /* 10vh = título→temporizador */
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'Fraunces', serif;
@@ -863,7 +866,7 @@
   /* Timer circular para los modos */
   .mode-banner__timer {
     position: absolute;
-    top: 54%;
+    top: calc(54% + var(--banner-slot, 0) * (10vh + 44px));
     left: 50%;
     transform: translate(-50%, -50%);
     font-family: 'IBM Plex Mono', monospace;
@@ -7071,6 +7074,19 @@ scene.add(ambulance);
 // shaders (medido: 43 ms al activar HEMS). Ver LightPool.
 const ambulanceHeadLight = new THREE.PointLight(0xfff0c0, 1, 20);
 scene.add(ambulanceHeadLight);
+// Apila los banners de modo activos: --banner-slot 0, 1, 2… en orden DOM
+// (ver CSS .mode-banner__title). El hueco 0 es la posición de siempre.
+const MODE_BANNERS = ['codigo-rojo-banner', 'fever-banner', 'jetpack-banner', 'rayo-banner', 'mastery-banner', 'sva-banner']
+  .map(id => document.getElementById(id)).filter(Boolean);
+function layoutModeBanners() {
+  let slot = 0;
+  for (const b of MODE_BANNERS) {
+    if (!b.classList.contains('active')) continue;
+    const want = String(slot++);
+    if (b.style.getPropertyValue('--banner-slot') !== want) b.style.setProperty('--banner-slot', want);
+  }
+}
+
 function syncAmbulanceHeadLight() {
   ambulanceHeadLight.position.set(ambulance.position.x, ambulance.position.y + 1, ambulance.position.z + 3);
 }
@@ -9153,6 +9169,7 @@ function animate() {
   }
 
   LightPool.update();
+  layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
   ConeInstancer.sync(activeObstacles, o => o.mesh.userData.kind === 'cone' ? o.mesh : null);
