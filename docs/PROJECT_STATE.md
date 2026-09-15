@@ -186,6 +186,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `c9e7df0` | Tráfico con el Car Kit (6 coches + 2 camiones, variante al azar) |
 | `15c5421`…`bc7c3af` | Rendimiento: LightPool, warm-up, Lambert, perf-mobile, DynamicRes |
 | `9352565` | Cono Kenney con `createInstancer` genérico + señales como sprites compartidos |
+| `ec819bd` | Valla Quaternius (Poly Pizza, CC0) instanciada + `tools/preview-glb.html` |
 
 ### Cómo añadir un modelo nuevo
 
@@ -233,7 +234,7 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 
 ### Pendiente en A2
 
-- Valla/contenedor: el Car Kit trae `box.glb` (CC0); `Q-Streets` como alternativa para la valla. Con `createInstancer` ya listo.
+- Patinete (obstáculo `scooter`, sin candidato aún — buscar en Poly Pizza "scooter" CC0).
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 

@@ -4,7 +4,7 @@
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
 **Última actualización**: 2026-09-15
-**Cobertura**: 20/25 candidatos; **6 integrados** (moneda, ambulancia, 4 coches civiles) + 2 camiones de tráfico. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
+**Cobertura**: 20/25 candidatos; **8 integrados** (moneda, ambulancia, 4 coches civiles, cono, valla) + 2 camiones de tráfico. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -46,6 +46,12 @@
 6. **InstancedMesh** para assets que aparecen muchas veces (monedas, conos, props decorativos) — ataca directamente la deuda de `draws=539` heredada de A1.
 
 ---
+
+## Poly Pizza como fuente de Quaternius en GLB (2026-09-15)
+
+Poly Pizza (https://poly.pizza) sirve los modelos de Quaternius **ya en GLB** (`https://static.poly.pizza/<uuid>.glb`, enlace visible en el HTML de cada ficha), con licencia CC0 indicada por modelo. Esto evita el pipeline FBX→Blender previsto para los packs Quaternius: buscar el modelo suelto en Poly Pizza, verificar CC0/CC-BY en la ficha, descargar el `.glb`, pasarlo por `tools/optimize-glb.sh` y anotar la URL en el `License.txt` del directorio. Visor rápido para medir antes de integrar: `tools/preview-glb.html?m=/ruta.glb&s=escala` (servir la raíz del repo).
+
+**Racing Kit de Kenney** (descargado en `~/Downloads/kenney_racing-kit.zip`, CC0): sus `barrier*` son bordillos de circuito de 25 cm y `fenceStraight` una red de 1 × 0,5 m — no sirven para la valla. Puede valer para decorado de A3.
 
 ## Pipeline real (Sesión 2 — 2026-09-15)
 
@@ -137,8 +143,8 @@ Estados:
 | 8 | Coche civil 2 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `suv.glb`, `taxi.glb`. |
 | 9 | Coche civil 3 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `van.glb`, `hatchback-sports.glb`. |
 | 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `sedan-sports.glb`. Camiones (`makeTruck()`): `delivery.glb` y `garbage-truck.glb` a escala 1.3 (`truck.glb` de Kenney es una pickup). |
-| 11 | Valla urbana | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
-| 12 | Contenedor basura | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
+| 11 | Valla urbana | GENÉRICO_JUEGO | **Quaternius vía Poly Pizza** | CC0 | **INTEGRADO** | `assets/models/quaternius/traffic-barrier.glb` (20 KB, 364 tris, escala 1.3 → 2.0 × 1.04 m). Fuente: https://poly.pizza/m/cM3aJPU9NS. `BarrierInstancer` (cuerpo + luz parpadeante). |
+| 12 | Contenedor basura | GENÉRICO_JUEGO | — | — | DESCARTADO | No existe como obstáculo en el juego (los obstáculos son coche, camión, valla, patinete y cono). |
 | 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | Sketchfab — wareFLO | CC-BY | CANDIDATO | URL: https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — 42.7k tris, 21.2k verts. HERO landmark Eixample. Low-poly monocromo limpio, torres bien diferenciadas, encaja con Quaternius/Kenney. Colores vía materiales Three.js. **Atribución obligatoria.** |
 | 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
 | 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | `Q-Build` (1ª) | CC0 | CANDIDATO | Base genérica; se "modernizará" con texturas custom (balcones, ocres) en A3. |
