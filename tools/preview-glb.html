@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- Visor rápido de GLB (no se despliega: tools/ está en .assetsignore).
+     Uso: servir la raíz del repo y abrir tools/preview-glb.html?m=/ruta/modelo.glb
+     Muestra bounding box, tris y materiales; Lambert como en el juego. -->
+<html><head><meta charset="utf-8"><title>GLB preview</title>
+<style>body{margin:0;background:#2a3250;color:#eee;font:12px monospace}#info{position:fixed;top:8px;left:8px;white-space:pre;background:rgba(0,0,0,.5);padding:8px}</style>
+</head><body><div id="info">cargando…</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const url = new URLSearchParams(location.search).get('m');
+const scale = parseFloat(new URLSearchParams(location.search).get('s') || '1');
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.outputEncoding = THREE.sRGBEncoding; document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x2a3250);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 100); camera.position.set(3, 2.5, 4);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.9)); const d = new THREE.DirectionalLight(0xffffff, 0.8); d.position.set(5, 8, 3); scene.add(d);
+scene.add(new THREE.GridHelper(6, 12, 0x666688, 0x444466));
+const ref = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2, 3.4), new THREE.MeshBasicMaterial({ color: 0xf5a623, wireframe: true })); ref.position.set(3, 1, 0); scene.add(ref); // referencia: ambulancia 1.7×2×3.4
+const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.set(0, 0.5, 0);
+new THREE.GLTFLoader().load(url, g => {
+  const o = g.scene; o.scale.setScalar(scale);
+  let tris = 0; const mats = new Set();
+  o.traverse(c => { if (c.isMesh) { tris += (c.geometry.index ? c.geometry.index.count : c.geometry.attributes.position.count) / 3; mats.add(c.material.type + (c.material.map ? '+map' : '') + ' ' + c.material.color.getHexString()); if (c.material.isMeshStandardMaterial) c.material = new THREE.MeshLambertMaterial({ map: c.material.map, color: c.material.color }); } });
+  scene.add(o);
+  const bb = new THREE.Box3().setFromObject(o), sz = bb.getSize(new THREE.Vector3());
+  scene.add(new THREE.Box3Helper(bb, 0x4ade80));
+  document.getElementById('info').textContent = `${url}\nescala ${scale}\nW×H×L ${sz.x.toFixed(2)} × ${sz.y.toFixed(2)} × ${sz.z.toFixed(2)}  minY ${bb.min.y.toFixed(2)}\ntris ${tris}\n${[...mats].join('\n')}\n(caja naranja = ambulancia 1.7×2×3.4)`;
+}, undefined, e => { document.getElementById('info').textContent = 'ERROR ' + e; });
+(function loop() { requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+</script></body></html>

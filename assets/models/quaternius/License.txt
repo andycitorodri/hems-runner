@@ -1,0 +1,6 @@
+Modelos de Quaternius (https://quaternius.com) obtenidos vía Poly Pizza.
+
+	traffic-barrier.glb — "Traffic Barrier" by Quaternius
+	https://poly.pizza/m/cM3aJPU9NS
+	Licencia: CC0 1.0 (Public Domain) — http://creativecommons.org/publicdomain/zero/1.0/
+	Optimizado con tools/optimize-glb.sh (prune + dedup + quantize).
