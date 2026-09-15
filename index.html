@@ -1095,56 +1095,88 @@
   }
 
   /* =============== OVERLAY PAUSA =============== */
-  /* Tutorial de la primera partida: zonas de toque dibujadas sobre el
-     juego congelado. Se muestra una sola vez (localStorage). */
+  /* Tutorial de la primera partida: anillos de toque sobre el juego
+     congelado, colocados donde se toca de verdad. Una sola vez (localStorage). */
   .tutorial {
     position: absolute; inset: 0; z-index: 60;
-    display: none;
-    background: rgba(10, 9, 8, 0.45);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease;
+    background: rgba(10, 9, 8, 0.5);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
     font-family: 'IBM Plex Mono', monospace;
     color: var(--bone);
     -webkit-tap-highlight-color: transparent;
     user-select: none; -webkit-user-select: none;
   }
-  .tutorial.active { display: block; }
-  .tutorial__zone {
-    position: absolute;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; padding: 12px; text-align: center;
-    border: 1px dashed rgba(245, 166, 35, 0.55);
-    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.5;
+  .tutorial.active { opacity: 1; pointer-events: auto; }
+
+  .tutorial__tap {
+    position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px;
+    border-radius: 50%; border: 1.5px solid var(--amber);
+    background: rgba(245, 166, 35, 0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-size: 24px; color: var(--amber);
   }
-  .tutorial__zone--top    { top: 8px; left: 8px; right: 8px; height: calc(33% - 12px); justify-content: flex-end; padding-bottom: 14px; }  /* texto bajo el HUD */
-  .tutorial__zone--left   { top: calc(33% + 4px); left: 8px; width: calc(50% - 12px); bottom: 96px; }
-  .tutorial__zone--right  { top: calc(33% + 4px); right: 8px; width: calc(50% - 12px); bottom: 96px; }
-  .tutorial__zone--bottom { left: 8px; right: 8px; bottom: 8px; height: 80px; border-style: none; font-size: 10px; color: var(--bone-dim); }
-  .tutorial__icon { font-size: 34px; line-height: 1; }
+  .tutorial__tap::before {
+    content: ''; position: absolute; inset: -2px; border-radius: 50%;
+    border: 1.5px solid var(--amber);
+    animation: tutorialRing 1.8s ease-out infinite;
+  }
+  @keyframes tutorialRing {
+    0%   { transform: scale(1);   opacity: 0.7; }
+    100% { transform: scale(2.1); opacity: 0; }
+  }
+  .tutorial__tap span {
+    position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+    white-space: nowrap; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--bone);
+  }
+  .tutorial__tap--jump  { left: 50%; top: 30%; }
+  .tutorial__tap--left  { left: 24%; top: 58%; }
+  .tutorial__tap--right { left: 76%; top: 58%; }
+
+  .tutorial__cta {
+    position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%);
+    text-align: center; white-space: nowrap;
+  }
+  .tutorial__eyebrow {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--amber); font-weight: 600; margin-bottom: 10px;
+  }
   .tutorial__go {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    padding: 12px 22px;
+    display: inline-block; padding: 13px 24px;
     background: var(--amber); color: var(--black);
     font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-    box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.6);
-    animation: tutorialPulse 1.4s ease-out infinite;
-    white-space: nowrap;
+    animation: tutorialPulse 1.6s ease-out infinite;
   }
   @keyframes tutorialPulse {
-    0% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.6); }
-    100% { box-shadow: 0 0 0 18px rgba(245, 166, 35, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.55); }
+    100% { box-shadow: 0 0 0 16px rgba(245, 166, 35, 0); }
   }
-  /* Desktop: una sola tarjeta con las teclas */
-  .tutorial--keys .tutorial__zone { display: none; }
+  .tutorial__hint {
+    margin-top: 14px;
+    font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--bone-dim);
+  }
+
+  /* Desktop: tarjeta con las teclas, sin anillos */
   .tutorial__keys {
     display: none;
-    position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%);
-    padding: 22px 30px;
-    background: rgba(10, 9, 8, 0.9);
+    position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%);
+    padding: 20px 28px;
+    background: rgba(10, 9, 8, 0.85);
     border: 1px solid rgba(244, 239, 230, 0.15);
-    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
-    line-height: 2.2; text-align: center;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    line-height: 2.3; text-align: left; white-space: nowrap;
   }
+  .tutorial__keys b {
+    display: inline-block; min-width: 44px; margin-right: 12px; text-align: center;
+    font-family: 'Fraunces', serif; font-size: 16px; color: var(--amber); font-weight: 500;
+  }
+  .tutorial--keys .tutorial__tap, .tutorial--keys .tutorial__hint { display: none; }
   .tutorial--keys .tutorial__keys { display: block; }
-  .tutorial__keys b { color: var(--amber); font-weight: 600; }
+  .tutorial--keys .tutorial__cta { top: 52%; }
 
   .pause-overlay {
     position: absolute;
@@ -1967,27 +1999,19 @@
   <!-- Overlay de pausa -->
   <!-- Tutorial de la primera partida -->
   <div id="tutorial" class="tutorial">
-    <div class="tutorial__zone tutorial__zone--top">
-      <span class="tutorial__icon">👆</span>
-      <span>Toca aquí<br>para saltar</span>
-    </div>
-    <div class="tutorial__zone tutorial__zone--left">
-      <span class="tutorial__icon">👈</span>
-      <span>Toca aquí<br>carril izquierdo</span>
-    </div>
-    <div class="tutorial__zone tutorial__zone--right">
-      <span class="tutorial__icon">👉</span>
-      <span>Toca aquí<br>carril derecho</span>
-    </div>
-    <div class="tutorial__zone tutorial__zone--bottom">
-      <span>Desliza ↓ para frenar · o usa los botones</span>
-    </div>
+    <div class="tutorial__tap tutorial__tap--jump">↑<span>Saltar</span></div>
+    <div class="tutorial__tap tutorial__tap--left">←<span>Carril izquierdo</span></div>
+    <div class="tutorial__tap tutorial__tap--right">→<span>Carril derecho</span></div>
     <div class="tutorial__keys">
-      <b>← →</b> cambiar carril<br>
-      <b>↑</b> saltar<br>
-      <b>↓</b> frenar
+      <b>← →</b>cambiar carril<br>
+      <b>↑</b>saltar<br>
+      <b>↓</b>frenar
     </div>
-    <div class="tutorial__go" id="tutorial-go">Toca para empezar</div>
+    <div class="tutorial__cta">
+      <div class="tutorial__eyebrow">Cómo se juega</div>
+      <div class="tutorial__go" id="tutorial-go">Toca para empezar</div>
+      <div class="tutorial__hint">Desliza ↓ para frenar · o usa los botones</div>
+    </div>
   </div>
 
   <div id="pause-overlay" class="pause-overlay">
