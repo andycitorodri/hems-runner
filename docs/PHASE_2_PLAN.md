@@ -329,7 +329,7 @@ Mi recomendación, sujeta a tu decisión cuando llegue el momento:
 - **Sesión por sub-bloque**: cada vez que abras Claude Code, decid en qué sub-bloque (A1, A2, etc.) estás trabajando
 - **Commits frecuentes**: cada feature funcional → commit + push a GitHub
 - **Probar localmente** antes de desplegar: usar `npx serve` o similar para servir el HTML
-- **Despliegue**: cuando algo está listo, subir manualmente a Cloudflare como hasta ahora (drag & drop), o configurar auto-deploy desde GitHub
+- **Despliegue**: cuando algo está listo, `npx wrangler@4 deploy` (o doble clic en `SUBIR.command`) — desde R0 (sept 2026) el drag & drop ya no sirve porque hay assets externos
 
 ---
 
@@ -408,7 +408,7 @@ El prototipo se considera terminado cuando:
 ### Semana 2 (1-7 mayo)
 
 - ✅ A1 cerrado y mergeado antes de tiempo
-- Desplegar `index.html` actualizado a Cloudflare Workers (drag & drop manual)
+- Desplegar a Cloudflare Workers con `npx wrangler@4 deploy` (sube `index.html` + `assets/`)
 - Empezar A2 — Sourcing de modelos GLTF
 
 ### A partir de ahí

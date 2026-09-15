@@ -1,8 +1,8 @@
 # HEMS Runner — Estado del proyecto
 
-**Última actualización**: 25 de abril de 2026
-**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main` (incluye 2 fixes post-validación móvil)
-**Archivo de producción**: `index.html` (~8.400 líneas)
+**Última actualización**: 15 de septiembre de 2026
+**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (spike GLTFLoader + moneda Kenney desplegado); R0 (deploy multi-archivo) cerrado
+**Archivos de producción**: `index.html` (~8.400 líneas) + `assets/models/` (GLB, texturas, licencias)
 
 ---
 
@@ -23,26 +23,33 @@
 ### Configuración Cloudflare
 
 - **Tipo de proyecto**: Worker con assets estáticos (no Pages clásico)
-- **Nombre del proyecto**: `app`
-- **Modo de deploy**: Drag & drop de archivo único `index.html` (no auto-deploy desde GitHub por bug del UI unificado de Cloudflare)
-- **GitHub App**: instalado con acceso solo al repo `hems-runner` (autorizado pero el flujo de Pages → GitHub no funcionó bien y se optó por manual upload)
+- **Nombre del Worker**: `app`
+- **Modo de deploy**: `wrangler deploy` desde el repo local (desde 15 sept 2026, bloque R0). Config en `wrangler.jsonc` (assets desde la raíz del repo) y exclusiones en `.assetsignore` (solo se publican `index.html` y `assets/`).
+- **Login**: OAuth de wrangler con la cuenta `luisrodriguezz1981@gmail.com`, credenciales en `~/Library/Preferences/.wrangler/config/default.toml`.
+- **GitHub App**: instalado con acceso solo al repo `hems-runner`, pero no se usa auto-deploy (el flujo Pages → GitHub no funcionó bien; el deploy es manual desde el Mac).
 
 ### Proceso para actualizar el juego en producción
 
-1. Generar `index.html` actualizado
-2. Cloudflare Dashboard → Workers & Pages → proyecto `app`
-3. Botón **"New deployment"** (arriba derecha, junto a "Visit")
-4. Arrastrar el `index.html` a la zona de upload
-5. Click en **Deploy**
-6. Esperar ~30 segundos
-7. **Hard reload** del navegador (Cmd+Shift+R / Ctrl+Shift+R) para evitar caché agresivo de Cloudflare
-8. Si en móvil sigue mostrando versión vieja, abrir en modo incógnito (caché de navegador)
+1. Guardar cambios en `index.html` y/o `assets/`
+2. Doble clic en `SUBIR.command` (raíz del repo) — hace `git push` de la rama actual + `npx wrangler@4 deploy`. Equivalente en terminal: `npx wrangler@4 deploy`
+3. Esperar a que diga `Deployed app triggers` + `Current Version ID`
+4. **Hard reload** del navegador (Cmd+Shift+R / Ctrl+Shift+R) para evitar caché agresivo de Cloudflare
+5. Si en móvil sigue mostrando versión vieja, abrir en modo incógnito (caché de navegador)
 
-### Histórico de deploys de esta sesión
+Detalle y casos de error en `DEPLOY_RUNBOOK.md`.
 
-1. Primer intento: subdomain `luisrodriguezz1981.workers.dev`, proyecto autogenerado `sparkling-voice-27cb`, archivo con nombre feo → URL solo funcionaba con ruta completa
+### Por qué se abandonó el drag & drop (R0, sept 2026)
+
+El drag & drop de un único `index.html` en el dashboard funcionaba mientras el juego era autocontenido. Desde el spike de A2 (`1c608aa`) el juego carga `assets/models/coin-gold.glb` por ruta relativa, y ese GLB a su vez referencia `Textures/colormap.png`; con el método antiguo esos archivos no llegaban a producción y las monedas caían al fallback procedural. `wrangler deploy` sube el directorio entero (filtrado por `.assetsignore`) y solo transfiere los archivos nuevos o modificados.
+
+**Primer deploy con wrangler** (15 sept 2026, Version ID `8929588f`): subió exactamente 4 archivos — `index.html`, `assets/models/coin-gold.glb`, `assets/models/Textures/colormap.png`, `assets/models/kenney-license.txt`. Verificado con `curl`: los 4 responden 200 y `docs/`, `wrangler.jsonc` responden 404. Hallazgo colateral: la carpeta temporal `.wrangler/` que crea el propio wrangler no estaba excluida y se habría subido — añadida a `.assetsignore` y `.gitignore` (`b73090f`).
+
+### Histórico de deploys
+
+1. Primer intento (abril 2026): subdomain `luisrodriguezz1981.workers.dev`, proyecto autogenerado `sparkling-voice-27cb`, archivo con nombre feo → URL solo funcionaba con ruta completa
 2. Segundo intento: cambio a subdomain `hems.workers.dev`, proyecto `app` con `index.html` correcto → funciona en raíz `app.hems.workers.dev`
-3. Versiones posteriores: re-deploys vía drag & drop con incrementales (ocultar debug, optimización móvil, rebalance fever)
+3. Abril 2026: re-deploys vía drag & drop con incrementales (ocultar debug, optimización móvil, rebalance fever, A1)
+4. 15 sept 2026: primer deploy multi-archivo con `wrangler deploy` (R0)
 
 ---
 
@@ -189,10 +196,10 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 - Alternativa considerada: Vercel/Netlify (similares pero con menor cuota gratuita)
 
 ### Por qué un solo HTML monolítico (en vez de proyecto multi-archivo)
-- Simplifica deploy (un solo archivo a subir)
+- Simplificaba el deploy (un solo archivo a subir) mientras no había assets externos
 - Three.js + lógica + CSS + assets en base64 = autocontenido
 - Trade-off: 222 KB iniciales vs lazy loading; aceptable porque todo es código JS, no assets pesados
-- Para Fase 2 (con GLTF, texturas), habrá que romper a multi-archivo
+- **Actualizado sept 2026**: el código sigue en un único `index.html`, pero los modelos/texturas de Fase 2 viven en `assets/` y se despliegan con `wrangler deploy` (ver "Despliegue actual")
 
 ### Por qué umbral fever a 35 (no 30 ni 50)
 - 30 era todavía demasiado frecuente (alcanzable en 1 minuto fácil)

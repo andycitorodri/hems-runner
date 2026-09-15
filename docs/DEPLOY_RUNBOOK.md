@@ -9,35 +9,47 @@
 
 **Cuando**: arreglaste un bug, ajustaste un valor, mejoraste un visual. Quieres que esté en producción YA.
 
+**Desde septiembre 2026 el deploy es multi-archivo con `wrangler`** (antes era drag & drop de `index.html` en el dashboard; ya no vale porque el juego carga `assets/models/*.glb` por ruta relativa y esos archivos no llegaban).
+
+**Opción A — doble clic (sin terminal)**:
 ```
-1. Genera el index.html actualizado (en /home/claude/jornada/index.html o donde esté)
-2. Descárgalo a tu Mac
-3. Abre https://dash.cloudflare.com/
-4. Workers & Pages → click en proyecto "app"
-5. Botón "New deployment" (arriba derecha, junto a "Visit")
-6. Arrastra el index.html nuevo
-7. Click "Deploy"
-8. Espera ~30 segundos
-9. Abre https://app.hems.workers.dev en MODO INCÓGNITO (evita caché)
-10. Verifica que funciona
-11. Si OK, manda el link por WhatsApp a quien necesite
+1. Guarda los cambios en index.html / assets/
+2. En el Finder, doble clic en SUBIR.command (raíz del repo)
+3. Hace git push de la rama actual + wrangler deploy
+4. La primera vez se abre el navegador para autorizar Cloudflare (login OAuth)
+5. Cuando diga "✅ LISTO", abre https://app.hems.workers.dev con Cmd+Shift+R
 ```
+
+**Opción B — terminal**:
+```bash
+cd ~/hems-runner
+git push origin $(git rev-parse --abbrev-ref HEAD)
+npx wrangler@4 deploy
+```
+
+**Qué sube**: `index.html` + todo lo que haya en `assets/`. Nada más — el resto (docs, .git, wrangler.jsonc, SUBIR.command, Claude outputs…) está excluido en `.assetsignore`. Wrangler solo sube los archivos nuevos o modificados desde el último deploy, así que un cambio en `index.html` sube 1 archivo.
+
+**Para ver qué subiría sin desplegar**: `npx wrangler@4 deploy --dry-run`.
 
 ---
 
-## Caso 2: La URL produce error 404
+## Caso 2: La URL produce error 404 (o un asset da 404)
 
-**Síntoma**: "Cuidado. Parece que algo no está bien" — error 404 en la URL raíz.
+**Síntoma A**: "Cuidado. Parece que algo no está bien" — error 404 en la URL raíz.
 
-**Causa habitual**: el archivo subido no se llama `index.html`.
+**Causa habitual**: `index.html` no está en la raíz del repo o se ha renombrado. Wrangler sirve la raíz del repo (`"directory": "./"` en `wrangler.jsonc`) y espera `index.html` ahí.
 
-**Solución**:
+**Síntoma B**: el juego carga pero un archivo de `assets/` da 404 en la consola del navegador (ej. `coin-gold.glb`).
+
+**Causas** (orden de probabilidad):
 ```
-1. En tu Mac, renombra el archivo a EXACTAMENTE: index.html
-   (sin paréntesis, sin números de versión, sin nada extra)
-2. Confirma "Mantener .html" si sale alerta
-3. Vuelve a Cloudflare → New deployment → arrastra el archivo bien nombrado
-4. Espera 30s + hard reload
+1. Propagación: recién desplegado, un asset nuevo puede tardar 10-30 s en
+   responder 200 en todas las regiones. Espera y recarga.
+2. El archivo está excluido por .assetsignore → npx wrangler@4 deploy --dry-run
+   y comprueba que aparece. Si no, revisa los patrones de .assetsignore.
+3. Mayúsculas/minúsculas: las rutas son case-sensitive en producción
+   (assets/models/Textures/colormap.png ≠ .../textures/...). El GLB de Kenney
+   referencia "Textures/colormap.png" con T mayúscula.
 ```
 
 ---
@@ -94,26 +106,37 @@ Si quieres analytics más detalladas (qué hacen los usuarios dentro del juego),
 
 ---
 
-## Caso 7: Quiero borrar el deploy actual y empezar de cero
+## Caso 7: Wrangler pide login o da error de autenticación
+
+**Síntoma**: `npx wrangler@4 deploy` abre el navegador, o falla con "not authenticated" / "Unable to authenticate".
+
+```
+1. npx wrangler@4 login          → se abre el navegador, acepta con la cuenta
+                                   Luisrodriguezz1981@gmail.com
+2. npx wrangler@4 whoami         → debe mostrar ese email y la cuenta
+                                   "Luisrodriguezz1981@gmail.com's Account"
+3. npx wrangler@4 deploy
+```
+
+Las credenciales quedan en `~/Library/Preferences/.wrangler/config/default.toml`. Si algún día hay que cerrar sesión: `npx wrangler@4 logout`.
+
+---
+
+## Caso 7b: Quiero borrar el Worker y empezar de cero
 
 **Cuando**: algo se ha roto y prefieres reiniciar limpio.
 
 ```
-1. Cloudflare → Workers & Pages → proyecto "app"
-2. Tab "Settings"
-3. Scroll abajo del todo
-4. Sección "Delete" (en rojo)
-5. Click "Delete"
-6. Escribe el nombre del worker para confirmar: "app"
-7. Confirmar borrado
-8. Volver a Workers & Pages → "Create application"
-9. "Upload your static files"
-10. Project name: poner "app" otra vez (o cambiar a otro nombre)
-11. Subir index.html
-12. Deploy
+1. Cloudflare → Workers & Pages → Worker "app"
+2. Tab "Settings" → scroll abajo → sección "Delete" (en rojo)
+3. Click "Delete", escribe "app" para confirmar
+4. En el Mac: npx wrangler@4 deploy
+   (wrangler recrea el Worker "app" desde wrangler.jsonc y sube los assets)
+5. Si la URL app.hems.workers.dev no responde: Settings → Domains & Routes →
+   activar "workers.dev"
 ```
 
-**ADVERTENCIA**: la URL `app.hems.workers.dev` deja de funcionar inmediatamente. Si has compartido el link con gente, todos verán error hasta que el nuevo deploy esté activo.
+**ADVERTENCIA**: la URL `app.hems.workers.dev` deja de funcionar en cuanto borras. Si has compartido el link con gente, todos verán error hasta que el nuevo deploy esté activo.
 
 ---
 
@@ -154,12 +177,14 @@ Si quieres analytics más detalladas (qué hacen los usuarios dentro del juego),
 
 | Problema | Acción inmediata |
 |---|---|
-| El juego no carga (404) | Verificar que archivo se llama `index.html` |
+| El juego no carga (404) | Verificar que `index.html` está en la raíz del repo (Caso 2) |
 | Error SSL | Esperar 2-15 minutos, no es problema tuyo |
 | Versión vieja sigue apareciendo | Hard reload + modo incógnito |
-| Cambios no se ven | Verificar que el deploy nuevo terminó (ver Deployments tab) |
-| Quiero rollback | Cloudflare → Deployments → click en deploy anterior → "Rollback" |
-| Quiero ver versiones anteriores | Tab "Deployments", lista cronológica |
+| Cambios no se ven | Verificar que `wrangler deploy` acabó con "Deployed app triggers" y un Version ID |
+| Un asset da 404 | Esperar 30 s; si sigue, `--dry-run` y revisar `.assetsignore` (Caso 2) |
+| Wrangler pide login | `npx wrangler@4 login` (Caso 7) |
+| Quiero rollback | Cloudflare → Worker `app` → Deployments → deploy anterior → "Rollback" (o `npx wrangler@4 rollback`) |
+| Quiero ver versiones anteriores | Tab "Deployments", lista cronológica (o `npx wrangler@4 deployments list`) |
 
 ---
 
