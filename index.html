@@ -4636,7 +4636,11 @@ const CoinInstancer = (() => {
       const mesh = tpl.getObjectByProperty('isMesh', true);
       geom = mesh.geometry;
       mat = mesh.material;
-      bodyLocal.copy(mesh.matrixWorld);
+      // Centrar el modelo en el origen del Group (el cilindro antiguo lo
+      // estaba): así el centro visual coincide con el punto que usan
+      // hitbox, imán y flotación, y el halo queda justo debajo.
+      const center = new THREE.Box3().setFromObject(tpl).getCenter(new THREE.Vector3());
+      bodyLocal.makeTranslation(-center.x, -center.y, -center.z).multiply(mesh.matrixWorld);
     } else {
       // Fallback procedural (modelo no disponible).
       geom = new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16);
