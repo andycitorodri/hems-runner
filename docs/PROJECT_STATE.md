@@ -1,7 +1,7 @@
 # HEMS Runner — Estado del proyecto
 
 **Última actualización**: 15 de septiembre de 2026 (tarde)
-**Versión actual**: Fase 2 · A1 cerrado y mergeado a `main`; A2 en curso en rama `phase-2-a2` (AssetManager, moneda instanciada y ambulancia Kenney desplegadas; controles táctiles por zonas y tutorial de primera partida); R0 cerrado
+**Versión actual**: Fase 2 · A1 y A2 cerrados (A2 en rama `phase-2-a2`, sin mergear a `main` aún); A3 iniciado (escenario instanciado). Idiomas CA/ES, dominio hems.jornadaimpacte.com, rendimiento móvil (LightPool, warm-up, DynamicRes)
 **Archivos de producción**: `index.html` (~8.900 líneas) + `assets/models/<kit>/` (GLB con textura embebida + License.txt)
 
 ---
@@ -241,6 +241,17 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 - (Opcional, no bloqueante) Helicóptero: cruz roja / logo SEM como decal.
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
+
+---
+
+## Fase 2 · Sub-bloque A3 — biomas (iniciado 16 septiembre 2026)
+
+**Estado**: 🔧 En curso en rama `phase-2-a2`. Base técnica hecha (`fb398f9`): **escenario instanciado**.
+
+- `Props` (index.html): cada tipo de prop (edificio, tejado, ventana, tronco, copa, poste, brazo, bombilla) es un `InstancedMesh` con geometría unitaria; cada prop es `{x,y,z,sx,sy,sz,ry,color}` y `Props.update(moveZ)` mueve, recicla (mismos umbrales que antes) y reescribe matrices cada frame. Color por instancia en edificios y copas; `changeScenario()` recolorea por instancia.
+- Resultado: **draws 380-480 → 94-143** (media 128) sin cambio visual. Objetivo `GRAPHICS_STRATEGY.md`: <100.
+- Nota r128: `InstancedMesh.setColorAt()` crea `instanceColor` con tamaño `mesh.count` (0 al crear) → crear el buffer a mano con capacidad máxima.
+- Siguiente: biomas (Eixample / Costa) sobre este sistema — los edificios GLB entran como capas de `Props` (una capa por malla del modelo, como `gltfLayers`), landmarks (Sagrada Família ya sourceada), cielo/niebla por bioma, transición.
 
 ---
 
