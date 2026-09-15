@@ -128,7 +128,7 @@ Estados:
 | # | Asset | Categoría | Pack candidatos | Licencia | Estado | Notas |
 |---|---|---|---|---|---|---|
 | 1 | Moneda/medalla | GENÉRICO_JUEGO | **`K-Plat`** (elegido) | CC0 | **INTEGRADO** | `assets/models/kenney-platformer-kit/coin-gold.glb` (17 KB). InstancedMesh (`CoinInstancer`): 2 draw calls para todas. |
-| 2 | Cono de tráfico | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | InstancedMesh. Props de calle no listados explícitamente — verificar al descargar; si no, buscar pack alternativo en Sesión 2. |
+| 2 | Cono de tráfico | GENÉRICO_JUEGO | **`K-Cars`** (`cone.glb`) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/cone.glb` (24 KB, 172 tris, escala 1.5). `ConeInstancer` (instanciador genérico `createInstancer`): cuerpo + aura, 2 draw calls para todos. Señales como sprites compartidos. |
 | 3 | Helicóptero medicalizado | GENÉRICO_JUEGO | `PP-Heli-J` (1ª), `PP-Heli-G` (2ª) | CC-BY 3.0 / CC-BY 3.0 | CANDIDATO | Sin cruz roja en el modelo — añadir decal/textura emisiva en integración. Atribución obligatoria. |
 | 4 | Ambulancia low-poly | GENÉRICO_JUEGO | **`K-Cars`** (elegido; `Q-PT` descartado, requería Blender) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/ambulance.glb` (85 KB, 2.8k tris, ruedas y puertas como nodos). Carrocería recoloreada a amarillo SEM vía paleta (`tools/png_swatch.py`). |
 | 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
