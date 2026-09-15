@@ -1974,6 +1974,24 @@
     100% { transform: translateX(350%); }
   }
 
+  /* Rendimiento móvil (body.perf-mobile, ver IS_MOBILE): en Safari iOS cada
+     backdrop-filter sobre el canvas WebGL obliga a componer y desenfocar el
+     fondo en cada frame (~13 cajas en partida), y el grano a pantalla
+     completa con mix-blend-mode fuerza un pase de mezcla de toda la
+     pantalla. Se sustituyen por fondos algo más opacos. */
+  .perf-mobile .hud-block, .perf-mobile .hud-rank, .perf-mobile .mission-hud-item,
+  .perf-mobile .word-hunt, .perf-mobile .pause-btn, .perf-mobile .back-btn,
+  .perf-mobile .ctrl-btn, .perf-mobile .powerup-display, .perf-mobile .resume-countdown,
+  .perf-mobile .mastery-liquidation__inner, .perf-mobile .pause-overlay,
+  .perf-mobile .overlay, .perf-mobile .tutorial, .perf-mobile .debug-panel {
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  }
+  .perf-mobile .hud-block, .perf-mobile .mission-hud-item, .perf-mobile .word-hunt,
+  .perf-mobile .powerup-display { background: rgba(10, 9, 8, 0.9); }
+  .perf-mobile .overlay { background: rgba(10, 9, 8, 0.96); }
+  .perf-mobile .pause-overlay { background: rgba(10, 9, 8, 0.8); }
+  .perf-mobile .grain { display: none; }
+
   @media (max-width: 640px) {
     .overlay { padding: 16px; }
     .hud { padding: 14px 10px 10px; gap: 8px; }
@@ -3319,6 +3337,7 @@ try {
 } catch (_) {}
 
 LightPool.init();  // tras detectar el tier (tamaño del pool)
+if (IS_MOBILE) document.body.classList.add('perf-mobile');  // sin backdrop-filter ni grano (ver CSS)
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-3d'),
@@ -8654,6 +8673,8 @@ const Metrics = (() => {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F2') { e.preventDefault(); toggle(); }
   });
+  // En móvil no hay F2: ?metrics=1 en la URL muestra el panel
+  if (new URLSearchParams(location.search).get('metrics') === '1') setTimeout(toggle, 0);
 
   return { tick };
 })();
