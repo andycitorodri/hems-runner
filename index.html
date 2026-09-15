@@ -3407,6 +3407,7 @@ const Assets = (() => {
       ['car_hatchback', 'hatchback-sports', 1.15], ['car_suv', 'suv', 1.15],
       ['car_taxi', 'taxi', 1.15], ['car_van', 'van', 1.15],
       ['truck_delivery', 'delivery', 1.3], ['truck_garbage', 'garbage-truck', 1.3],
+      ['cone', 'cone', 1.5],
     ].map(([key, file, scale]) => [key, {
       url: `assets/models/kenney-car-kit/${file}.glb`, scale,
       credit: { what: 'credit.traffic', author: 'Kenney', url: 'https://kenney.nl', license: 'CC0' }
@@ -5437,116 +5438,76 @@ function makeScooter() {
   return group;
 }
 
+// Sprites de señalización con textura COMPARTIDA (antes cada cono/valla
+// creaba su propio canvas + textura → una subida a GPU por spawn). Los
+// sprites llevan userData.sharedAsset para que disposeObj() no libere el
+// material común al retirar el obstáculo.
+const SharedSprites = (() => {
+  const cache = {};
+  function make(key, draw, w, h) {
+    if (!cache[key]) {
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      draw(cv.getContext('2d'), w, h);
+      const tex = new THREE.CanvasTexture(cv);
+      cache[key] = new THREE.SpriteMaterial({ map: tex, transparent: true });
+    }
+    const sprite = new THREE.Sprite(cache[key]);
+    sprite.userData.sharedAsset = true;
+    return sprite;
+  }
+  return { make };
+})();
+
+// Señal de aviso: triángulo amarillo con borde rojo y "!"
 function makeWarningSign(scale) {
-  const group = new THREE.Group();
-
-  // Triángulo amarillo con borde rojo
-  const shape = new THREE.Shape();
-  shape.moveTo(0, 0.4);
-  shape.lineTo(0.35, -0.2);
-  shape.lineTo(-0.35, -0.2);
-  shape.closePath();
-  const geom = new THREE.ShapeGeometry(shape);
-
-  const triangle = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
-    color: 0xffd93d, side: THREE.DoubleSide
-  }));
-  triangle.scale.setScalar(scale);
-  group.add(triangle);
-
-  // Borde rojo (triángulo más grande)
-  const shapeBorder = new THREE.Shape();
-  shapeBorder.moveTo(0, 0.5);
-  shapeBorder.lineTo(0.43, -0.25);
-  shapeBorder.lineTo(-0.43, -0.25);
-  shapeBorder.closePath();
-  const geomBorder = new THREE.ShapeGeometry(shapeBorder);
-  const border = new THREE.Mesh(geomBorder, new THREE.MeshBasicMaterial({
-    color: 0xe63946, side: THREE.DoubleSide
-  }));
-  border.scale.setScalar(scale);
-  border.position.z = -0.01;
-  group.add(border);
-
-  // Símbolo "!"
-  const exclV = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.18, 0.01), new THREE.MeshBasicMaterial({ color: 0x0a0908 }));
-  exclV.position.y = 0.08 * scale;
-  exclV.scale.setScalar(scale);
-  group.add(exclV);
-  const exclD = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.01), new THREE.MeshBasicMaterial({ color: 0x0a0908 }));
-  exclD.position.y = -0.1 * scale;
-  exclD.scale.setScalar(scale);
-  group.add(exclD);
-
-  // Siempre mirar a la cámara
-  group.userData.billboard = true;
-  return group;
+  const sprite = SharedSprites.make('warning', (cx, w, h) => {
+    const tri = (inset, color) => {
+      cx.fillStyle = color;
+      cx.beginPath();
+      cx.moveTo(w / 2, inset);
+      cx.lineTo(w - inset, h - inset);
+      cx.lineTo(inset, h - inset);
+      cx.closePath();
+      cx.fill();
+    };
+    tri(4, '#e63946');
+    tri(22, '#ffd93d');
+    cx.fillStyle = '#0a0908';
+    cx.fillRect(w / 2 - 6, 44, 12, 34);
+    cx.fillRect(w / 2 - 6, 86, 12, 12);
+  }, 128, 128);
+  sprite.scale.set(scale * 1.7, scale * 1.7, 1);
+  return sprite;
 }
 
 // Indicador de "SALTAR" que aparece encima de obstáculos saltables
 function makeJumpSign() {
-  const cv = document.createElement('canvas');
-  cv.width = 256; cv.height = 128;
-  const cx = cv.getContext('2d');
-
-  cx.fillStyle = 'rgba(74, 222, 128, 0.92)';
-  cx.beginPath();
-  cx.roundRect(10, 20, 236, 88, 16);
-  cx.fill();
-
-  cx.strokeStyle = '#ffffff';
-  cx.lineWidth = 3;
-  cx.beginPath();
-  cx.roundRect(10, 20, 236, 88, 16);
-  cx.stroke();
-
-  cx.fillStyle = '#ffffff';
-  cx.font = "bold 54px 'Fraunces', serif";
-  cx.textAlign = 'center';
-  cx.textBaseline = 'middle';
-  cx.fillText('↑ SALTA', 128, 64);
-
-  const tex = new THREE.CanvasTexture(cv);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-  const sprite = new THREE.Sprite(mat);
+  const sprite = SharedSprites.make('jump', (cx, w, h) => {
+    cx.fillStyle = 'rgba(74, 222, 128, 0.92)';
+    cx.beginPath();
+    cx.roundRect(10, 20, 236, 88, 16);
+    cx.fill();
+    cx.strokeStyle = '#ffffff';
+    cx.lineWidth = 3;
+    cx.beginPath();
+    cx.roundRect(10, 20, 236, 88, 16);
+    cx.stroke();
+    cx.fillStyle = '#ffffff';
+    cx.font = "bold 54px 'Fraunces', serif";
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+    cx.fillText('↑ SALTA', 128, 64);
+  }, 256, 128);
   sprite.scale.set(2, 1, 1);
   return sprite;
 }
 
 function makeCone() {
+  // Cuerpo y aura los dibuja ConeInstancer (InstancedMesh, 2 draw calls
+  // para todos los conos). El Group lleva solo transform, señalización y
+  // metadatos — el código de colisión no cambia.
   const group = new THREE.Group();
-
-  const auraGeom = new THREE.CircleGeometry(0.9, 24);
-  const auraMat = new THREE.MeshBasicMaterial({
-    color: 0xff6b35, transparent: true, opacity: 0.45, side: THREE.DoubleSide
-  });
-  const aura = new THREE.Mesh(auraGeom, auraMat);
-  aura.rotation.x = -Math.PI / 2;
-  aura.position.y = 0.02;
-  group.add(aura);
-  group.userData.aura = aura;
-
-  const base = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.08, 0.7),
-    new THREE.MeshLambertMaterial({ color: 0x1a1a1a })
-  );
-  base.position.y = 0.04;
-  group.add(base);
-
-  const cone = new THREE.Mesh(
-    new THREE.ConeGeometry(0.35, 0.9, 10),
-    new THREE.MeshLambertMaterial({ color: 0xff6b35 })
-  );
-  cone.position.y = 0.52;
-  cone.castShadow = true;
-  group.add(cone);
-
-  const stripe = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.31, 0.1, 10),
-    new THREE.MeshBasicMaterial({ color: 0xf4efe6 })
-  );
-  stripe.position.y = 0.6;
-  group.add(stripe);
 
   const warn = makeWarningSign(0.5);
   warn.position.set(0, 1.55, 0);
@@ -5560,6 +5521,78 @@ function makeCone() {
   group.userData.kind = 'cone';
   return group;
 }
+
+/* ---- Instanciador genérico (A2) ----
+   Varias "capas" (geometría + material) dibujadas con un InstancedMesh cada
+   una; cada frame se componen las matrices a partir de los Groups activos
+   (hijos directos de scene): matrix(group) × local(capa). Si las capas se
+   construyeron con el fallback y luego aparece el GLB (ready()), se
+   reconstruyen. Patrón de CoinInstancer, generalizado. */
+function createInstancer(buildLayers, ready, MAX) {
+  let layers = null;
+  const tmp = new THREE.Matrix4();
+
+  function ensure() {
+    const isReady = ready();
+    if (layers && (layers.usingGltf || !isReady)) return;
+    if (layers) {
+      for (const l of layers) { scene.remove(l.mesh); if (!l.shared) { l.mesh.geometry.dispose(); l.mesh.material.dispose(); } }
+    }
+    layers = buildLayers(isReady).map(l => {
+      const mesh = new THREE.InstancedMesh(l.geometry, l.material, MAX);
+      mesh.frustumCulled = false;  // las instancias se reparten por toda la carretera
+      mesh.castShadow = !!l.castShadow;
+      mesh.count = 0;
+      scene.add(mesh);
+      return { mesh, local: l.local || new THREE.Matrix4(), shared: !!l.shared };
+    });
+    layers.usingGltf = isReady;
+  }
+
+  // items: lista; pick(item) → Group a instanciar o null
+  function sync(items, pick) {
+    ensure();
+    let n = 0;
+    for (const it of items) {
+      const g = pick(it);
+      if (!g) continue;
+      if (n >= MAX) break;
+      g.updateMatrix();
+      for (const l of layers) l.mesh.setMatrixAt(n, tmp.multiplyMatrices(g.matrix, l.local));
+      n++;
+    }
+    for (const l of layers) {
+      l.mesh.count = n;
+      if (n > 0) l.mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  function layer(i) { return layers ? layers[i] : null; }
+  return { sync, layer };
+}
+
+const ConeInstancer = createInstancer((usingGltf) => {
+  let body;
+  if (usingGltf) {
+    const tpl = Assets.get('cone');
+    tpl.updateMatrixWorld(true);
+    const mesh = tpl.getObjectByProperty('isMesh', true);
+    body = { geometry: mesh.geometry, material: mesh.material, local: mesh.matrixWorld.clone(), castShadow: true, shared: true };
+  } else {
+    body = {
+      geometry: new THREE.ConeGeometry(0.35, 0.9, 10),
+      material: new THREE.MeshLambertMaterial({ color: 0xff6b35 }),
+      local: new THREE.Matrix4().makeTranslation(0, 0.52, 0),
+      castShadow: true
+    };
+  }
+  const aura = {
+    geometry: new THREE.CircleGeometry(0.9, 24),
+    material: new THREE.MeshBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
+    local: new THREE.Matrix4().makeRotationX(-Math.PI / 2).setPosition(0, 0.02, 0)
+  };
+  return [body, aura];
+}, () => Assets.has('cone'), 64);
 
 /* ================================================================
    RECOGIBLES
@@ -8875,12 +8908,7 @@ function animate() {
       const pulse = 0.3 + Math.sin(Date.now() / 250) * 0.2;
       o.mesh.userData.aura.material.opacity = pulse;
     }
-    // Billboard warning signs + jump signs miran a la cámara
-    o.mesh.traverse(child => {
-      if (child.userData && child.userData.billboard) {
-        child.lookAt(camera.position);
-      }
-    });
+    // (Las señales son sprites: miran a la cámara solas.)
   }
 
   updateParticles();
@@ -8942,6 +8970,9 @@ function animate() {
   LightPool.update();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
+  ConeInstancer.sync(activeObstacles, o => o.mesh.userData.kind === 'cone' ? o.mesh : null);
+  const coneAura = ConeInstancer.layer(1);
+  if (coneAura) coneAura.mesh.material.opacity = 0.3 + Math.sin(Date.now() / 250) * 0.2;
   renderer.render(scene, camera);
   Metrics.tick(dt);
   PerfWatchdog.tick(dt);
