@@ -1840,6 +1840,16 @@
     width: 40%; height: 100%; background: var(--amber);
     animation: loadingSlide 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+  /* Con progreso real (precarga de assets) la barra deja de deslizar */
+  .loading__bar-fill.determinate {
+    animation: none; transform: none;
+    transition: width 0.25s ease;
+  }
+  .loading__status {
+    margin-top: 14px; min-height: 14px;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--bone); opacity: 0.45;
+  }
   @keyframes loadingSlide {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(350%); }
@@ -1878,7 +1888,8 @@
   <!-- Loading -->
   <div id="loading" class="loading">
     <div class="loading__title">HEMS <em>Runner</em></div>
-    <div class="loading__bar"><div class="loading__bar-fill"></div></div>
+    <div class="loading__bar"><div class="loading__bar-fill" id="loading-bar-fill"></div></div>
+    <div class="loading__status" id="loading-status"></div>
   </div>
 
   <button id="back-btn" class="back-btn hidden">← Menú</button>
@@ -2461,22 +2472,87 @@ const rimLight = new THREE.DirectionalLight(0xf5a623, 0.35);
 rimLight.position.set(-20, 20, 30);
 scene.add(rimLight);
 
-// ========== ASSETS GLTF (spike A2) ==========
-// Pre-carga de modelos GLB. makeCoin() clona el template; si aún no
-// está disponible (red lenta) o la carga falla, cae al fallback procedural.
-let coinGltfTemplate = null;
-if (typeof THREE.GLTFLoader === 'function') {
-  new THREE.GLTFLoader().load(
-    'assets/models/coin-gold.glb',
-    (gltf) => { coinGltfTemplate = gltf.scene; },
-    undefined,
-    (err) => {
-      console.warn('[A2 spike] coin-gold.glb load failed, using procedural fallback', err);
+/* ================================================================
+   ASSET MANAGER (Fase 2 — A2)
+   Precarga de modelos GLB antes de mostrar el menú (nunca durante el
+   gameplay). Las factorías (makeCoin, …) piden Assets.clone(key); si el
+   modelo no está disponible (carga fallida, red lenta, GLTFLoader
+   ausente) reciben null y usan su fallback procedural.
+
+   Los clones comparten geometría y materiales con el template, por lo
+   que se marcan con userData.sharedAsset y disposeObj() no los libera.
+   ================================================================ */
+const Assets = (() => {
+  // Clave → { url, scale }. Añadir aquí cada modelo nuevo de A2.
+  const MANIFEST = {
+    coin: { url: 'assets/models/coin-gold.glb', scale: 1.5 }
+  };
+  // Si la red tarda más que esto, arrancamos igualmente con fallbacks;
+  // los modelos que lleguen después se usan en los siguientes spawns.
+  const PRELOAD_TIMEOUT_MS = 8000;
+
+  const templates = {};
+  let preloadPromise = null;
+
+  function markShared(obj) {
+    obj.traverse(c => { c.userData.sharedAsset = true; });
+  }
+
+  function preload(onProgress) {
+    if (preloadPromise) return preloadPromise;
+    const keys = Object.keys(MANIFEST);
+    const total = keys.length;
+
+    if (typeof THREE.GLTFLoader !== 'function') {
+      console.warn('[Assets] THREE.GLTFLoader no disponible, usando fallbacks procedurales');
+      preloadPromise = Promise.resolve();
+      return preloadPromise;
     }
-  );
-} else {
-  console.warn('[A2 spike] THREE.GLTFLoader no disponible, usando fallback procedural');
-}
+    if (total === 0) { preloadPromise = Promise.resolve(); return preloadPromise; }
+
+    const loader = new THREE.GLTFLoader();
+    let done = 0;
+    if (onProgress) onProgress(0, total);
+
+    const loads = keys.map(key => new Promise(resolve => {
+      const spec = MANIFEST[key];
+      loader.load(
+        spec.url,
+        (gltf) => {
+          const tpl = gltf.scene;
+          tpl.scale.setScalar(spec.scale || 1);
+          markShared(tpl);
+          templates[key] = tpl;
+          done++; if (onProgress) onProgress(done, total);
+          resolve();
+        },
+        undefined,
+        (err) => {
+          console.warn(`[Assets] ${key} (${spec.url}) falló, fallback procedural`, err);
+          done++; if (onProgress) onProgress(done, total);
+          resolve();
+        }
+      );
+    }));
+
+    const timeout = new Promise(resolve => setTimeout(() => {
+      if (done < total) console.warn(`[Assets] precarga > ${PRELOAD_TIMEOUT_MS} ms, arrancando con fallbacks`);
+      resolve();
+    }, PRELOAD_TIMEOUT_MS));
+
+    preloadPromise = Promise.race([Promise.all(loads), timeout]);
+    return preloadPromise;
+  }
+
+  function has(key) { return !!templates[key]; }
+
+  function clone(key) {
+    const tpl = templates[key];
+    return tpl ? tpl.clone(true) : null;
+  }
+
+  return { preload, has, clone };
+})();
 
 // ========== CONSTANTES ==========
 const LANE_WIDTH = 2.5;
@@ -4519,13 +4595,12 @@ function makeCone() {
 function makeCoin() {
   const group = new THREE.Group();
 
-  if (coinGltfTemplate) {
-    // Spike A2: moneda Kenney GLB clonada del template precargado.
-    const coin = coinGltfTemplate.clone(true);
-    coin.scale.setScalar(1.5);
-    group.add(coin);
+  const gltfCoin = Assets.clone('coin');
+  if (gltfCoin) {
+    // Moneda Kenney GLB (A2), clonada del template precargado.
+    group.add(gltfCoin);
   } else {
-    // Fallback procedural (template aún no cargado o GLTFLoader fallido).
+    // Fallback procedural (modelo no disponible).
     const coin = new THREE.Mesh(
       new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16),
       new THREE.MeshLambertMaterial({
@@ -5733,6 +5808,8 @@ function cleanupFarObjects() {
 
 function disposeObj(obj) {
   obj.traverse(c => {
+    // Los clones de Assets comparten geometría/material con su template.
+    if (c.userData.sharedAsset) return;
     if (c.geometry) c.geometry.dispose();
     if (c.material) {
       if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
@@ -8403,7 +8480,8 @@ backBtn.addEventListener('click', () => {
 createRoad();
 createSideGround();
 populateEnvironment();
-generateTiles();
+// generateTiles() se llama tras la precarga de assets (ver más abajo) para
+// que las monedas del fondo del menú ya usen los modelos GLB.
 
 // Render inicial del panel de misiones en el menú
 renderMenuMissions();
@@ -8412,11 +8490,23 @@ ambulance.position.z = -2;
 ambulance.rotation.y = -0.2;
 animate();
 
-setTimeout(() => {
+// Precarga de assets (A2) en la pantalla de carga. El menú aparece cuando
+// los modelos están listos (o vence el timeout) y han pasado al menos 600 ms.
+const loadingBarFill = document.getElementById('loading-bar-fill');
+const loadingStatus = document.getElementById('loading-status');
+const assetsReady = Assets.preload((done, total) => {
+  loadingBarFill.classList.add('determinate');
+  loadingBarFill.style.width = Math.round((done / total) * 100) + '%';
+  loadingStatus.textContent = `Cargando modelos · ${done}/${total}`;
+});
+const minSplash = new Promise(resolve => setTimeout(resolve, 600));
+
+Promise.all([assetsReady, minSplash]).then(() => {
+  generateTiles();
   loading.classList.add('hidden');
   ambulance.rotation.y = 0;
   ambulance.position.z = 0;
-}, 600);
+});
 </script>
 </body>
 </html>
