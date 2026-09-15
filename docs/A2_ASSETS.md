@@ -4,7 +4,7 @@
 **Sub-bloque**: Fase 2 · A2 — Modelos GLTF (sourcing + integración)
 **Sesión 1**: sourcing puro (sin código, sin descargas).
 **Última actualización**: 2026-09-15
-**Cobertura**: 20/25 candidatos; **2 integrados** (moneda, ambulancia). Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
+**Cobertura**: 20/25 candidatos; **6 integrados** (moneda, ambulancia, 4 coches civiles) + 2 camiones de tráfico. Pendientes: paciente en camilla (5), 3 landmarks Sketchfab (Casa Batlló, W Hotel, Torre Mapfre) y 2 skyboxes.
 
 ---
 
@@ -133,10 +133,10 @@ Estados:
 | 4 | Ambulancia low-poly | GENÉRICO_JUEGO | **`K-Cars`** (elegido; `Q-PT` descartado, requería Blender) | CC0 | **INTEGRADO** | `assets/models/kenney-car-kit/ambulance.glb` (85 KB, 2.8k tris, ruedas y puertas como nodos). Carrocería recoloreada a amarillo SEM vía paleta (`tools/png_swatch.py`). |
 | 5 | Paciente acostado en camilla | GENÉRICO_JUEGO | — | — | PENDIENTE | No cubierto por packs verificados. Buscar en Poly Pizza ("patient", "stretcher", "medical bed") en próxima ronda. |
 | 6 | Caja sorpresa (cartón con lazo) | GENÉRICO_JUEGO | `Q-PlatU` (1ª) | CC0 | CANDIDATO | "Powerups" del pack es el candidato; verificar variante con lazo o aplicar textura. |
-| 7 | Coche civil 1 | GENÉRICO_JUEGO | **`K-Cars`** (pack ya descargado) | CC0 | DESCARGADO | `~/Downloads/kenney_car-kit.zip` trae sedan, suv, taxi, police, van, truck, hatchback-sports… en GLB. Mismo pipeline que la ambulancia. |
-| 8 | Coche civil 2 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
-| 9 | Coche civil 3 | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
-| 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | `K-Cars` / `Q-Cars` | CC0 | CANDIDATO | Idem. |
+| 7 | Coche civil 1 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `sedan.glb` — `makeCar()` elige al azar entre 6 variantes (`Assets.CAR_KEYS`). |
+| 8 | Coche civil 2 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `suv.glb`, `taxi.glb`. |
+| 9 | Coche civil 3 | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `van.glb`, `hatchback-sports.glb`. |
+| 10 | Coche civil 4 (opcional) | GENÉRICO_JUEGO | **`K-Cars`** | CC0 | **INTEGRADO** | `sedan-sports.glb`. Camiones (`makeTruck()`): `delivery.glb` y `garbage-truck.glb` a escala 1.3 (`truck.glb` de Kenney es una pickup). |
 | 11 | Valla urbana | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
 | 12 | Contenedor basura | GENÉRICO_JUEGO | `Q-Streets` (1ª) | CC0 | CANDIDATO | Verificar al descargar (ver nota fila 2). |
 | 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | Sketchfab — wareFLO | CC-BY | CANDIDATO | URL: https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — 42.7k tris, 21.2k verts. HERO landmark Eixample. Low-poly monocromo limpio, torres bien diferenciadas, encaja con Quaternius/Kenney. Colores vía materiales Three.js. **Atribución obligatoria.** |

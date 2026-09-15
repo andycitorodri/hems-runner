@@ -168,7 +168,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ## Fase 2 · Sub-bloque A2 — infraestructura de assets (15 septiembre 2026)
 
-**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada; moneda y ambulancia integradas y desplegadas (Version `6fdb512c`); pendiente el resto del catálogo (`A2_ASSETS.md`).
+**Estado**: 🔧 En curso en rama `phase-2-a2`. Infraestructura cerrada; moneda, ambulancia y tráfico (8 vehículos) integrados y desplegados (Version `d9c3f80d`); pendiente el resto del catálogo (`A2_ASSETS.md`).
 
 ### Commits de A2 (cronológico)
 
@@ -182,6 +182,8 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 | `dc6accb` | Táctil: tap por zonas (lado de la ambulancia = carril, arriba = salto) |
 | `b581aac` / `301e818` | Tutorial de la primera partida (anillos de toque, una sola vez) |
 | `110b930` | Ambulancia Kenney en amarillo SEM + assets por kit + `tools/optimize-glb.sh` |
+| `b380617` | i18n: català per defecte amb selector CAT · ESP |
+| `c9e7df0` | Tráfico con el Car Kit (6 coches + 2 camiones, variante al azar) |
 
 ### Cómo añadir un modelo nuevo
 
@@ -212,7 +214,7 @@ const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 
 ### Pendiente en A2
 
-- Coches de tráfico: `~/Downloads/kenney_car-kit.zip` ya descargado (sedan, suv, taxi, police, van, truck…); sustituir `makeCar()`/`makeTruck()` con el mismo patrón. Cono/valla/contenedor (`Q-Streets`, verificar que existen; el Car Kit trae `cone.glb` y `box.glb` como alternativa CC0 sin Blender).
+- Cono/valla/contenedor: el Car Kit trae `cone.glb` y `box.glb` (CC0, sin Blender); `Q-Streets` como alternativa. Los conos aparecen muchas veces → patrón `CoinInstancer`.
 - Helicóptero (CC-BY), caja sorpresa (`Q-PlatU`), paciente (sin candidato).
 - Volver a probar en Galaxy XCover5 tras instanciar más geometría.
 
