@@ -4242,10 +4242,25 @@ canvas3d.addEventListener('touchend', (e) => {
     } else if (Math.abs(dy) > 25) {
       if (dy < 0) INPUT.jumpOnce = true;
       else INPUT.brakeOnce = true;
+    } else if (dt < 350) {
+      handleTapZone(t.clientX, t.clientY);
     }
   }
   touchStart = null;
 }, { passive: true });
+
+// Tap (sin desplazar) por zonas: tercio superior de la pantalla = saltar;
+// el resto, a la izquierda o derecha de la ambulancia (proyectada a
+// pantalla, así sigue el carril en el que esté) = cambiar de carril.
+const TAP_JUMP_ZONE = 0.33;
+const _tapProj = new THREE.Vector3();
+function handleTapZone(x, y) {
+  if (y < window.innerHeight * TAP_JUMP_ZONE) { INPUT.jumpOnce = true; return; }
+  _tapProj.copy(ambulance.position).project(camera);
+  const ambX = (_tapProj.x + 1) / 2 * window.innerWidth;
+  if (x < ambX) INPUT.leftOnce = true;
+  else INPUT.rightOnce = true;
+}
 
 ['btn-left', 'btn-right', 'btn-jump'].forEach(id => {
   const btn = document.getElementById(id);
@@ -8584,6 +8599,20 @@ populateEnvironment();
 
 // Render inicial del panel de misiones en el menú
 renderMenuMissions();
+
+// En táctil, la tarjeta "Controles" explica toques y deslizamientos
+if (isMobile) {
+  const hints = [
+    ['👈 👉', 'Toca a un lado de la ambulancia'],
+    ['👆', 'Toca arriba o desliza ↑'],
+    ['👇', 'Desliza ↓ para frenar']
+  ];
+  document.querySelectorAll('.start-card .control-hint').forEach((el, i) => {
+    if (!hints[i]) return;
+    el.querySelector('.control-hint__key').textContent = hints[i][0];
+    el.querySelector('.control-hint__desc').textContent = hints[i][1];
+  });
+}
 
 // Créditos de assets 3D (atribución de licencias)
 document.getElementById('menu-credits').innerHTML = Assets.credits().map(c => {
