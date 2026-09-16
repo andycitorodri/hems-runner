@@ -143,24 +143,25 @@
   }
 
   /* Barra de rango/progreso */
+  /* Rango y palabra del día van en el lateral izquierdo, bajo la puntuación:
+     en el centro tapaban el punto de fuga (petición del usuario, 16 sept). */
   .hud-rank {
-    position: absolute; top: 114px; left: 50%;
-    transform: translateX(-50%);
+    position: absolute; top: 108px; left: 20px;
     z-index: 11;
-    padding: 7px 16px;
+    padding: 6px 12px;
     background: rgba(10, 9, 8, 0.78);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(245, 166, 35, 0.35);
     border-radius: 3px;
-    min-width: 220px;
+    min-width: 150px; max-width: 190px;
     display: none;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
   .hud-rank.active { display: block; }
   .hud-rank__label {
     font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--amber); text-align: center;
+    color: var(--amber); text-align: left;
     font-weight: 600; margin-bottom: 4px;
   }
   .hud-rank__bar {
@@ -1012,11 +1013,10 @@
   }
   .word-hunt {
     position: absolute;
-    top: 155px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 150px;
+    left: 20px;
     z-index: 11;
-    padding: 8px 14px;
+    padding: 6px 10px;
     background: rgba(10, 9, 8, 0.78);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
@@ -1038,7 +1038,7 @@
   .word-hunt__letters {
     display: flex;
     gap: 4px;
-    justify-content: center;
+    justify-content: flex-start;
   }
   .word-letter {
     width: 22px;
@@ -2010,8 +2010,8 @@
     .milestone__subtitle { font-size: 13px; }
     .combo-display__value { font-size: 28px; }
     .combo-display { top: 130px; right: 14px; }
-    .hud-rank { min-width: 180px; top: 98px; }
-    .word-hunt { top: 138px; }
+    .hud-rank { min-width: 140px; max-width: 170px; top: 100px; left: 10px; }
+    .word-hunt { top: 140px; left: 10px; }
     .toast-central { top: 210px; }
     .toast-central__text { font-size: 28px; }
     .toast-central__sub { font-size: 9px; }
