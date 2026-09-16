@@ -2112,6 +2112,7 @@
     <div class="metrics-panel__row"><span class="metrics-panel__key">res</span><span class="metrics-panel__val" id="m-res">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">tier</span><span class="metrics-panel__val" id="m-tier">--</span></div>
     <div class="metrics-panel__row"><span class="metrics-panel__key">why</span><span class="metrics-panel__val" id="m-tier-reason">--</span></div>
+    <div class="metrics-panel__row"><span class="metrics-panel__key">lm</span><span class="metrics-panel__val" id="m-lm">--</span></div>
     <div class="metrics-panel__hint">F2 to toggle</div>
   </div>
 
@@ -3793,7 +3794,21 @@ const Landmark = (() => {
     group.position.set(camera.position.x * 0.2 + cur.x, cur.y, camera.position.z + cur.z);
     for (const m of cur.mats) { m.color.copy(m.userData.base).lerp(scene.fog.color, 0.12); m.opacity = fade; }
   }
-  return { init, set, show, update, group, get current() { return cur ? cur.name : null; } };
+  // Diagnóstico (panel de métricas): landmark, y del grupo, base real de la
+  // malla en mundo (dequantizando: Box3 en r128 no sirve con KHR_mesh_quantization) y cámara.
+  const _dv = new THREE.Vector3();
+  function debug() {
+    if (!cur) return '--';
+    cur.obj.updateWorldMatrix(true, true);
+    let minY = Infinity;
+    cur.obj.traverse(m => {
+      if (!m.isMesh || !m.geometry.attributes.position) return;
+      const p = m.geometry.attributes.position, f = p.normalized ? 1 / 32767 : 1;
+      for (let i = 0; i < p.count; i += 5) { _dv.set(p.getX(i) * f, p.getY(i) * f, p.getZ(i) * f).applyMatrix4(m.matrixWorld); if (_dv.y < minY) minY = _dv.y; }
+    });
+    return `${cur.name} y${group.position.y.toFixed(0)} base${minY.toFixed(0)} cam${camera.position.y.toFixed(1)}`;
+  }
+  return { init, set, show, update, debug, group, get current() { return cur ? cur.name : null; } };
 })();
 
 /* ---- Gaviotas (bioma costa): 8 pájaros en "V" con 2 InstancedMesh (ala
@@ -9700,7 +9715,8 @@ const Metrics = (() => {
       tris: document.getElementById('m-tris'),
       res: document.getElementById('m-res'),
       tier: document.getElementById('m-tier'),
-      reason: document.getElementById('m-tier-reason')
+      reason: document.getElementById('m-tier-reason'),
+      lm: document.getElementById('m-lm')
     };
   }
 
@@ -9738,6 +9754,7 @@ const Metrics = (() => {
     dom.tris.textContent = lastInfo.triangles.toLocaleString('en-US');
     dom.res.textContent = renderer.getPixelRatio().toFixed(2) + '×' + (DynamicRes.step ? ` (−${DynamicRes.step})` : '');
     dom.tier.textContent = QUALITY_TIER;
+    if (dom.lm) dom.lm.textContent = Landmark.debug();
     dom.reason.textContent = QUALITY_TIER_REASON;
   }
 
