@@ -3469,7 +3469,8 @@ const Ambience = (() => {
     if (k >= 1) { from = to = null; }
   }
   function registerGround(mat) { groundMats.push(mat); }
-  return { set, transitionTo, update, registerGround };
+  function groundColor() { return groundMats.length ? groundMats[0].color : _c.setHex(0x4d7a36); }
+  return { set, transitionTo, update, registerGround, groundColor };
 })();
 
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
@@ -3575,15 +3576,20 @@ const Landmark = (() => {
   // estructura oscura, césped). Es bajo (27 m) y la fila de edificios lo
   // taparía entero: mientras está activo la acera derecha se queda sin
   // edificios (Props.setMask) y el estadio se ve en su explanada, justo
-  // detrás de la niebla. (Probado inclinarlo hacia la cámara para enseñar
-  // el césped: parece un platillo volante; mejor a ras de suelo.)
+  // detrás de la niebla. Las gradas van pintadas blaugrana por niveles
+  // (flatten-glb.mjs UPFACING) y el modelo no trae césped: se añade un plano.
+  // Desde la calzada (cámara a 5 m) no se ve el interior del cuenco; probado
+  // inclinarlo hacia la cámara (solo o sobre una loma verde): parece un
+  // platillo volante o un estadio en una ladera. Se queda a ras de suelo.
   const isRightBuilding = (name, it) => it.x > 0 && (name.startsWith('bld_') || name === 'building' || name === 'roof' || name === 'window');
   function buildCampNou() {
     if (!Assets.has('campnou')) return null;
     const model = Assets.clone('campnou');
-    // Colores del GLB, algo más oscuros: el hormigón claro se confundía con el horizonte
-    model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.clone().multiplyScalar(0.8).getHex()); });
-    return entry('campnou', model, { x: 62, z: -250, ry: 0.35, mask: isRightBuilding });
+    model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.clone().multiplyScalar(0.85).getHex()); });
+    const pitch = new THREE.Mesh(new THREE.PlaneGeometry(64, 44), lambert(0x3f8a3a));
+    pitch.rotation.x = -Math.PI / 2; pitch.position.y = 1.2;
+    model.add(pitch);
+    return entry('campnou', model, { x: 68, z: -250, ry: 0.35, mask: isRightBuilding });
   }
 
   // Arc de Triomf: blockout de Sketchfab (SC-03), ladrillo rojo. Va sobre
@@ -3703,7 +3709,7 @@ const Assets = (() => {
   // Landmark: Camp Nou (Sketchfab, Alvxrez, CC-BY). Fundido a un material y
   // decimado de 52k a 16k tris (tools/node/flatten-glb.mjs); ver Landmark.
   MANIFEST.campnou = {
-    url: 'assets/models/sketchfab/camp-nou.glb', scale: 0.45, ground: true,
+    url: 'assets/models/sketchfab/camp-nou-v2.glb', scale: 0.5, ground: true,
     credit: { what: 'credit.campnou', author: 'Alvxrez', url: 'https://sketchfab.com/3d-models/camp-nou-744b8bc710d54b73a110cd173c7f4ec8', license: 'CC-BY 4.0' }
   };
   // Landmark: Arc de Triomf (Sketchfab, SC-03, CC-BY; blockout de 8,5k tris,

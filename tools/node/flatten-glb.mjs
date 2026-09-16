@@ -5,6 +5,9 @@
 //      vértice fuera de ese rectángulo (la placa de suelo que traen algunos modelos de Sketchfab).
 //      BUCKETS="regex=hex,regex=hex" agrupa por nombre de material original en varios materiales
 //      planos (p.ej. "Green=3f8f3a,DarkGray|Color_008=6e6a63"); el resto va al hex por defecto.
+//      UPFACING="y0:y1=hex,y0:y1=hex" (m, mundo) pinta de otro color los triángulos que miran
+//      hacia arriba (normal y > 0.35) con centroide en esa franja de altura — p.ej. gradas
+//      de un estadio por niveles — sin tocar el material del resto de la malla.
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { join, simplify, weld, prune, dedup, flatten } from '@gltf-transform/functions';
@@ -23,6 +26,7 @@ for (const mesh of root.listMeshes()) for (const prim of mesh.listPrimitives()) 
 }
 await doc.transform(prune(), dedup(), flatten(), join({ keepNamed: false, keepMeshes: false }));
 if (process.env.DROP_OUTSIDE) dropTrianglesOutside(process.env.DROP_OUTSIDE.split(',').map(Number));
+if (process.env.UPFACING) splitUpFacing(process.env.UPFACING.split(',').map(b => { const [r, h] = b.split('='); const [y0, y1] = r.split(':').map(Number); return { y0, y1, mat: flat('up_' + h, h) }; }));
 await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: parseFloat(ratioArg), error: parseFloat(process.env.SIMPLIFY_ERROR || '0.05') }), prune());
 let tris = 0; for (const m of root.listMeshes()) for (const p of m.listPrimitives()) tris += (p.getIndices()?.getCount() || 0) / 3;
 console.log(`${output}: meshes ${root.listMeshes().length}, prims ${root.listMeshes().flatMap(m => m.listPrimitives()).length}, tris ${tris}`);
@@ -53,6 +57,38 @@ function dropTrianglesOutside([x0, x1, z0, z1]) {
       }
       idx.setArray(remap.size > 65535 ? new Uint32Array(newIdx) : new Uint16Array(newIdx));
       console.log(`dropTrianglesOutside(${[x0, x1, z0, z1]}): ${dropped} triángulos quitados, ${remap.size} vértices quedan`);
+    }
+  }
+}
+
+// Separa en primitivas nuevas (con otro material) los triángulos que miran hacia arriba
+// cuyo centroide (en mundo) cae en cada franja [y0,y1].
+function splitUpFacing(bands) {
+  for (const node of root.listNodes()) {
+    const mesh = node.getMesh(); if (!mesh) continue;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const pos = prim.getAttribute('POSITION'), idx = prim.getIndices(); if (!idx) continue;
+      const src = idx.getArray(), keep = [], out = bands.map(() => []);
+      const v = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], w = [0, 0, 0];
+      const xf = (p, o) => { o[0] = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12]; o[1] = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13]; o[2] = m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]; };
+      for (let i = 0; i < src.length; i += 3) {
+        for (let k = 0; k < 3; k++) { pos.getElement(src[i + k], w); xf(w, v[k]); }
+        const ax = v[1][0] - v[0][0], ay = v[1][1] - v[0][1], az = v[1][2] - v[0][2];
+        const bx = v[2][0] - v[0][0], by = v[2][1] - v[0][1], bz = v[2][2] - v[0][2];
+        const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+        const len = Math.hypot(nx, ny, nz) || 1, cy = (v[0][1] + v[1][1] + v[2][1]) / 3;
+        const b = ny / len > 0.35 ? bands.findIndex(B => cy >= B.y0 && cy < B.y1) : -1;
+        (b >= 0 ? out[b] : keep).push(src[i], src[i + 1], src[i + 2]);
+      }
+      const mk = arr => doc.createAccessor().setType('SCALAR').setArray(arr.length > 65535 || src instanceof Uint32Array ? new Uint32Array(arr) : new Uint16Array(arr));
+      idx.setArray(mk(keep).getArray());
+      out.forEach((arr, k) => {
+        if (!arr.length) return;
+        const p2 = prim.clone().setIndices(mk(arr)).setMaterial(bands[k].mat);
+        mesh.addPrimitive(p2);
+        console.log(`splitUpFacing ${bands[k].y0}-${bands[k].y1}: ${arr.length / 3} triángulos`);
+      });
     }
   }
 }
