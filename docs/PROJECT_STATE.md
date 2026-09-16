@@ -252,7 +252,8 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 - Resultado: **draws 380-480 → 94-143** (media 128) sin cambio visual. Objetivo `GRAPHICS_STRATEGY.md`: <100.
 - Nota r128: `InstancedMesh.setColorAt()` crea `instanceColor` con tamaño `mesh.count` (0 al crear) → crear el buffer a mano con capacidad máxima.
 - **A3.1 (`8fc1149`, `50dea1a`)**: edificios Kenney City Kit Commercial (CC0, `~/Downloads/kenney_city-kit-commercial.zip`, 8 variantes en `assets/models/kenney-city-kit/`) como capas GLB de `Props` (`Props.defineGltfLayer`), fachada hacia la calle, tinte cálido por instancia (`EIXAMPLE_TINTS`). Cielo: cúpula con degradado (`skyDome`) + `Ambience` (sol, hemisferio, ambiente, niebla, suelo) con presets = momentos del día (Migdia, Capvespre, Nit, Alba) cada 1000 m y transición de 3 s. Arranque y partida nueva: mediodía. Draws ~110-130; tris ~100k (antes 20k) — pendiente variante low-detail (el kit las trae, `low-detail-building-*`) para tier low.
-- Siguiente: Sagrada Família como landmark hero al fondo (ya sourceada, CC-BY, 42k tris → hay que decimar), bioma Costa Barceloneta (palmeras, mar, W Hotel) y transición entre biomas cada 1500 m.
+- **Landmark (`8533f11`, `4411aff`)**: `Landmark` recoloca cada frame un objeto a 260 m por delante de la cámara (sin niebla, color mezclado con el horizonte). Primero silueta procedural (18 torres, 2 InstancedMesh); luego el modelo real de Sketchfab (wareFLO, CC-BY, decimado a 11k tris) vía `Landmark.useGltf()`. Modelos de Sketchfab: los descarga el usuario (cuenta), formato GLB.
+- Siguiente: bioma Costa Barceloneta (palmeras, mar, W Hotel como landmark) y transición entre biomas cada 1500 m.
 
 ---
 
