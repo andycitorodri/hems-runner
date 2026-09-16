@@ -1,7 +1,7 @@
 # HEMS Runner — Estado del proyecto
 
 **Última actualización**: 15 de septiembre de 2026 (tarde)
-**Versión actual**: Fase 2 · A1 y A2 cerrados (A2 en rama `phase-2-a2`, sin mergear a `main` aún); A3 en curso (escenario instanciado, edificios Kenney, cielo/Ambience, carrusel de landmarks: Sagrada → Torre Glòries → Arc de Triomf → Tres Xemeneies). Idiomas CA/ES, dominio hems.jornadaimpacte.com, rendimiento móvil (LightPool, warm-up, DynamicRes)
+**Versión actual**: Fase 2 · A1 y A2 cerrados (A2 en rama `phase-2-a2`, sin mergear a `main` aún); A3 en curso (escenario instanciado, edificios Kenney, cielo/Ambience, carrusel de landmarks: Sagrada → Torre Glòries → Arc de Triomf → Tres Xemeneies → Hotel W con bioma costa). Idiomas CA/ES, dominio hems.jornadaimpacte.com, rendimiento móvil (LightPool, warm-up, DynamicRes)
 **Archivos de producción**: `index.html` (~8.900 líneas) + `assets/models/<kit>/` (GLB con textura embebida + License.txt)
 
 ---
@@ -258,9 +258,9 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 - **Arc de Triomf (`39c933b`)**: 3.º del carrusel (Sagrada → Torre Glòries → **Arc** → Camp Nou). Blockout de Sketchfab (SC-03, CC-BY, 8,5k tris, unidades diminutas: escala 340 → 38 m), un color ladrillo `0x9c4f3a`. Va **de frente sobre la calzada** a 170 m (`x: 0`), con `Props.setMask` ocultando las dos filas de edificios: el arco queda enmarcado al fondo del paseo, visible también en vertical (centrado).
 - **Torre Glòries v2 + Tres Xemeneies (`1f22106`)**: la torre lleva ahora ranuras en cada planta (34) por las que asoma un cilindro interior oscuro → líneas de forjado; rojo solo en la base, azul grisáceo/verdoso arriba, cilindro hasta el 72 %. **Tres Xemeneies** de Sant Adrià (Sketchfab, novusod, CC-BY; 3 colores planos, 7k tris, 244 KB, escala 0.55 → 112 m) como 5.º landmark a la derecha (x 64, z −270). Orden: Sagrada → Glòries → Arc → Camp Nou → Xemeneies.
 - **Camp Nou retirado** (`1f446a9` → quitado en el siguiente commit): desde la calzada (cámara a 5 m) un estadio es una pared curva; se probó pintar gradas blaugrana por niveles (`flatten-glb.mjs UPFACING`), añadir césped, inclinarlo hacia la cámara y ponerlo sobre una loma — platillo volante. Decisión del usuario: fuera. Carrusel definitivo: **Sagrada → Torre Glòries → Arc de Triomf → Tres Xemeneies** (teclas debug Z X C V; N = siguiente escenario).
-- Pendiente del carrusel: Hotel W (procedural, vela) con bioma Costa Barceloneta (palmeras, mar).
+- **Bioma costa + Hotel W (`54a2c2b`)**: `Props` admite capas con `def.biome` que solo se ven cuando `Props.setBiome(b)` coincide (mismo mecanismo que la máscara: se evalúa al reciclar → entran y salen por la niebla). Capas `sea`/`sand` (2 franjas de 260 m a la derecha, recicladas a 520 m; el suelo lateral solo llega a x 64, el mar hasta x 328) y `ptrunk`/`frond` (33 palmeras × 6 hojas, la hoja lleva la caída de 30° en la geometría y por instancia solo gira). **Hotel W** procedural (vela = cuarto de elipse extruido 100 m + podio), 5.º landmark, x 72 z −285; su entrada esconde edificios y árboles de la derecha y activa `costa`. Carrusel completo: Sagrada → Glòries → Arc → Xemeneies → Hotel W (teclas Z X C V B; N = siguiente escenario).
+- A3 queda funcionalmente cerrado. Ideas pendientes (no comprometidas): variante low-detail de edificios para tier low; preset de cielo propio para la costa.
 - Herramienta nueva: `tools/node/flatten-glb.mjs` (gltf-transform 4 + meshoptimizer; `npm i` en `tools/node`, `node_modules` ignorado). Previsualizar: `tools/preview-glb.html?m=&s=&view=side|top` — ojo, con modelos cuantizados (`optimize-glb.sh`) `Box3.setFromObject` en r128 da tamaños inflados; los tamaños reales los da `gltf-transform inspect`.
-- Siguiente: bioma Costa Barceloneta (palmeras, mar, W Hotel como landmark) y transición entre biomas cada 1500 m.
 
 ---
 
