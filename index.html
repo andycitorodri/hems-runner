@@ -3628,6 +3628,7 @@ const Landmark = (() => {
     cur = e; if (cur) cur.obj.visible = true;
     Props.setMask(cur ? cur.mask : null);
     Props.setBiome(cur ? cur.biome : null);
+    Gulls.setActive(!!cur && cur.biome === 'costa');
   }
   // Cambio inmediato (reinicio de partida)
   function set(i) { if (!ENTRIES.length) return; pending = null; fadeDir = 0; fade = 1; swap(at(i)); }
@@ -3651,6 +3652,38 @@ const Landmark = (() => {
     for (const m of cur.mats) { m.color.copy(m.userData.base).lerp(scene.fog.color, 0.12); m.opacity = fade; }
   }
   return { init, set, show, update, group, get current() { return cur ? cur.name : null; } };
+})();
+
+/* ---- Gaviotas (bioma costa): 8 pájaros en "V" con 2 InstancedMesh (ala
+   izquierda / derecha) que aletean y vuelan en círculos sobre el mar, en
+   coordenadas relativas a la cámara. 2 draw calls; sin esqueleto (el modelo
+   animado de Sketchfab no se puede instanciar). */
+const Gulls = (() => {
+  const N = 8, group = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 });
+  const geoL = new THREE.BoxGeometry(1.2, 0.05, 0.38).translate(-0.6, 0, 0), geoR = new THREE.BoxGeometry(1.2, 0.05, 0.38).translate(0.6, 0, 0);
+  const wl = new THREE.InstancedMesh(geoL, mat, N), wr = new THREE.InstancedMesh(geoR, mat, N);
+  wl.frustumCulled = wr.frustumCulled = false;
+  group.add(wl, wr); group.visible = false; scene.add(group);
+  const birds = Array.from({ length: N }, (_, i) => ({ cx: 12 + Math.random() * 36, cy: 8 + Math.random() * 8, cz: -50 - Math.random() * 100, r: 6 + Math.random() * 10, a: Math.random() * 6.28, w: (0.25 + Math.random() * 0.25) * (Math.random() < 0.5 ? 1 : -1), ph: Math.random() * 6.28, f: 5 + Math.random() * 3 }));
+  const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(1, 1, 1);
+  let t = 0, active = false;
+  function setActive(on) { active = on; group.visible = on; }
+  function update(dt) {
+    if (!active) return;
+    t += dt;
+    group.position.set(camera.position.x * 0.5, 0, camera.position.z);
+    for (let i = 0; i < N; i++) {
+      const b = birds[i]; b.a += b.w * dt;
+      const flap = Math.sin(t * b.f + b.ph) * 0.55;
+      _p.set(b.cx + Math.cos(b.a) * b.r, b.cy + Math.sin(t * 1.3 + b.ph) * 0.6, b.cz + Math.sin(b.a) * b.r);
+      const heading = -b.a - Math.PI / 2 * Math.sign(b.w);  // mirando a lo largo del círculo
+      _e.set(0, heading, flap); wl.setMatrixAt(i, _m.compose(_p, _q.setFromEuler(_e), _s));
+      _e.set(0, heading, -flap); wr.setMatrixAt(i, _m.compose(_p, _q.setFromEuler(_e), _s));
+    }
+    wl.instanceMatrix.needsUpdate = wr.instanceMatrix.needsUpdate = true;
+  }
+  return { setActive, update };
 })();
 
 const rimLight = new THREE.DirectionalLight(0xf5a623, 0.35);
@@ -9683,6 +9716,7 @@ function animate() {
   LightPool.update();
   Ambience.update();
   Landmark.update(dt);
+  Gulls.update(dt);
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
