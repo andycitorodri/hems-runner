@@ -3493,7 +3493,7 @@ const Landmark = (() => {
   group.scale.setScalar(1.0);
   scene.add(group);
 
-  const stone = new THREE.Color(0xb8a68a);
+  const stone = new THREE.Color(0xb59a70);  // piedra arenisca de Montjuïc
   const mats = [mat];
 
   // Modelo real (Sketchfab, wareFLO): sustituye a las torres procedurales.
@@ -3504,7 +3504,7 @@ const Landmark = (() => {
     mats.length = 0;
     model.traverse(c => {
       if (!c.isMesh) return;
-      c.material = new THREE.MeshLambertMaterial({ color: 0xb8a68a, fog: false });
+      c.material = new THREE.MeshLambertMaterial({ color: 0xb59a70, fog: false });
       c.frustumCulled = false;
       mats.push(c.material);
     });
@@ -3518,7 +3518,7 @@ const Landmark = (() => {
   // carretera; la x se mueve poco con el carril (parallax lejano)
   function update() {
     group.position.set(camera.position.x * 0.2 - 50, -1, camera.position.z - 260);
-    const c = stone.clone().lerp(scene.fog.color, 0.45);
+    const c = stone.clone().lerp(scene.fog.color, 0.22);
     for (const m of mats) m.color.copy(c);
   }
   return { update, useGltf, group };
@@ -4440,10 +4440,10 @@ function pickNextWord() {
 // siguiente con una transición de 3 s (Ambience.transitionTo). `sky` es el
 // degradado de la cúpula (cenit → horizonte); la niebla toma el horizonte.
 const SCENARIOS = [
-  { name: 'Migdia',     skyTop: 0x2f6fd0, skyHorizon: 0xcfe6f7, sun: 0xfff1d6, sunIntensity: 1.35, hemiSky: 0x9fc6ff, hemiGround: 0x8a7a5a, hemiIntensity: 0.75, ambient: 0x8fa0b8, ambientIntensity: 0.3, ground: 0x4d7a36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
+  { name: 'Migdia',     skyTop: 0x2f6fd0, skyHorizon: 0xcfe6f7, sun: 0xfff1d6, sunIntensity: 1.25, hemiSky: 0xc5d3e6, hemiGround: 0x8a7a5a, hemiIntensity: 0.55, ambient: 0xa0a0a0, ambientIntensity: 0.25, ground: 0x4d7a36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
   { name: 'Capvespre',  skyTop: 0x4a3f8f, skyHorizon: 0xf4a55e, sun: 0xffb372, sunIntensity: 1.1,  hemiSky: 0xd9926f, hemiGround: 0x4a3a3a, hemiIntensity: 0.6,  ambient: 0x8a6a70, ambientIntensity: 0.3, ground: 0x5a6634, buildingColor: [0xa0806a, 0x8a7060, 0xb89878, 0x8a8070] },
   { name: 'Nit',        skyTop: 0x0b1226, skyHorizon: 0x2a3250, sun: 0x8aa0d8, sunIntensity: 0.55, hemiSky: 0x4a5a8a, hemiGround: 0x1a1a22, hemiIntensity: 0.5,  ambient: 0x2a3040, ambientIntensity: 0.35, ground: 0x1e2a1e, buildingColor: [0x2a2830, 0x3a3842, 0x1a1822, 0x2a2a32] },
-  { name: 'Alba',       skyTop: 0x5a7fc8, skyHorizon: 0xf7c9a8, sun: 0xffd9b0, sunIntensity: 1.0,  hemiSky: 0xb9c8ea, hemiGround: 0x6a6050, hemiIntensity: 0.65, ambient: 0x8a8ea0, ambientIntensity: 0.3, ground: 0x486e36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
+  { name: 'Alba',       skyTop: 0x5a7fc8, skyHorizon: 0xf7c9a8, sun: 0xffd9b0, sunIntensity: 1.0,  hemiSky: 0xc9d0e4, hemiGround: 0x6a6050, hemiIntensity: 0.55, ambient: 0x8a8ea0, ambientIntensity: 0.3, ground: 0x486e36, buildingColor: [0xc8a880, 0x9a8068, 0x7a6a58, 0xa89878] },
 ];
 
 // ========== WORD HUNT ==========
@@ -6747,7 +6747,7 @@ const sceneObjects = []; // carretera, líneas y bordes que se mueven (los props
 function createRoad() {
   const road = new THREE.Mesh(
     new THREE.PlaneGeometry(LANE_WIDTH * 3 + 1.5, ROAD_LENGTH),
-    new THREE.MeshLambertMaterial({ color: 0x2a2a30 })
+    new THREE.MeshLambertMaterial({ color: 0x1f1f22 })  // asfalto (oscuro: de día la luz lo aclara mucho)
   );
   road.rotation.x = -Math.PI / 2;
   road.position.z = -ROAD_LENGTH / 2 + 10;
