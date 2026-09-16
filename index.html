@@ -2219,8 +2219,7 @@
       <span><b>Z</b> ⛪ Sagrada</span>
       <span><b>X</b> 🗼 Glòries</span>
       <span><b>C</b> 🏛 Arc</span>
-      <span><b>V</b> 🏟 Camp Nou</span>
-      <span><b>B</b> 🏭 Xemeneies</span>
+      <span><b>V</b> 🏭 Xemeneies</span>
       <span><b>N</b> 🌇 Escenario</span>
     </div>
   </div>
@@ -2488,7 +2487,6 @@ const I18N_STRINGS = {
     'credit.traffic': 'Tráfico',
     'credit.buildings': 'Edificios',
     'credit.sagrada': 'Sagrada Família',
-    'credit.campnou': 'Camp Nou',
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
     'credit.barrier': 'Valla',
@@ -2810,7 +2808,6 @@ const I18N_STRINGS = {
     'credit.traffic': 'Trànsit',
     'credit.buildings': 'Edificis',
     'credit.sagrada': 'Sagrada Família',
-    'credit.campnou': 'Camp Nou',
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
     'credit.barrier': 'Tanca',
@@ -3475,8 +3472,9 @@ const Ambience = (() => {
 
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
    Solo hay uno visible; cambia con changeScenario() (cada 1000 m):
-   Sagrada Família → Torre Glòries → Arc de Triomf → Camp Nou → Tres
-   Xemeneies (Hotel W cuando haya bioma de costa). Va "pegado" al fondo: cada frame se recoloca a una
+   Sagrada Família → Torre Glòries → Arc de Triomf → Tres Xemeneies
+   (Hotel W cuando haya bioma de costa). El Camp Nou se probó y se quitó:
+   desde la calzada un estadio es una pared curva, no se lee. Va "pegado" al fondo: cada frame se recoloca a una
    distancia fija por delante de la cámara, fuera de la niebla (fog: false)
    y con el color mezclado con el horizonte del Ambience, como una silueta
    lejana en la bruma. Al cambiar se funde (opacidad) con el cielo, se
@@ -3572,26 +3570,6 @@ const Landmark = (() => {
     return entry('xemeneies', model, { x: 64, z: -270 });
   }
 
-  // Camp Nou: modelo Sketchfab (Alvxrez) en 3 colores planos (hormigón,
-  // estructura oscura, césped). Es bajo (27 m) y la fila de edificios lo
-  // taparía entero: mientras está activo la acera derecha se queda sin
-  // edificios (Props.setMask) y el estadio se ve en su explanada, justo
-  // detrás de la niebla. Las gradas van pintadas blaugrana por niveles
-  // (flatten-glb.mjs UPFACING) y el modelo no trae césped: se añade un plano.
-  // Desde la calzada (cámara a 5 m) no se ve el interior del cuenco; probado
-  // inclinarlo hacia la cámara (solo o sobre una loma verde): parece un
-  // platillo volante o un estadio en una ladera. Se queda a ras de suelo.
-  const isRightBuilding = (name, it) => it.x > 0 && (name.startsWith('bld_') || name === 'building' || name === 'roof' || name === 'window');
-  function buildCampNou() {
-    if (!Assets.has('campnou')) return null;
-    const model = Assets.clone('campnou');
-    model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.clone().multiplyScalar(0.85).getHex()); });
-    const pitch = new THREE.Mesh(new THREE.PlaneGeometry(64, 44), lambert(0x3f8a3a));
-    pitch.rotation.x = -Math.PI / 2; pitch.position.y = 1.2;
-    model.add(pitch);
-    return entry('campnou', model, { x: 68, z: -250, ry: 0.35, mask: isRightBuilding });
-  }
-
   // Arc de Triomf: blockout de Sketchfab (SC-03), ladrillo rojo. Va sobre
   // la calzada, de frente (Passeig de Lluís Companys): mientras está activo
   // no hay edificios a ningún lado, solo árboles y farolas, y el arco queda
@@ -3609,7 +3587,7 @@ const Landmark = (() => {
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
-    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildCampNou(), buildXemeneies()]) if (e) ENTRIES.push(e);
+    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies()]) if (e) ENTRIES.push(e);
     set(0);
   }
   function at(i) { return ENTRIES[((i % ENTRIES.length) + ENTRIES.length) % ENTRIES.length]; }
@@ -3705,12 +3683,6 @@ const Assets = (() => {
   MANIFEST.sagrada = {
     url: 'assets/models/sketchfab/sagrada-familia.glb', scale: 0.7, ground: true,
     credit: { what: 'credit.sagrada', author: 'wareFLO', url: 'https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97', license: 'CC-BY 4.0' }
-  };
-  // Landmark: Camp Nou (Sketchfab, Alvxrez, CC-BY). Fundido a un material y
-  // decimado de 52k a 16k tris (tools/node/flatten-glb.mjs); ver Landmark.
-  MANIFEST.campnou = {
-    url: 'assets/models/sketchfab/camp-nou-v2.glb', scale: 0.5, ground: true,
-    credit: { what: 'credit.campnou', author: 'Alvxrez', url: 'https://sketchfab.com/3d-models/camp-nou-744b8bc710d54b73a110cd173c7f4ec8', license: 'CC-BY 4.0' }
   };
   // Landmark: Arc de Triomf (Sketchfab, SC-03, CC-BY; blockout de 8,5k tris,
   // un color plano ladrillo). Unidades diminutas: 0,11 de alto → ×340 ≈ 38 m.
@@ -5401,7 +5373,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => KEYS.delete(e.key));
 
-// ========== DEBUG TESTING (teclas 1-7, Z X C V B, N) ==========
+// ========== DEBUG TESTING (teclas 1-7, Z X C V, N) ==========
 // Atajos para probar cada efecto sin depender del azar
 // Solo funcionan durante la partida. Borrar antes de producción si se quiere.
 const DEBUG_EFFECT_KEYS = {
@@ -5418,8 +5390,7 @@ const DEBUG_EFFECT_KEYS = {
   'z': { label: '⛪ Sagrada Família', fn: () => Landmark.show(0) },
   'x': { label: '🗼 Torre Glòries', fn: () => Landmark.show(1) },
   'c': { label: '🏛 Arc de Triomf', fn: () => Landmark.show(2) },
-  'v': { label: '🏟 Camp Nou', fn: () => Landmark.show(3) },
-  'b': { label: '🏭 Tres Xemeneies', fn: () => Landmark.show(4) },
+  'v': { label: '🏭 Tres Xemeneies', fn: () => Landmark.show(3) },
   'n': { label: '🌇 Siguiente escenario', fn: () => changeScenario() },
 };
 
@@ -7010,7 +6981,7 @@ const Props = (() => {
 
   // Máscara (name, item) → true oculta la instancia (escala 0). Se evalúa al
   // reciclar cada instancia hacia delante, así la fila "se acaba" con la
-  // distancia en vez de desaparecer de golpe; ver Landmark (Camp Nou).
+  // distancia en vez de desaparecer de golpe; ver Landmark (Arc de Triomf).
   let mask = null;
   const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
   function setMask(fn) {

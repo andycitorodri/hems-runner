@@ -4,14 +4,6 @@ Licencia: CC Attribution 4.0 — https://creativecommons.org/licenses/by/4.0/
 Atribución mostrada en los créditos del menú del juego.
 Decimado de 42.7k a ~8k triángulos (gltf-transform simplify) + tools/optimize-glb.sh.
 
-camp-nou.glb — "Camp Nou" by Alvxrez
-https://sketchfab.com/3d-models/camp-nou-744b8bc710d54b73a110cd173c7f4ec8
-Licencia: CC Attribution 4.0 — https://creativecommons.org/licenses/by/4.0/
-Atribución mostrada en los créditos del menú del juego.
-Fundido a un solo material plano, sin la placa de suelo, unido y decimado de 52k
-a 16.5k triángulos (tools/node/flatten-glb.mjs + gltf-transform weld/simplify)
-+ tools/optimize-glb.sh.
-
 arc-de-triomf.glb — "CGT 116 - Week 2 - Environment Blockout" (Arc de Triomf, Barcelona) by SC-03
 https://sketchfab.com/3d-models/cgt-116-week-2-environment-blockout-579b55312c2248ea82d4af0c457dee08
 Licencia: CC Attribution 4.0 — https://creativecommons.org/licenses/by/4.0/
