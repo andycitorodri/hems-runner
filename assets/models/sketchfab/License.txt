@@ -1,0 +1,5 @@
+sagrada-familia.glb — "Sagrada Familia" by wareFLO
+https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97
+Licencia: CC Attribution 4.0 — https://creativecommons.org/licenses/by/4.0/
+Atribución mostrada en los créditos del menú del juego.
+Decimado de 42.7k a ~8k triángulos (gltf-transform simplify) + tools/optimize-glb.sh.
