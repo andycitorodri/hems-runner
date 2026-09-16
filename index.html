@@ -2483,6 +2483,7 @@ const I18N_STRINGS = {
     'credit.buildings': 'Edificios',
     'credit.sagrada': 'Sagrada Família',
     'credit.campnou': 'Camp Nou',
+    'credit.arc': 'Arc de Triomf',
     'credit.barrier': 'Valla',
     'credit.scooter': 'Patinete',
     'credit.helicopter': 'Helicóptero',
@@ -2803,6 +2804,7 @@ const I18N_STRINGS = {
     'credit.buildings': 'Edificis',
     'credit.sagrada': 'Sagrada Família',
     'credit.campnou': 'Camp Nou',
+    'credit.arc': 'Arc de Triomf',
     'credit.barrier': 'Tanca',
     'credit.scooter': 'Patinet',
     'credit.helicopter': 'Helicòpter',
@@ -3464,8 +3466,8 @@ const Ambience = (() => {
 
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
    Solo hay uno visible; cambia con changeScenario() (cada 1000 m):
-   Sagrada Família → Torre Glòries → Camp Nou (Arc de Triomf y Hotel W
-   cuando haya modelo). Va "pegado" al fondo: cada frame se recoloca a una
+   Sagrada Família → Torre Glòries → Arc de Triomf → Camp Nou (Hotel W
+   cuando haya bioma de costa). Va "pegado" al fondo: cada frame se recoloca a una
    distancia fija por delante de la cámara, fuera de la niebla (fog: false)
    y con el color mezclado con el horizonte del Ambience, como una silueta
    lejana en la bruma. Al cambiar se funde (opacidad) con el cielo, se
@@ -3557,12 +3559,24 @@ const Landmark = (() => {
     return entry('campnou', model, { x: 62, z: -250, ry: 0.35, mask: isRightBuilding });
   }
 
+  // Arc de Triomf: blockout de Sketchfab (SC-03), ladrillo rojo. Va sobre
+  // la calzada, de frente (Passeig de Lluís Companys): mientras está activo
+  // no hay edificios a ningún lado, solo árboles y farolas, y el arco queda
+  // enmarcado al fondo de la avenida. También se ve centrado en vertical.
+  const isBuilding = (name) => name.startsWith('bld_') || name === 'building' || name === 'roof' || name === 'window';
+  function buildArc() {
+    if (!Assets.has('arc')) return null;
+    const model = Assets.clone('arc');
+    model.traverse(c => { if (c.isMesh) c.material = lambert(0x9c4f3a); });
+    return entry('arc', model, { x: 0, z: -170, mask: isBuilding });
+  }
+
   const ENTRIES = [];
   let cur = null, pending = null, fade = 1, fadeDir = 0;
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
-    for (const e of [buildSagrada(), buildGlories(), buildCampNou()]) if (e) ENTRIES.push(e);
+    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildCampNou()]) if (e) ENTRIES.push(e);
     set(0);
   }
   function at(i) { return ENTRIES[((i % ENTRIES.length) + ENTRIES.length) % ENTRIES.length]; }
@@ -3664,6 +3678,12 @@ const Assets = (() => {
   MANIFEST.campnou = {
     url: 'assets/models/sketchfab/camp-nou.glb', scale: 0.45, ground: true,
     credit: { what: 'credit.campnou', author: 'Alvxrez', url: 'https://sketchfab.com/3d-models/camp-nou-744b8bc710d54b73a110cd173c7f4ec8', license: 'CC-BY 4.0' }
+  };
+  // Landmark: Arc de Triomf (Sketchfab, SC-03, CC-BY; blockout de 8,5k tris,
+  // un color plano ladrillo). Unidades diminutas: 0,11 de alto → ×340 ≈ 38 m.
+  MANIFEST.arc = {
+    url: 'assets/models/sketchfab/arc-de-triomf.glb', scale: 340, ground: true,
+    credit: { what: 'credit.arc', author: 'SC-03', url: 'https://sketchfab.com/3d-models/cgt-116-week-2-environment-blockout-579b55312c2248ea82d4af0c457dee08', license: 'CC-BY 4.0' }
   };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
