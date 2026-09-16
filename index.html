@@ -3517,7 +3517,7 @@ const Landmark = (() => {
   // Distancia fija por delante de la cámara, desplazada a la izquierda de la
   // carretera; la x se mueve poco con el carril (parallax lejano)
   function update() {
-    group.position.set(camera.position.x * 0.2 + 52, -1, camera.position.z - 260);  // a la derecha: en vertical el HUD ocupa el centro-izquierda
+    group.position.set(camera.position.x * 0.2 + 58, -1, camera.position.z - 250);  // a la derecha y apartada de los bloques; en vertical el HUD ocupa el centro-izquierda
     const c = stone.clone().lerp(scene.fog.color, 0.12);
     for (const m of mats) m.color.copy(c);
   }
@@ -3585,7 +3585,7 @@ const Assets = (() => {
   // Landmark Eixample: Sagrada Família (Sketchfab, wareFLO, CC-BY). Se coloca
   // a 260 m por delante de la cámara como silueta en la bruma (Landmark).
   MANIFEST.sagrada = {
-    url: 'assets/models/sketchfab/sagrada-familia.glb', scale: 0.45, ground: true,
+    url: 'assets/models/sketchfab/sagrada-familia.glb', scale: 0.7, ground: true,
     credit: { what: 'credit.sagrada', author: 'wareFLO', url: 'https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97', license: 'CC-BY 4.0' }
   };
   MANIFEST.barrier = {
