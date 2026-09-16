@@ -354,6 +354,19 @@
 
   /* Créditos de assets (bajo los botones del menú). Se rellena desde
      el manifest de Assets; las licencias CC-BY exigen esta atribución. */
+  .sponsors { margin-top: 22px; text-align: center; }
+  .sponsors__title {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--bone-faint); margin-bottom: 8px;
+  }
+  .sponsors__row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; align-items: center; }
+  .sponsors__row img { height: 34px; width: auto; max-width: 140px; object-fit: contain; filter: saturate(0.9); }
+  .sponsors__row .sponsor-text {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--bone); border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 6px 10px;
+  }
+  .sponsors__row a { text-decoration: none; }
+
   .credits {
     margin-top: 18px;
     font-family: 'IBM Plex Mono', monospace;
@@ -2374,6 +2387,10 @@
       </button>
       <button id="btn-leaderboard" class="btn btn--ghost" data-i18n="menu.ranking">Ranking</button>
     </div>
+    <div id="menu-sponsors" class="sponsors" hidden>
+      <div class="sponsors__title" data-i18n="menu.sponsors">Amb el suport de</div>
+      <div class="sponsors__row" id="menu-sponsors-row"></div>
+    </div>
     <div id="menu-credits" class="credits"></div>
   </div>
 
@@ -2475,6 +2492,14 @@
    códigos, rangos…) usan getters que llaman a t(), así el resto del
    código no sabe de idiomas. Idioma guardado en localStorage.
    ================================================================ */
+// ========== PUBLICIDAD / PATROCINADORES ==========
+// Ver assets/ads/LLEGIR.md. Cada entrada: { img, name, url } o { text, sub }.
+// Salen en las vallas de la carretera (rotando) y en "Amb el suport de" del menú.
+const ADS = [
+  { text: 'I JORNADA IMPACTE', sub: '27 · 10 · 2026 · jornadaimpacte.com', url: 'https://jornadaimpacte.com' },
+  { text: 'HEMS RUNNER', sub: 'hems.jornadaimpacte.com' },
+];
+
 const I18N_STRINGS = {
   es: {
     'meta.title': 'HEMS Runner · Jornada de Trauma 2026',
@@ -2590,6 +2615,7 @@ const I18N_STRINGS = {
     'menu.total_missions': 'Misiones totales',
     'menu.start': 'Empezar misión',
     'menu.ranking': 'Ranking',
+    'menu.sponsors': 'Con el apoyo de',
     'menu.day': 'día',
     'menu.days': 'días',
 
@@ -2910,6 +2936,7 @@ const I18N_STRINGS = {
     'menu.total_missions': 'Missions totals',
     'menu.start': 'Començar missió',
     'menu.ranking': 'Rànquing',
+    'menu.sponsors': 'Amb el suport de',
     'menu.day': 'dia',
     'menu.days': 'dies',
 
@@ -7079,6 +7106,57 @@ function makePanotTexture() {
   return tex;
 }
 
+/* ---- Vallas publicitarias (ADS): 3 vallas en el bucle de 400 m, a los dos
+   lados de la calzada, mirando al tráfico. Cada valla es un panel 4×2 con
+   textura (imagen del anuncio o texto dibujado en canvas) sobre dos postes;
+   al reciclarse pasa al siguiente anuncio. Lambert + map: mismo programa que
+   los edificios. Si ADS está vacío no se crean. */
+const Billboards = (() => {
+  const boards = [], textures = [];
+  let next = 0;
+  function textTexture(ad) {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#14161c'; g.fillRect(0, 0, 512, 256);
+    g.strokeStyle = '#f5a623'; g.lineWidth = 8; g.strokeRect(12, 12, 488, 232);
+    g.fillStyle = '#f4efe6'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold 54px Georgia, serif'; g.fillText(ad.text, 256, ad.sub ? 108 : 128, 460);
+    if (ad.sub) { g.font = '26px monospace'; g.fillStyle = '#f5a623'; g.fillText(ad.sub, 256, 172, 460); }
+    return new THREE.CanvasTexture(cv);
+  }
+  function imgTexture(ad) {
+    const tex = new THREE.TextureLoader().load(ad.img);
+    tex.anisotropy = 4;
+    return tex;
+  }
+  function init() {
+    if (typeof ADS === 'undefined' || !ADS.length) return;
+    for (const ad of ADS) textures.push(ad.img ? imgTexture(ad) : textTexture(ad));
+    const post = new THREE.MeshLambertMaterial({ color: 0x3a3d44 });
+    for (let i = 0; i < 3; i++) {
+      const side = i % 2 === 0 ? 1 : -1;
+      const g = new THREE.Group();
+      // En la acera, delante de los edificios (que empiezan en |x| ≈ 7)
+      for (const px of [-1.6, 1.6]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.4, 0.18), post); p.position.set(px, 1.2, 0); g.add(p); }
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(4.3, 2.3, 0.2), post); frame.position.set(0, 3.4, -0.12); g.add(frame);
+      const panel = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshLambertMaterial({ map: textures[next++ % textures.length] }));
+      panel.position.set(0, 3.4, 0.01); g.add(panel);
+      g.position.set(side * (LANE_WIDTH * 1.5 + 2.3), 0, -i * 133 - 90);
+      g.rotation.y = -side * 0.55;  // girada hacia el tráfico que viene
+      g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+      scene.add(g);
+      boards.push({ g, panel });
+    }
+  }
+  function update(moveZ) {
+    for (const b of boards) {
+      b.g.position.z += moveZ;
+      if (b.g.position.z > 20) { b.g.position.z -= 400; b.panel.material.map = textures[next++ % textures.length]; }
+    }
+  }
+  return { init, update };
+})();
+
 // Senyera colgada de un balcón (64×48 px): 9 franjas, 5 amarillas y 4 rojas.
 function makeSenyeraTexture() {
   const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48;
@@ -9966,6 +10044,7 @@ function update(dt) {
     if (o.type === 'dash' && o.mesh.position.z > 10) o.mesh.position.z -= 180;
   }
   Props.update(moveZ);  // edificios, árboles, farolas (instanciados)
+  Billboards.update(moveZ);
   for (const o of activeObstacles) o.mesh.position.z += moveZ;
   for (const i of activeItems) i.mesh.position.z += moveZ;
   nextTileZ += moveZ;
@@ -10523,6 +10602,20 @@ function renderCredits() {
 I18N.onChange(renderCredits);
 renderCredits();
 
+// Patrocinadores en el menú (ADS con imagen o texto; enlace si hay url)
+(function renderSponsors() {
+  const box = document.getElementById('menu-sponsors'), row = document.getElementById('menu-sponsors-row');
+  if (!box || typeof ADS === 'undefined' || !ADS.length) return;
+  row.innerHTML = '';
+  for (const ad of ADS) {
+    const el = ad.img ? Object.assign(document.createElement('img'), { src: ad.img, alt: ad.name || '' })
+                      : Object.assign(document.createElement('span'), { className: 'sponsor-text', textContent: ad.text });
+    if (ad.url) { const a = document.createElement('a'); a.href = ad.url; a.target = '_blank'; a.rel = 'noopener'; a.appendChild(el); row.appendChild(a); }
+    else row.appendChild(el);
+  }
+  box.hidden = false;
+})();
+
 ambulance.position.z = -2;
 ambulance.rotation.y = -0.2;
 animate();
@@ -10608,6 +10701,7 @@ Promise.all([assetsReady, minSplash]).then(() => {
   refreshAmbulanceModel();
   refreshHelicopterModel();
   Landmark.init();
+  Billboards.init();
   populateEnvironment();
   generateTiles();
   warmUpRenderer();
