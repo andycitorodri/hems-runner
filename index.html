@@ -3457,6 +3457,50 @@ const Ambience = (() => {
   return { set, transitionTo, update, registerGround };
 })();
 
+/* ---- Landmark: Sagrada Família (silueta procedural, A3) ----
+   18 torres afiladas (2 fachadas de 4 + 4 evangelistas + María + Jesús +
+   pináculos) con 2 InstancedMesh (fustes + agujas). Va "pegada" al fondo:
+   cada frame se recoloca a una distancia fija por delante de la cámara,
+   fuera de la niebla (fog: false) y con el color mezclado con el
+   horizonte del Ambience, como una silueta lejana en la bruma. Si algún
+   día entra el modelo de Sketchfab (wareFLO, CC-BY), sustituye a esto. */
+const Landmark = (() => {
+  const towers = [
+    // [x, z, altura, radio]  — cluster: fachada Nativitat (izq), Passió (der), centro
+    [-14, -8, 58, 2.6], [-9, -10, 62, 2.6], [-4, -10, 62, 2.6], [1, -8, 58, 2.6],
+    [-14, 8, 58, 2.6], [-9, 10, 62, 2.6], [-4, 10, 62, 2.6], [1, 8, 58, 2.6],
+    [-12, 0, 74, 3.0], [-1, 0, 74, 3.0], [-6.5, -4, 76, 3.0], [-6.5, 4, 76, 3.0],  // evangelistas
+    [-6.5, 0, 110, 4.4],   // Jesús
+    [-18, 0, 84, 3.2],     // María
+    [-20, -12, 34, 1.4], [8, -12, 34, 1.4], [-20, 12, 34, 1.4], [8, 12, 34, 1.4],  // pináculos bajos
+  ];
+  const mat = new THREE.MeshLambertMaterial({ color: 0xb8a68a, fog: false });
+  const shafts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.62, 1, 1, 8, 1), mat, towers.length);
+  const spires = new THREE.InstancedMesh(new THREE.ConeGeometry(0.62, 1, 8), mat, towers.length);
+  const group = new THREE.Group();
+  const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+  towers.forEach(([x, z, h, r], i) => {
+    const shaftH = h * 0.72, spireH = h * 0.28;
+    _s.set(r, shaftH, r); _p.set(x, shaftH / 2, z);
+    shafts.setMatrixAt(i, _m.compose(_p, _q, _s));
+    _s.set(r, spireH, r); _p.set(x, shaftH + spireH / 2, z);
+    spires.setMatrixAt(i, _m.compose(_p, _q, _s));
+  });
+  shafts.frustumCulled = spires.frustumCulled = false;
+  group.add(shafts, spires);
+  group.scale.setScalar(1.0);
+  scene.add(group);
+
+  const stone = new THREE.Color(0xb8a68a);
+  // Distancia fija por delante de la cámara, desplazada a la izquierda de la
+  // carretera; la x se mueve poco con el carril (parallax lejano)
+  function update() {
+    group.position.set(camera.position.x * 0.2 - 34, -1, camera.position.z - 260);
+    mat.color.copy(stone).lerp(scene.fog.color, 0.45);
+  }
+  return { update, group };
+})();
+
 const rimLight = new THREE.DirectionalLight(0xf5a623, 0.35);
 rimLight.position.set(-20, 20, 30);
 scene.add(rimLight);
@@ -9372,6 +9416,7 @@ function animate() {
 
   LightPool.update();
   Ambience.update();
+  Landmark.update();
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
