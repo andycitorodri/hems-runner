@@ -3531,6 +3531,12 @@ const Landmark = (() => {
     m.userData.base = new THREE.Color(hex);
     return m;
   }
+  // Terreno con textura: el color base (blanco) se mezcla con el horizonte
+  function lambertMap(map) {
+    const m = new THREE.MeshLambertMaterial({ map, fog: false, transparent: true });
+    m.userData.base = new THREE.Color(0xffffff);
+    return m;
+  }
   // Envuelve el objeto y recoge sus materiales (uno por color; los clones GLB
   // reciben material propio Lambert para no tocar el template compartido).
   function entry(name, obj, { x, y = -1, z, ry = 0, mask = null, biome = null }) {
@@ -3684,6 +3690,12 @@ const Landmark = (() => {
   // campanas) en dos láminas (la de atrás más alta y más clara: profundidad)
   // sobre una loma verde.
   function buildMontserrat() {
+    if (Assets.has('montserrat')) {
+      // Placa de 1000 × 520 (bordes a 0: isla) con el macizo en medio, a z −590
+      const model = Assets.clone('montserrat');
+      model.traverse(c => { if (c.isMesh) c.material = lambertMap(c.material.map); });
+      return entry('montserrat', model, { x: 0, y: -2, z: -590 });
+    }
     const g = new THREE.Group();
     const peaksA = [[-95, 9, 38], [-72, 7, 52], [-56, 6, 46], [-40, 8, 62], [-24, 6, 50], [-8, 9, 70], [8, 6, 58], [24, 7, 66], [40, 6, 48], [56, 8, 60], [74, 7, 44], [92, 9, 34]];
     const peaksB = [[-80, 12, 44], [-30, 12, 56], [16, 14, 64], [62, 12, 52], [100, 10, 36]];
@@ -3698,13 +3710,27 @@ const Landmark = (() => {
   // Fondo permanente a la izquierda: la sierra de Collserola (perfil suave)
   // con el Tibidabo (templo con torre) y la Torre de Collserola (aguja).
   const backdrop = new THREE.Group(), backMats = [];
-  (function buildCollserola() {
-    const hill = x => 14 + 8 * Math.sin(x / 55) + 6 * Math.sin(x / 23 + 1) + bump(x, -120, 45, 16) + bump(x, -40, 60, 8);
-    const green = lambert(0x3e5a38); backMats.push(green);
-    backdrop.add(ridgeMesh(-360, 200, 3, hill, 12, green));
+  let backdropReal = false;
+  function buildCollserola() {  // se llama en init() (necesita Assets)
+    // Con terreno real: Tibidabo y Torre de Collserola en sus coordenadas
+    // (lat/lon → placa × 0.12); sin él, cresta procedural.
+    let hill = x => 14 + 8 * Math.sin(x / 55) + 6 * Math.sin(x / 23 + 1) + bump(x, -120, 45, 16) + bump(x, -40, 60, 8);
+    let posT = [-120, 0, 0], posC = [-75, 0, 4];
+    if (Assets.has('collserola')) {
+      const model = Assets.clone('collserola');
+      model.traverse(c => { if (c.isMesh) c.material = lambertMap(c.material.map); });
+      model.traverse(c => { if (c.isMesh) backMats.push(c.material); });
+      backdrop.add(model);
+      backdropReal = true;
+      hill = () => 1;  // los marcadores llevan ya su altura
+      posT = [145, 185, 71]; posC = [72, 171, 165];  // lat/lon → placa × (0.2, 0.4, 0.2)
+    } else {
+      const green = lambert(0x3e5a38); backMats.push(green);
+      backdrop.add(ridgeMesh(-360, 200, 3, hill, 12, green));
+    }
     const stone = lambert(0xe2dccf); backMats.push(stone);
     // Tibidabo (Temple del Sagrat Cor) en la cima
-    const t = new THREE.Group(); t.position.set(-120, hill(-120) - 1, 0);
+    const t = new THREE.Group(); t.position.set(posT[0], posT[1] + hill(posT[0]) - 1, posT[2]);
     const nave = new THREE.Mesh(new THREE.BoxGeometry(9, 6, 8), stone); nave.position.y = 3; t.add(nave);
     const tower = new THREE.Mesh(new THREE.BoxGeometry(3.2, 15, 3.2), stone); tower.position.y = 13; t.add(tower);
     const spire = new THREE.Mesh(new THREE.ConeGeometry(2.2, 5, 6), stone); spire.position.y = 23; t.add(spire);
@@ -3712,20 +3738,21 @@ const Landmark = (() => {
     backdrop.add(t);
     // Torre de Collserola: mástil con plataforma y aguja
     const white = lambert(0xeeeeee); backMats.push(white);
-    const c = new THREE.Group(); c.position.set(-75, hill(-75) - 1, 4);
+    const c = new THREE.Group(); c.position.set(posC[0], posC[1] + hill(posC[0]) - 1, posC[2]);
     const mast = new THREE.Mesh(new THREE.BoxGeometry(1.6, 44, 1.6), white); mast.position.y = 22; c.add(mast);
     const deck = new THREE.Mesh(new THREE.BoxGeometry(7, 6, 7), white); deck.position.y = 32; c.add(deck);
     const needle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 26, 0.5), white); needle.position.y = 57; c.add(needle);
     backdrop.add(c);
     backdrop.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     scene.add(backdrop);
-  })();
+  }
 
   const ENTRIES = [];
   let cur = null, pending = null, fade = 1, fadeDir = 0;
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
+    buildCollserola();
     for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies(), buildHotelW(), buildMontserrat()]) if (e) ENTRIES.push(e);
     set(0);
   }
@@ -3748,8 +3775,13 @@ const Landmark = (() => {
   }
   function update(dt) {
     // Fondo (Collserola): siempre, a la izquierda y más lejos que los landmarks
-    backdrop.position.set(camera.position.x * 0.2 - 60, -1, camera.position.z - 345);
-    for (const m of backMats) m.color.copy(m.userData.base).lerp(scene.fog.color, 0.45);
+    if (backdrop.parent) {
+      if (backdropReal) backdrop.position.set(camera.position.x * 0.2 - 225, -30, camera.position.z - 591);  // Tibidabo a (−80, −520); la llanura del Eixample queda bajo el suelo
+      else backdrop.position.set(camera.position.x * 0.2 - 60, -1, camera.position.z - 345);
+      // Bruma de distancia: el color se apaga y el emisivo añade el tono del horizonte
+      for (const m of backMats) { m.color.copy(m.userData.base).multiplyScalar(0.55); m.emissive.copy(scene.fog.color).multiplyScalar(0.5); }
+      backdrop.visible = !cur || cur.name !== 'montserrat';  // mirando a Montserrat (oeste) Collserola queda fuera de plano
+    }
     if (!cur) return;
     if (fadeDir) {
       fade += fadeDir * dt / FADE_S;
@@ -3892,6 +3924,14 @@ const Assets = (() => {
     credit: { what: 'credit.sailboat', author: 'Kenepin', url: 'https://sketchfab.com/3d-models/low-poly-sailboat-fdf38588937242f5b85efc87e028a876', license: 'CC-BY 4.0' } };
   MANIFEST.cruise = { url: 'assets/models/sketchfab/costa/cruise.glb', scale: 0.45, ground: true, center: true,
     credit: { what: 'credit.cruise', author: 'sec20ad002', url: 'https://sketchfab.com/3d-models/cruise-ship-toofan-bc1d588ba585448a9f30c04569490bf1', license: 'CC-BY 4.0' } };
+  // Terreno real (SRTM vía open-elevation, tools/terrain/fetch_heightmap.py +
+  // tools/node/heightmap-glb.mjs): Montserrat (11,7 × 6,7 km, 79-1203 m) y la
+  // sierra de Collserola (13,4 × 5,6 km, 9-508 m) con textura de color por
+  // altura/pendiente. Metros reales × 0.12.
+  // Exageración vertical ×2 / ×2,5: la ciudad del juego es muy compacta y a
+  // escala real los relieves quedan por debajo de la línea de tejados.
+  MANIFEST.montserrat = { url: 'assets/models/terrain/montserrat.glb', scale: 0.15, scaleY: 0.15 };
+  MANIFEST.collserola = { url: 'assets/models/terrain/collserola.glb', scale: 0.2, scaleY: 0.4 };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
     credit: { what: 'credit.barrier', author: 'Quaternius', url: 'https://quaternius.com', license: 'CC0' }
@@ -3931,7 +3971,7 @@ const Assets = (() => {
         spec.url,
         (gltf) => {
           const tpl = gltf.scene;
-          tpl.scale.setScalar(spec.scale || 1);
+          tpl.scale.set(spec.scale || 1, spec.scaleY || spec.scale || 1, spec.scale || 1);  // scaleY: exageración vertical (terrenos)
           // PBR (MeshStandardMaterial, iluminación por píxel) → Lambert (por
           // vértice): con las paletas planas de Kenney se ve igual y cuesta
           // una fracción en móvil (9 luces × 1,6 Mpx). Es además el material
