@@ -2490,6 +2490,7 @@ const I18N_STRINGS = {
     'credit.sagrada': 'Sagrada Família',
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
+    'credit.hotelw': 'Hotel W',
     'credit.barrier': 'Valla',
     'credit.scooter': 'Patinete',
     'credit.helicopter': 'Helicóptero',
@@ -2811,6 +2812,7 @@ const I18N_STRINGS = {
     'credit.sagrada': 'Sagrada Família',
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
+    'credit.hotelw': 'Hotel W',
     'credit.barrier': 'Tanca',
     'credit.scooter': 'Patinet',
     'credit.helicopter': 'Helicòpter',
@@ -3583,11 +3585,17 @@ const Landmark = (() => {
     return entry('arc', model, { x: 0, z: -170, mask: isBuilding });
   }
 
-  // Hotel W (Barceloneta): vela de vidrio procedural (perfil de cuarto de
-  // elipse extruido) sobre un podio, al final de la playa. Activa el bioma
-  // costa: sin edificios ni árboles a la derecha; arena, mar y palmeras.
+  // Hotel W (Barceloneta): modelo Sketchfab (sgallartm, CC-BY-SA) en colores
+  // planos, al final de la playa; si no cargó, vela procedural (cuarto de
+  // elipse extruido) sobre un podio. Activa el bioma costa: sin edificios ni
+  // árboles a la derecha; arena, mar y palmeras.
   const isRightSide = (name, it) => it.x > 0 && (isBuilding(name) || name === 'trunk' || name === 'canopy');
   function buildHotelW() {
+    if (Assets.has('hotelw')) {
+      const model = Assets.clone('hotelw');
+      model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.getHex()); });
+      return entry('hotelw', model, { x: 78, z: -270, ry: -0.6, mask: isRightSide, biome: 'costa' });
+    }
     const g = new THREE.Group();
     const shape = new THREE.Shape();
     shape.moveTo(0, 0); shape.lineTo(34, 0); shape.quadraticCurveTo(36, 72, 0, 100); shape.lineTo(0, 0);
@@ -3712,6 +3720,13 @@ const Assets = (() => {
   MANIFEST.xemeneies = {
     url: 'assets/models/sketchfab/tres-xemeneies.glb', scale: 0.55, ground: true,
     credit: { what: 'credit.xemeneies', author: 'novusod', url: 'https://sketchfab.com/3d-models/tres-xemeneies-bb89e193d1644f909c09effeef2e469d', license: 'CC-BY 4.0' }
+  };
+  // Landmark: Hotel W (Sketchfab, sgallartm, CC-BY-SA). Sin los edificios
+  // vecinos ni el suelo del modelo (flatten-glb.mjs DROP_NODES), 7 colores
+  // planos, 9,5k tris. Unidades en pies: 326 ft = 99 m → ×0.24 ≈ 78 m.
+  MANIFEST.hotelw = {
+    url: 'assets/models/sketchfab/hotel-w.glb', scale: 0.24, ground: true, center: true,
+    credit: { what: 'credit.hotelw', author: 'sgallartm', url: 'https://sketchfab.com/3d-models/w-vela-hotel-barcelona-34845e13867547d788956bf4828141b6', license: 'CC-BY-SA 4.0' }
   };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,

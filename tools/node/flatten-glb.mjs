@@ -5,6 +5,8 @@
 //      vértice fuera de ese rectángulo (la placa de suelo que traen algunos modelos de Sketchfab).
 //      BUCKETS="regex=hex,regex=hex" agrupa por nombre de material original en varios materiales
 //      planos (p.ej. "Green=3f8f3a,DarkGray|Color_008=6e6a63"); el resto va al hex por defecto.
+//      DROP_NODES=regex quita los nodos (con sus mallas) cuyo nombre cumple la expresión
+//      (edificios vecinos, suelos, escaleras que trae el modelo y no queremos).
 //      UPFACING="y0:y1=hex,y0:y1=hex" (m, mundo) pinta de otro color los triángulos que miran
 //      hacia arriba (normal y > 0.35) con centroide en esa franja de altura — p.ej. gradas
 //      de un estadio por niveles — sin tocar el material del resto de la malla.
@@ -20,6 +22,11 @@ const root = doc.getRoot();
 const flat = (name, hex) => doc.createMaterial(name).setBaseColorFactor([...[0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), 1]).setMetallicFactor(0).setRoughnessFactor(1);
 const buckets = (process.env.BUCKETS || '').split(',').filter(Boolean).map(b => { const [re, h] = b.split('='); return { re: new RegExp(re), mat: flat('flat_' + h, h) }; });
 const mat = flat('flat', hex);
+if (process.env.DROP_NODES) {
+  const re = new RegExp(process.env.DROP_NODES); let n = 0;
+  for (const node of root.listNodes()) if (node.getMesh() && re.test(node.getName())) { node.setMesh(null); n++; }
+  console.log(`DROP_NODES: ${n} nodos sin malla`);
+}
 for (const mesh of root.listMeshes()) for (const prim of mesh.listPrimitives()) {
   const name = prim.getMaterial()?.getName() || '';
   prim.setMaterial((buckets.find(b => b.re.test(name)) || { mat }).mat);

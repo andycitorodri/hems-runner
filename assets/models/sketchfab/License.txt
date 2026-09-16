@@ -17,3 +17,13 @@ Licencia: CC Attribution 4.0 — https://creativecommons.org/licenses/by/4.0/
 Atribución mostrada en los créditos del menú del juego.
 Texturas quitadas: 3 colores planos por material (tools/node/flatten-glb.mjs BUCKETS),
 weld + simplify de 30k a 7k triángulos + tools/optimize-glb.sh.
+
+hotel-w.glb — "W_vela_Hotel_Barcelona" by sgallartm
+https://sketchfab.com/3d-models/w-vela-hotel-barcelona-34845e13867547d788956bf4828141b6
+Licencia: CC Attribution-ShareAlike 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+Atribución mostrada en los créditos del menú del juego. Esta versión modificada
+(hotel-w.glb) se comparte bajo la misma licencia CC BY-SA 4.0.
+Modificaciones: quitados los edificios vecinos, suelo y escaleras del modelo;
+texturas sustituidas por 7 colores planos por material; unido y decimado de
+105k a 9,5k triángulos (tools/node/flatten-glb.mjs + gltf-transform weld/simplify)
++ tools/optimize-glb.sh.
