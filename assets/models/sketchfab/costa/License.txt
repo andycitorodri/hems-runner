@@ -1,0 +1,17 @@
+Props del bioma costa (Fase 2 · A3). Todos de Sketchfab, licencia CC Attribution 4.0
+(https://creativecommons.org/licenses/by/4.0/). Atribución mostrada en los créditos del
+menú del juego. Procesado común: texturas sustituidas por colores planos por material
+(tools/node/flatten-glb.mjs KEEP_COLORS / BUCKETS), unido y decimado, + tools/optimize-glb.sh.
+
+beach-umbrella2/3, beach-towel1/3, beach-chair, beach-ball — objetos extraídos (KEEP_NODES)
+de "Low Poly Beach Assets" by EdwiixGG
+https://sketchfab.com/3d-models/low-poly-beach-assets-66c18ecd7a834d4a99dabc46b5ee6e4a
+
+lifeguard.glb — "Lifeguard Tower" by Sololopenko
+https://sketchfab.com/3d-models/lifeguard-tower-2f147eeb428847f7b06244026db6c07e
+
+sailboat.glb — "Low-Poly Sailboat" by Kenepin
+https://sketchfab.com/3d-models/low-poly-sailboat-fdf38588937242f5b85efc87e028a876
+
+cruise.glb — "Cruise Ship - toofan" by sec20ad002
+https://sketchfab.com/3d-models/cruise-ship-toofan-bc1d588ba585448a9f30c04569490bf1

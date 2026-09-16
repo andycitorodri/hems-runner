@@ -5,6 +5,11 @@
 //      vértice fuera de ese rectángulo (la placa de suelo que traen algunos modelos de Sketchfab).
 //      BUCKETS="regex=hex,regex=hex" agrupa por nombre de material original en varios materiales
 //      planos (p.ej. "Green=3f8f3a,DarkGray|Color_008=6e6a63"); el resto va al hex por defecto.
+//      KEEP_NODES=regex conserva solo las mallas cuyo nodo (o algún antecesor) cumple la
+//      expresión — para sacar un objeto de un pack (p.ej. "^UMBRELLA2$").
+//      KEEP_COLORS=1 conserva el color base de cada material original (sin texturas) en vez
+//      de fundirlos en uno; hex/BUCKETS se ignoran.
+//      NO_JOIN=1 no une ni decima (modelos con esqueleto/animación: solo materiales).
 //      DROP_NODES=regex quita los nodos (con sus mallas) cuyo nombre cumple la expresión
 //      (edificios vecinos, suelos, escaleras que trae el modelo y no queremos).
 //      UPFACING="y0:y1=hex,y0:y1=hex" (m, mundo) pinta de otro color los triángulos que miran
@@ -22,19 +27,33 @@ const root = doc.getRoot();
 const flat = (name, hex) => doc.createMaterial(name).setBaseColorFactor([...[0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), 1]).setMetallicFactor(0).setRoughnessFactor(1);
 const buckets = (process.env.BUCKETS || '').split(',').filter(Boolean).map(b => { const [re, h] = b.split('='); return { re: new RegExp(re), mat: flat('flat_' + h, h) }; });
 const mat = flat('flat', hex);
+if (process.env.KEEP_NODES) {
+  const re = new RegExp(process.env.KEEP_NODES); let n = 0;
+  const hit = node => { for (let x = node; x; x = x.getParentNode?.()) if (x.getName && re.test(x.getName())) return true; return false; };
+  for (const node of root.listNodes()) if (node.getMesh() && !hit(node)) { node.setMesh(null); n++; }
+  console.log(`KEEP_NODES: ${n} nodos descartados`);
+}
 if (process.env.DROP_NODES) {
   const re = new RegExp(process.env.DROP_NODES); let n = 0;
   for (const node of root.listNodes()) if (node.getMesh() && re.test(node.getName())) { node.setMesh(null); n++; }
   console.log(`DROP_NODES: ${n} nodos sin malla`);
 }
+const keepColors = !!process.env.KEEP_COLORS, byColor = new Map();
 for (const mesh of root.listMeshes()) for (const prim of mesh.listPrimitives()) {
   const name = prim.getMaterial()?.getName() || '';
-  prim.setMaterial((buckets.find(b => b.re.test(name)) || { mat }).mat);
+  if (keepColors) {
+    const c = prim.getMaterial()?.getBaseColorFactor() || [1, 1, 1, 1];
+    const key = c.map(v => v.toFixed(3)).join(',');
+    if (!byColor.has(key)) byColor.set(key, doc.createMaterial('c' + byColor.size).setBaseColorFactor(c).setMetallicFactor(0).setRoughnessFactor(1));
+    prim.setMaterial(byColor.get(key));
+  } else prim.setMaterial((buckets.find(b => b.re.test(name)) || { mat }).mat);
 }
-await doc.transform(prune(), dedup(), flatten(), join({ keepNamed: false, keepMeshes: false }));
+await doc.transform(prune(), dedup());
+if (!process.env.NO_JOIN) await doc.transform(flatten(), join({ keepNamed: false, keepMeshes: false }));
 if (process.env.DROP_OUTSIDE) dropTrianglesOutside(process.env.DROP_OUTSIDE.split(',').map(Number));
 if (process.env.UPFACING) splitUpFacing(process.env.UPFACING.split(',').map(b => { const [r, h] = b.split('='); const [y0, y1] = r.split(':').map(Number); return { y0, y1, mat: flat('up_' + h, h) }; }));
-await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: parseFloat(ratioArg), error: parseFloat(process.env.SIMPLIFY_ERROR || '0.05') }), prune());
+if (!process.env.NO_JOIN) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: parseFloat(ratioArg), error: parseFloat(process.env.SIMPLIFY_ERROR || '0.05') }));
+await doc.transform(prune());
 let tris = 0; for (const m of root.listMeshes()) for (const p of m.listPrimitives()) tris += (p.getIndices()?.getCount() || 0) / 3;
 console.log(`${output}: meshes ${root.listMeshes().length}, prims ${root.listMeshes().flatMap(m => m.listPrimitives()).length}, tris ${tris}`);
 await io.write(output, doc);
