@@ -2221,6 +2221,7 @@
       <span><b>C</b> 🏛 Arc</span>
       <span><b>V</b> 🏭 Xemeneies</span>
       <span><b>B</b> ⛵ Hotel W</span>
+      <span><b>M</b> ⛰ Montserrat</span>
       <span><b>N</b> 🌇 Escenario</span>
     </div>
   </div>
@@ -3484,8 +3485,10 @@ const Ambience = (() => {
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
    Solo hay uno visible; cambia con changeScenario() (cada 1000 m):
    Sagrada Família → Torre Glòries → Arc de Triomf → Tres Xemeneies →
-   Hotel W (con bioma costa). El Camp Nou se probó y se quitó: desde la
-   calzada un estadio es una pared curva, no se lee. Va "pegado" al fondo: cada frame se recoloca a una
+   Hotel W (con bioma costa) → Montserrat. Además, un fondo permanente a la
+   izquierda: la sierra de Collserola con el Tibidabo y la Torre de
+   Collserola. El Camp Nou se probó y se quitó: desde la calzada un estadio
+   es una pared curva, no se lee. Va "pegado" al fondo: cada frame se recoloca a una
    distancia fija por delante de la cámara, fuera de la niebla (fog: false)
    y con el color mezclado con el horizonte del Ambience, como una silueta
    lejana en la bruma. Al cambiar se funde (opacidad) con el cielo, se
@@ -3598,11 +3601,32 @@ const Landmark = (() => {
   // elipse extruido) sobre un podio. Activa el bioma costa: sin edificios ni
   // árboles a la derecha; arena, mar y palmeras.
   const isRightSide = (name, it) => it.x > 0 && (isBuilding(name) || name === 'trunk' || name === 'canopy');
+  // Torre de Sant Sebastià (teleférico del puerto): celosía roja de 4 patas
+  // con plataforma, y el cable hacia Montjuïc. Va junto al W.
+  function buildSantSebastia() {
+    const g = new THREE.Group(), red = lambert(0xb8312b), H = 62;
+    for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(1.1, H, 1.1), red);
+      leg.position.set(sx * 3.2, H / 2, sz * 3.2);
+      leg.rotation.z = -sx * 0.045; leg.rotation.x = sz * 0.045;
+      g.add(leg);
+    }
+    for (let i = 1; i <= 4; i++) { const ring = new THREE.Mesh(new THREE.BoxGeometry(7 - i * 0.6, 0.5, 7 - i * 0.6), red); ring.position.y = i * H / 5; g.add(ring); }
+    const top = new THREE.Mesh(new THREE.BoxGeometry(9, 3.5, 9), red); top.position.y = H + 1.5; g.add(top);
+    const cable = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 150), lambert(0x333333)); cable.position.set(-8, H + 6, 60); cable.rotation.y = 0.35; cable.rotation.x = 0.04; g.add(cable);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2, 2.6), red); cabin.position.set(-19, H + 3.5, 33); g.add(cabin);
+    return g;
+  }
+
   function buildHotelW() {
     if (Assets.has('hotelw')) {
       const model = Assets.clone('hotelw');
       model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.getHex()); });
-      return entry('hotelw', model, { x: 78, z: -270, ry: -0.6, mask: isRightSide, biome: 'costa' });
+      const g = new THREE.Group();
+      g.add(model);
+      const torre = buildSantSebastia(); torre.position.set(-46, 0, 22); g.add(torre);
+      model.rotation.y = -0.6;
+      return entry('hotelw', g, { x: 78, z: -270, mask: isRightSide, biome: 'costa' });
     }
     const g = new THREE.Group();
     const shape = new THREE.Shape();
@@ -3614,12 +3638,53 @@ const Landmark = (() => {
     return entry('hotelw', g, { x: 72, z: -285, ry: 0.55, mask: isRightSide, biome: 'costa' });
   }
 
+  // Montserrat: macizo de agujas redondeadas (cilindro + casquete) sobre una
+  // loma, piedra rosada. Alto y ancho: asoma por encima de los tejados.
+  function buildMontserrat() {
+    const g = new THREE.Group(), stone = 0xb59a8c;
+    const base = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), lambert(0x8f7a6c)); base.scale.set(120, 26, 55); g.add(base);
+    const peaks = [[-70, 42, 9], [-52, 58, 11], [-36, 50, 8], [-22, 66, 12], [-6, 56, 9], [8, 72, 13], [24, 60, 10], [40, 50, 9], [56, 62, 11], [72, 44, 8], [-40, 36, 6], [30, 38, 6]];
+    for (const [x, h, r] of peaks) {
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, h, 9), lambert(stone)); m.position.set(x, h / 2 + 10, (Math.random() - 0.5) * 30); g.add(m);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.8, 9, 6), lambert(stone)); cap.position.set(x, h + 10, m.position.z); g.add(cap);
+    }
+    return entry('montserrat', g, { x: 30, y: -1, z: -310 });
+  }
+
+  // Fondo permanente a la izquierda: la sierra de Collserola con el Tibidabo
+  // (templo con torre) y la Torre de Collserola (aguja), detrás de la ciudad.
+  const backdrop = new THREE.Group(), backMats = [];
+  (function buildCollserola() {
+    const green = lambert(0x4e6a3c); backMats.push(green);
+    for (const [x, rx, ry, rz] of [[-250, 110, 30, 60], [-150, 120, 40, 70], [-60, 110, 34, 60], [30, 100, 26, 60], [110, 90, 20, 50]]) {
+      const h = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), green); h.scale.set(rx, ry, rz); h.position.set(x, 0, 0); backdrop.add(h);
+    }
+    const stone = lambert(0xd9d0c2); backMats.push(stone);
+    // Tibidabo (Temple del Sagrat Cor) en lo alto de la loma de x −150 (y 40)
+    const t = new THREE.Group(); t.position.set(-150, 38, 0);
+    const nave = new THREE.Mesh(new THREE.BoxGeometry(14, 9, 10), stone); nave.position.y = 4.5; t.add(nave);
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.4, 20, 8), stone); tower.position.y = 10 + 9; t.add(tower);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(3.2, 8, 6), stone); dome.position.y = 29; t.add(dome);
+    const statue = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 4, 6), lambert(0x7b7168)); statue.position.y = 33.5; t.add(statue);
+    for (const sx of [-1, 1]) { const tw = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 12, 6), stone); tw.position.set(sx * 6, 12, -4); t.add(tw); }
+    backdrop.add(t);
+    // Torre de Collserola (Foster): mástil, anillo de plataformas, aguja
+    const white = lambert(0xe6e6e6); backMats.push(white);
+    const c = new THREE.Group(); c.position.set(-95, 32, 10);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.5, 62, 8), white); mast.position.y = 31; c.add(mast);
+    const deck = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 5.5, 9, 10), white); deck.position.y = 44; c.add(deck);
+    const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.9, 30, 6), white); spire.position.y = 77; c.add(spire);
+    backdrop.add(c);
+    backdrop.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+    scene.add(backdrop);
+  })();
+
   const ENTRIES = [];
   let cur = null, pending = null, fade = 1, fadeDir = 0;
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
-    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies(), buildHotelW()]) if (e) ENTRIES.push(e);
+    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies(), buildHotelW(), buildMontserrat()]) if (e) ENTRIES.push(e);
     set(0);
   }
   function at(i) { return ENTRIES[((i % ENTRIES.length) + ENTRIES.length) % ENTRIES.length]; }
@@ -3640,6 +3705,9 @@ const Landmark = (() => {
     pending = e; fadeDir = -1;
   }
   function update(dt) {
+    // Fondo (Collserola): siempre, a la izquierda y más lejos que los landmarks
+    backdrop.position.set(camera.position.x * 0.2 - 90, -6, camera.position.z - 330);
+    for (const m of backMats) m.color.copy(m.userData.base).lerp(scene.fog.color, 0.35);
     if (!cur) return;
     if (fadeDir) {
       fade += fadeDir * dt / FADE_S;
@@ -5478,6 +5546,7 @@ const DEBUG_EFFECT_KEYS = {
   'c': { label: '🏛 Arc de Triomf', fn: () => Landmark.show(2) },
   'v': { label: '🏭 Tres Xemeneies', fn: () => Landmark.show(3) },
   'b': { label: '⛵ Hotel W · costa', fn: () => Landmark.show(4) },
+  'm': { label: '⛰ Montserrat', fn: () => Landmark.show(5) },
   'n': { label: '🌇 Siguiente escenario', fn: () => changeScenario() },
 };
 
