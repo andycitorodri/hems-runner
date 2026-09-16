@@ -147,6 +147,7 @@ Estados:
 | 11 | Valla urbana | GENÉRICO_JUEGO | **Quaternius vía Poly Pizza** | CC0 | **INTEGRADO** | `assets/models/quaternius/traffic-barrier.glb` (20 KB, 364 tris, escala 1.3 → 2.0 × 1.04 m). Fuente: https://poly.pizza/m/cM3aJPU9NS. `BarrierInstancer` (cuerpo + luz parpadeante). |
 | 12 | Contenedor basura | GENÉRICO_JUEGO | — | — | DESCARTADO | No existe como obstáculo en el juego (los obstáculos son coche, camión, valla, patinete y cono). |
 | 13 | Sagrada Família low-poly | BIOMA_EIXAMPLE | Sketchfab — wareFLO | CC-BY 4.0 | **INTEGRADO** | `assets/models/sketchfab/sagrada-familia.glb` (314 KB, 11k tris tras decimar de 42.7k con `gltf-transform simplify --ratio 0.2 --error 0.01`). Descarga manual del usuario (Sketchfab requiere cuenta; formato GLB). `Landmark` la coloca a 260 m por delante de la cámara, sin niebla, con el color del horizonte. Atribución en créditos. |
+| 14 | Camp Nou | Landmark (carrusel, 3.º) | Sketchfab — Alvxrez | CC-BY 4.0 | **INTEGRADO** | `assets/models/sketchfab/camp-nou.glb` (328 KB, 16k tris desde 52k; 63 materiales → 3 colores planos con `tools/node/flatten-glb.mjs BUCKETS`, placa de suelo quitada con `DROP_OUTSIDE`, `gltf-transform weld --tolerance 0.0077` + `simplify --ratio 0.1 --error 0.05` + `optimize-glb.sh`). Descarga manual del usuario. Modelos descartados: texturizados (88 materiales, escudo FC Barcelona), Andrej Sladič (364k caras). |
 | 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
 | 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | `Q-Build` (1ª) | CC0 | CANDIDATO | Base genérica; se "modernizará" con texturas custom (balcones, ocres) en A3. |
 | 16 | Edificio modernista 2 | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
@@ -245,3 +246,4 @@ Se compararon 4 candidatos Sketchfab (filtro CC-BY + CC0 + Downloadable):
 (Lista de autores + URLs de los modelos CC-BY/CC-BY-SA finalmente integrados, para incluir en pantalla de créditos del juego cuando se cierre A2.)
 
 - **wareFLO** — Sagrada Família — https://sketchfab.com/3d-models/sagrada-familia-1e6a870501584df28a328d1278b96b97 — CC-BY (Attribution).
+- **Alvxrez** — Camp Nou — https://sketchfab.com/3d-models/camp-nou-744b8bc710d54b73a110cd173c7f4ec8 — CC-BY (Attribution).
