@@ -2220,6 +2220,7 @@
       <span><b>X</b> 🗼 Glòries</span>
       <span><b>C</b> 🏛 Arc</span>
       <span><b>V</b> 🏭 Xemeneies</span>
+      <span><b>B</b> ⛵ Hotel W</span>
       <span><b>N</b> 🌇 Escenario</span>
     </div>
   </div>
@@ -3472,9 +3473,9 @@ const Ambience = (() => {
 
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
    Solo hay uno visible; cambia con changeScenario() (cada 1000 m):
-   Sagrada Família → Torre Glòries → Arc de Triomf → Tres Xemeneies
-   (Hotel W cuando haya bioma de costa). El Camp Nou se probó y se quitó:
-   desde la calzada un estadio es una pared curva, no se lee. Va "pegado" al fondo: cada frame se recoloca a una
+   Sagrada Família → Torre Glòries → Arc de Triomf → Tres Xemeneies →
+   Hotel W (con bioma costa). El Camp Nou se probó y se quitó: desde la
+   calzada un estadio es una pared curva, no se lee. Va "pegado" al fondo: cada frame se recoloca a una
    distancia fija por delante de la cámara, fuera de la niebla (fog: false)
    y con el color mezclado con el horizonte del Ambience, como una silueta
    lejana en la bruma. Al cambiar se funde (opacidad) con el cielo, se
@@ -3492,13 +3493,13 @@ const Landmark = (() => {
   }
   // Envuelve el objeto y recoge sus materiales (uno por color; los clones GLB
   // reciben material propio Lambert para no tocar el template compartido).
-  function entry(name, obj, { x, y = -1, z, ry = 0, mask = null }) {
+  function entry(name, obj, { x, y = -1, z, ry = 0, mask = null, biome = null }) {
     const mats = [];
     obj.traverse(c => { if (c.isMesh) { c.frustumCulled = false; if (!c.material.userData.base) c.material = lambert(c.material.userData.hex || 0xb8a68a); mats.push(c.material); } });
     obj.rotation.y = ry;
     obj.visible = false;
     group.add(obj);
-    return { name, obj, mats, x, y, z, mask };
+    return { name, obj, mats, x, y, z, mask, biome };
   }
 
   // Sagrada Família: modelo Sketchfab (wareFLO) o, si no cargó, 18 torres
@@ -3582,12 +3583,27 @@ const Landmark = (() => {
     return entry('arc', model, { x: 0, z: -170, mask: isBuilding });
   }
 
+  // Hotel W (Barceloneta): vela de vidrio procedural (perfil de cuarto de
+  // elipse extruido) sobre un podio, al final de la playa. Activa el bioma
+  // costa: sin edificios ni árboles a la derecha; arena, mar y palmeras.
+  const isRightSide = (name, it) => it.x > 0 && (isBuilding(name) || name === 'trunk' || name === 'canopy');
+  function buildHotelW() {
+    const g = new THREE.Group();
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0); shape.lineTo(34, 0); shape.quadraticCurveTo(36, 72, 0, 100); shape.lineTo(0, 0);
+    const sail = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 14, bevelEnabled: false, curveSegments: 14 }).translate(-17, 0, -7), lambert(0x5c8fbe));
+    const podium = new THREE.Mesh(new THREE.BoxGeometry(70, 10, 34), lambert(0x9aa3ad));
+    podium.position.set(-14, 5, 0);
+    g.add(sail, podium);
+    return entry('hotelw', g, { x: 72, z: -285, ry: 0.55, mask: isRightSide, biome: 'costa' });
+  }
+
   const ENTRIES = [];
   let cur = null, pending = null, fade = 1, fadeDir = 0;
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
-    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies()]) if (e) ENTRIES.push(e);
+    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildXemeneies(), buildHotelW()]) if (e) ENTRIES.push(e);
     set(0);
   }
   function at(i) { return ENTRIES[((i % ENTRIES.length) + ENTRIES.length) % ENTRIES.length]; }
@@ -3595,6 +3611,7 @@ const Landmark = (() => {
     if (cur) cur.obj.visible = false;
     cur = e; if (cur) cur.obj.visible = true;
     Props.setMask(cur ? cur.mask : null);
+    Props.setBiome(cur ? cur.biome : null);
   }
   // Cambio inmediato (reinicio de partida)
   function set(i) { if (!ENTRIES.length) return; pending = null; fadeDir = 0; fade = 1; swap(at(i)); }
@@ -5373,7 +5390,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => KEYS.delete(e.key));
 
-// ========== DEBUG TESTING (teclas 1-7, Z X C V, N) ==========
+// ========== DEBUG TESTING (teclas 1-7, Z X C V B, N) ==========
 // Atajos para probar cada efecto sin depender del azar
 // Solo funcionan durante la partida. Borrar antes de producción si se quiere.
 const DEBUG_EFFECT_KEYS = {
@@ -5391,6 +5408,7 @@ const DEBUG_EFFECT_KEYS = {
   'x': { label: '🗼 Torre Glòries', fn: () => Landmark.show(1) },
   'c': { label: '🏛 Arc de Triomf', fn: () => Landmark.show(2) },
   'v': { label: '🏭 Tres Xemeneies', fn: () => Landmark.show(3) },
+  'b': { label: '⛵ Hotel W · costa', fn: () => Landmark.show(4) },
   'n': { label: '🌇 Siguiente escenario', fn: () => changeScenario() },
 };
 
@@ -6935,6 +6953,12 @@ const Props = (() => {
     pole:     { geometry: () => new THREE.CylinderGeometry(0.08, 0.1, 4, 6), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
     arm:      { geometry: () => new THREE.BoxGeometry(0.08, 0.08, 1), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
     bulb:     { geometry: () => new THREE.SphereGeometry(0.2, 6, 6), material: () => new THREE.MeshBasicMaterial({ color: 0xffe8a0 }), recycle: { limit: 15, span: 336 } },
+    // Bioma costa (solo visibles con Props.setBiome('costa'); ver Landmark · Hotel W)
+    sea:      { geometry: () => new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), material: () => new THREE.MeshLambertMaterial({ color: 0x2b6f9c }), recycle: { limit: 140, span: 520 }, biome: 'costa' },
+    sand:     { geometry: () => new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), material: () => new THREE.MeshLambertMaterial({ color: 0xd9c898 }), receive: true, recycle: { limit: 140, span: 520 }, biome: 'costa' },
+    ptrunk:   { geometry: () => new THREE.CylinderGeometry(0.11, 0.2, 1, 6).translate(0, 0.5, 0), material: () => new THREE.MeshLambertMaterial({ color: 0x8a6a45 }), shadow: true, recycle: { limit: 20, span: 400 }, biome: 'costa' },
+    // Hoja: caja alargada con origen en la base, ya caída 30°; por instancia solo gira (ry) alrededor del tronco
+    frond:    { geometry: () => new THREE.BoxGeometry(0.5, 0.05, 2.6).translate(0, 0, 1.2).rotateX(-0.5), material: () => new THREE.MeshLambertMaterial({ color: 0x3f7a2e }), shadow: true, recycle: { limit: 20, span: 400 }, biome: 'costa' },
   };
   const MAX = 256;
   const layers = {};
@@ -6974,6 +6998,7 @@ const Props = (() => {
     const L = layer(name);
     if (L.items.length >= MAX) return null;
     const item = { x: it.x, y: it.y, z: it.z, sx: it.sx ?? 1, sy: it.sy ?? 1, sz: it.sz ?? 1, ry: it.ry || 0, color: it.color };
+    item.hidden = isHidden(name, L, item);
     L.items.push(item);
     if (L.def.perColor) L.mesh.setColorAt(L.items.length - 1, _c.setHex(item.color ?? 0xffffff));
     return item;
@@ -6982,14 +7007,18 @@ const Props = (() => {
   // Máscara (name, item) → true oculta la instancia (escala 0). Se evalúa al
   // reciclar cada instancia hacia delante, así la fila "se acaba" con la
   // distancia en vez de desaparecer de golpe; ver Landmark (Arc de Triomf).
-  let mask = null;
+  // Bioma: las capas con def.biome solo se ven cuando coincide con el activo
+  // (mismo mecanismo: entran y salen por la niebla al reciclar).
+  let mask = null, biome = null;
   const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
-  function setMask(fn) {
-    mask = fn;
+  function isHidden(name, L, it) { return (!!L.def.biome && L.def.biome !== biome) || !!(mask && mask(name, it)); }
+  function applyFar() {
     for (const name in layers) for (const it of layers[name].items) {
-      if (it.z < -FOG_DEFAULT_FAR) it.hidden = !!(mask && mask(name, it));  // ya en plena niebla: sin salto visible
+      if (it.z < -FOG_DEFAULT_FAR) it.hidden = isHidden(name, layers[name], it);  // ya en plena niebla: sin salto visible
     }
   }
+  function setMask(fn) { mask = fn; applyFar(); }
+  function setBiome(b) { biome = b || null; applyFar(); }
 
   function writeMatrix(L, i) {
     const it = L.items[i];
@@ -7011,7 +7040,7 @@ const Props = (() => {
       for (let i = 0; i < L.items.length; i++) {
         const it = L.items[i];
         it.z += moveZ;
-        if (it.z > limit) { it.z -= span; it.hidden = !!(mask && mask(name, it)); }
+        if (it.z > limit) { it.z -= span; it.hidden = isHidden(name, L, it); }
         writeMatrix(L, i);
       }
       L.mesh.count = L.items.length;
@@ -7029,7 +7058,7 @@ const Props = (() => {
 
   function count(name) { return layers[name] ? layers[name].items.length : 0; }
 
-  return { add, update, setColor, count, layer, defineGltfLayer, setMask };
+  return { add, update, setColor, count, layer, defineGltfLayer, setMask, setBiome };
 })();
 
 // Tintes cálidos "Eixample" para los edificios GLB (multiplican la textura)
@@ -7095,6 +7124,17 @@ function populateEnvironment() {
     Props.add('pole', { x, y: 2, z });
     Props.add('arm', { x: x - side * 0.5, y: 4, z });
     Props.add('bulb', { x: x - side * 1, y: 3.8, z });
+  }
+  // Bioma costa (ocultos hasta Props.setBiome('costa')): arena y mar a la
+  // derecha en dos franjas que se reciclan (520 m), y palmeras en la acera.
+  for (const z of [-130, -390]) {
+    Props.add('sand', { x: 18, y: 0.02, z, sx: 20, sz: 260 });
+    Props.add('sea', { x: 178, y: 0.03, z, sx: 300, sz: 260 });
+  }
+  for (let i = 0; i < 33; i++) {
+    const z = -i * 12 - 6 - Math.random() * 4, x = 9.5 + Math.random() * 3, h = 4.5 + Math.random() * 2.5;
+    Props.add('ptrunk', { x, y: 0, z, sy: h });
+    for (let k = 0; k < 6; k++) Props.add('frond', { x, y: h, z, ry: k * Math.PI / 3 + Math.random() * 0.4 });
   }
   Props.update(0);
 }
