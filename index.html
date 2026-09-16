@@ -3555,7 +3555,7 @@ const Landmark = (() => {
     if (Assets.has('sagrada')) {
       const model = Assets.clone('sagrada');
       model.traverse(c => { if (c.isMesh) c.material = lambert(stone); });
-      return entry('sagrada', model, { x: 58, z: -250, ry: 0.35 });  // fachada ligeramente girada hacia la calle
+      return entry('sagrada', model, { x: 58, y: -14, z: -250, ry: 0.35 });  // fachada girada hacia la calle; hundida 14 m: el modelo trae un zócalo plano que, visto por encima de los tejados, parecía un corte
     }
     const towers = [
       [-14, -8, 58, 2.6], [-9, -10, 62, 2.6], [-4, -10, 62, 2.6], [1, -8, 58, 2.6],
