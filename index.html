@@ -3665,42 +3665,57 @@ const Landmark = (() => {
     return entry('hotelw', g, { x: 72, z: -285, ry: 0.55, mask: isRightSide, biome: 'costa' });
   }
 
-  // Montserrat: macizo de agujas redondeadas (cilindro + casquete) sobre una
-  // loma, piedra rosada. Alto y ancho: asoma por encima de los tejados.
+  // Silueta extruida a partir de un perfil de altura h(x) (una lámina de
+  // `depth` de grosor): como un decorado de fondo. A 300 m es lo que se ve
+  // de una montaña; las esferas y cilindros parecían tubos.
+  function ridgeMesh(x0, x1, step, h, depth, mat) {
+    const shape = new THREE.Shape();
+    shape.moveTo(x0, -5);
+    for (let x = x0; x <= x1; x += step) shape.lineTo(x, Math.max(0, h(x)));
+    shape.lineTo(x1, -5); shape.lineTo(x0, -5);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    geo.translate(0, 0, -depth / 2);
+    const m = new THREE.Mesh(geo, mat); m.frustumCulled = false;
+    return m;
+  }
+  const bump = (x, c, w, a) => a * Math.exp(-(((x - c) / w) ** 2));
+
+  // Montserrat: el perfil de sierra con agujas redondeadas (suma de
+  // campanas) en dos láminas (la de atrás más alta y más clara: profundidad)
+  // sobre una loma verde.
   function buildMontserrat() {
-    const g = new THREE.Group(), stone = 0xb59a8c;
-    const base = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), lambert(0x8f7a6c)); base.scale.set(120, 26, 55); g.add(base);
-    const peaks = [[-70, 42, 9], [-52, 58, 11], [-36, 50, 8], [-22, 66, 12], [-6, 56, 9], [8, 72, 13], [24, 60, 10], [40, 50, 9], [56, 62, 11], [72, 44, 8], [-40, 36, 6], [30, 38, 6]];
-    for (const [x, h, r] of peaks) {
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.8, r, h, 9), lambert(stone)); m.position.set(x, h / 2 + 10, (Math.random() - 0.5) * 30); g.add(m);
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.8, 9, 6), lambert(stone)); cap.position.set(x, h + 10, m.position.z); g.add(cap);
-    }
-    return entry('montserrat', g, { x: 30, y: -1, z: -310 });
+    const g = new THREE.Group();
+    const peaksA = [[-95, 9, 38], [-72, 7, 52], [-56, 6, 46], [-40, 8, 62], [-24, 6, 50], [-8, 9, 70], [8, 6, 58], [24, 7, 66], [40, 6, 48], [56, 8, 60], [74, 7, 44], [92, 9, 34]];
+    const peaksB = [[-80, 12, 44], [-30, 12, 56], [16, 14, 64], [62, 12, 52], [100, 10, 36]];
+    const hA = x => 18 + peaksA.reduce((a, [c, w, h]) => a + bump(x, c, w, h), 0);
+    const hB = x => 26 + peaksB.reduce((a, [c, w, h]) => a + bump(x, c, w, h), 0);
+    g.add(ridgeMesh(-130, 130, 1.5, hB, 6, lambert(0xc0aa9c)).translateZ(-30));
+    g.add(ridgeMesh(-120, 120, 1.5, hA, 8, lambert(0xa88e80)));
+    g.add(ridgeMesh(-170, 170, 3, x => 14 + bump(x, -60, 70, 8) + bump(x, 50, 80, 10), 10, lambert(0x56703f)).translateZ(12));
+    return entry('montserrat', g, { x: 20, y: -1, z: -330 });
   }
 
-  // Fondo permanente a la izquierda: la sierra de Collserola con el Tibidabo
-  // (templo con torre) y la Torre de Collserola (aguja), detrás de la ciudad.
+  // Fondo permanente a la izquierda: la sierra de Collserola (perfil suave)
+  // con el Tibidabo (templo con torre) y la Torre de Collserola (aguja).
   const backdrop = new THREE.Group(), backMats = [];
   (function buildCollserola() {
-    const green = lambert(0x4e6a3c); backMats.push(green);
-    for (const [x, rx, ry, rz] of [[-250, 110, 30, 60], [-150, 120, 40, 70], [-60, 110, 34, 60], [30, 100, 26, 60], [110, 90, 20, 50]]) {
-      const h = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), green); h.scale.set(rx, ry, rz); h.position.set(x, 0, 0); backdrop.add(h);
-    }
-    const stone = lambert(0xd9d0c2); backMats.push(stone);
-    // Tibidabo (Temple del Sagrat Cor) en lo alto de la loma de x −150 (y 40)
-    const t = new THREE.Group(); t.position.set(-150, 38, 0);
-    const nave = new THREE.Mesh(new THREE.BoxGeometry(14, 9, 10), stone); nave.position.y = 4.5; t.add(nave);
-    const tower = new THREE.Mesh(new THREE.CylinderGeometry(3, 3.4, 20, 8), stone); tower.position.y = 10 + 9; t.add(tower);
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(3.2, 8, 6), stone); dome.position.y = 29; t.add(dome);
-    const statue = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 4, 6), lambert(0x7b7168)); statue.position.y = 33.5; t.add(statue);
-    for (const sx of [-1, 1]) { const tw = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 12, 6), stone); tw.position.set(sx * 6, 12, -4); t.add(tw); }
+    const hill = x => 14 + 8 * Math.sin(x / 55) + 6 * Math.sin(x / 23 + 1) + bump(x, -120, 45, 16) + bump(x, -40, 60, 8);
+    const green = lambert(0x3e5a38); backMats.push(green);
+    backdrop.add(ridgeMesh(-360, 200, 3, hill, 12, green));
+    const stone = lambert(0xe2dccf); backMats.push(stone);
+    // Tibidabo (Temple del Sagrat Cor) en la cima
+    const t = new THREE.Group(); t.position.set(-120, hill(-120) - 1, 0);
+    const nave = new THREE.Mesh(new THREE.BoxGeometry(9, 6, 8), stone); nave.position.y = 3; t.add(nave);
+    const tower = new THREE.Mesh(new THREE.BoxGeometry(3.2, 15, 3.2), stone); tower.position.y = 13; t.add(tower);
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(2.2, 5, 6), stone); spire.position.y = 23; t.add(spire);
+    const statue = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3, 0.8), lambert(0x5f5750)); statue.position.y = 27; t.add(statue);
     backdrop.add(t);
-    // Torre de Collserola (Foster): mástil, anillo de plataformas, aguja
-    const white = lambert(0xe6e6e6); backMats.push(white);
-    const c = new THREE.Group(); c.position.set(-95, 32, 10);
-    const mast = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.5, 62, 8), white); mast.position.y = 31; c.add(mast);
-    const deck = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 5.5, 9, 10), white); deck.position.y = 44; c.add(deck);
-    const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.9, 30, 6), white); spire.position.y = 77; c.add(spire);
+    // Torre de Collserola: mástil con plataforma y aguja
+    const white = lambert(0xeeeeee); backMats.push(white);
+    const c = new THREE.Group(); c.position.set(-75, hill(-75) - 1, 4);
+    const mast = new THREE.Mesh(new THREE.BoxGeometry(1.6, 44, 1.6), white); mast.position.y = 22; c.add(mast);
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(7, 6, 7), white); deck.position.y = 32; c.add(deck);
+    const needle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 26, 0.5), white); needle.position.y = 57; c.add(needle);
     backdrop.add(c);
     backdrop.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     scene.add(backdrop);
@@ -3733,8 +3748,8 @@ const Landmark = (() => {
   }
   function update(dt) {
     // Fondo (Collserola): siempre, a la izquierda y más lejos que los landmarks
-    backdrop.position.set(camera.position.x * 0.2 - 90, -6, camera.position.z - 330);
-    for (const m of backMats) m.color.copy(m.userData.base).lerp(scene.fog.color, 0.35);
+    backdrop.position.set(camera.position.x * 0.2 - 60, -1, camera.position.z - 345);
+    for (const m of backMats) m.color.copy(m.userData.base).lerp(scene.fog.color, 0.45);
     if (!cur) return;
     if (fadeDir) {
       fade += fadeDir * dt / FADE_S;
