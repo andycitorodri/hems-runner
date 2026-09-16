@@ -2484,6 +2484,7 @@ const I18N_STRINGS = {
     'credit.sagrada': 'Sagrada Família',
     'credit.campnou': 'Camp Nou',
     'credit.arc': 'Arc de Triomf',
+    'credit.xemeneies': 'Tres Xemeneies',
     'credit.barrier': 'Valla',
     'credit.scooter': 'Patinete',
     'credit.helicopter': 'Helicóptero',
@@ -2805,6 +2806,7 @@ const I18N_STRINGS = {
     'credit.sagrada': 'Sagrada Família',
     'credit.campnou': 'Camp Nou',
     'credit.arc': 'Arc de Triomf',
+    'credit.xemeneies': 'Tres Xemeneies',
     'credit.barrier': 'Tanca',
     'credit.scooter': 'Patinet',
     'credit.helicopter': 'Helicòpter',
@@ -3466,8 +3468,8 @@ const Ambience = (() => {
 
 /* ---- Landmarks (A3): carrusel de siluetas de Barcelona ----
    Solo hay uno visible; cambia con changeScenario() (cada 1000 m):
-   Sagrada Família → Torre Glòries → Arc de Triomf → Camp Nou (Hotel W
-   cuando haya bioma de costa). Va "pegado" al fondo: cada frame se recoloca a una
+   Sagrada Família → Torre Glòries → Arc de Triomf → Camp Nou → Tres
+   Xemeneies (Hotel W cuando haya bioma de costa). Va "pegado" al fondo: cada frame se recoloca a una
    distancia fija por delante de la cámara, fuera de la niebla (fog: false)
    y con el color mezclado con el horizonte del Ambience, como una silueta
    lejana en la bruma. Al cambiar se funde (opacidad) con el cielo, se
@@ -3525,23 +3527,42 @@ const Landmark = (() => {
     return entry('sagrada', g, { x: 58, z: -250 });
   }
 
-  // Torre Glòries (Agbar): bala de 144 m, degradado rojo→azul en 4 tramos
-  // (un color por tramo: mismo programa Lambert, sin vertexColors).
+  // Torre Glòries (Agbar): bala de 144 m. Cuatro tramos de color (rojo en
+  // la base → azul grisáceo → azul verdoso; un color por tramo: mismo
+  // programa Lambert, sin vertexColors) con ranuras en cada forjado por
+  // las que asoma un cilindro interior oscuro: las líneas horizontales
+  // de la torre real. Cilindro hasta el 72 % y casquete elíptico arriba.
   function buildGlories() {
-    const H = 100, R = 12.5, g = new THREE.Group();
-    const bands = [[0, 0.30, 0xb5433c], [0.30, 0.52, 0x8a4a6e], [0.52, 0.70, 0x5b5aa0], [0.70, 1, 0x3f78c2]];
-    for (const [a, b, hex] of bands) {
-      const y0 = a * H, y1 = b * H;
-      // radio del perfil: cilindro hasta el 62 %, luego casquete elíptico
-      const r = t => t < 0.62 ? R : R * Math.sqrt(Math.max(0, 1 - ((t - 0.62) / 0.38) ** 2));
+    const H = 100, R = 12.5, FLOORS = 34, FH = H / FLOORS, g = new THREE.Group();
+    const r = t => t < 0.72 ? R : R * Math.sqrt(Math.max(0, 1 - ((t - 0.72) / 0.28) ** 2));
+    const bands = [[0, 7, 0xa8402c], [7, 14, 0x7b5b5f], [14, 24, 0x4f7a92], [24, FLOORS, 0x5e93a6]];
+    for (const [f0, f1, hex] of bands) {
       const pts = [];
-      for (let i = 0; i <= 6; i++) { const t = a + (b - a) * i / 6; pts.push(new THREE.Vector2(Math.max(0.01, r(t)), t * H)); }
-      const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 14), lambert(hex));
-      g.add(m);
+      for (let f = f0; f < f1; f++) {
+        const y0 = f * FH, y1 = y0 + FH * 0.7, y2 = (f + 1) * FH;  // pared 70 %, ranura 30 %
+        const ra = Math.max(0.05, r(y0 / H)), rb = Math.max(0.05, r(y1 / H)), rc = Math.max(0.05, r(y2 / H));
+        pts.push(new THREE.Vector2(ra, y0), new THREE.Vector2(rb, y1), new THREE.Vector2(rb * 0.93, y1), new THREE.Vector2(rc * 0.93, y2));
+      }
+      if (f1 === FLOORS) pts.push(new THREE.Vector2(0.05, H));
+      g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 16), lambert(hex)));
     }
-    // Zócalo bajo y plaza
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(R + 3, R + 3, 3, 14), lambert(0x9a9188)); base.position.y = 1.5; g.add(base);
+    // Cilindro interior oscuro (asoma por las ranuras = líneas de forjado)
+    const inner = [];
+    for (let f = 0; f <= FLOORS; f++) inner.push(new THREE.Vector2(Math.max(0.04, r(f / FLOORS) * 0.965), f * FH));
+    inner.push(new THREE.Vector2(0.04, H));
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(inner, 16), lambert(0x2f3a44)));
+    // Zócalo bajo
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(R + 3, R + 3, 3, 16), lambert(0x9a9188)); base.position.y = 1.5; g.add(base);
     return entry('glories', g, { x: 66, z: -260 });
+  }
+
+  // Tres Xemeneies (Sant Adrià): modelo Sketchfab (novusod, CC-BY) en 3
+  // colores planos (hormigón claro, acero azulado, naves). 200 m reales.
+  function buildXemeneies() {
+    if (!Assets.has('xemeneies')) return null;
+    const model = Assets.clone('xemeneies');
+    model.traverse(c => { if (c.isMesh) c.material = lambert(c.material.color.getHex()); });
+    return entry('xemeneies', model, { x: 64, z: -270 });
   }
 
   // Camp Nou: modelo Sketchfab (Alvxrez) en 3 colores planos (hormigón,
@@ -3576,7 +3597,7 @@ const Landmark = (() => {
 
   // Tras la precarga de Assets (los GLB ya están o no estarán).
   function init() {
-    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildCampNou()]) if (e) ENTRIES.push(e);
+    for (const e of [buildSagrada(), buildGlories(), buildArc(), buildCampNou(), buildXemeneies()]) if (e) ENTRIES.push(e);
     set(0);
   }
   function at(i) { return ENTRIES[((i % ENTRIES.length) + ENTRIES.length) % ENTRIES.length]; }
@@ -3684,6 +3705,12 @@ const Assets = (() => {
   MANIFEST.arc = {
     url: 'assets/models/sketchfab/arc-de-triomf.glb', scale: 340, ground: true,
     credit: { what: 'credit.arc', author: 'SC-03', url: 'https://sketchfab.com/3d-models/cgt-116-week-2-environment-blockout-579b55312c2248ea82d4af0c457dee08', license: 'CC-BY 4.0' }
+  };
+  // Landmark: Tres Xemeneies de Sant Adrià (Sketchfab, novusod, CC-BY).
+  // 3 colores planos, decimado de 30k a 7k tris (flatten-glb.mjs BUCKETS).
+  MANIFEST.xemeneies = {
+    url: 'assets/models/sketchfab/tres-xemeneies.glb', scale: 0.55, ground: true,
+    credit: { what: 'credit.xemeneies', author: 'novusod', url: 'https://sketchfab.com/3d-models/tres-xemeneies-bb89e193d1644f909c09effeef2e469d', license: 'CC-BY 4.0' }
   };
   MANIFEST.barrier = {
     url: 'assets/models/quaternius/traffic-barrier.glb', scale: 1.3,
