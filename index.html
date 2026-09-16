@@ -2216,6 +2216,12 @@
       <span><b>5</b> 🌀 Wormhole</span>
       <span><b>6</b> 📜 Palabra</span>
       <span><b>7</b> 🔥 Fever</span>
+      <span><b>Z</b> ⛪ Sagrada</span>
+      <span><b>X</b> 🗼 Glòries</span>
+      <span><b>C</b> 🏛 Arc</span>
+      <span><b>V</b> 🏟 Camp Nou</span>
+      <span><b>B</b> 🏭 Xemeneies</span>
+      <span><b>N</b> 🌇 Escenario</span>
     </div>
   </div>
 
@@ -5389,7 +5395,7 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => KEYS.delete(e.key));
 
-// ========== DEBUG TESTING (teclas 1-7) ==========
+// ========== DEBUG TESTING (teclas 1-7, Z X C V B, N) ==========
 // Atajos para probar cada efecto sin depender del azar
 // Solo funcionan durante la partida. Borrar antes de producción si se quiere.
 const DEBUG_EFFECT_KEYS = {
@@ -5400,6 +5406,15 @@ const DEBUG_EFFECT_KEYS = {
   '5': { label: '🌀 Wormhole', fn: () => triggerDebugEffect('wormhole') },
   '6': { label: '🚨 SVA Activado', fn: () => triggerDebugEffect('sva') },
   '7': { label: '🔥 Fever Mode', fn: () => { if (!STATE.fever) activateFever(true); } },
+  // Landmarks (A3): Z X C V B fuerzan la silueta (con fundido; si el landmark
+  // esconde edificios, la fila tarda unos metros en acabarse, como en el juego).
+  // N = siguiente escenario completo (momento del día + landmark), lo mismo que cada 1000 m.
+  'z': { label: '⛪ Sagrada Família', fn: () => Landmark.show(0) },
+  'x': { label: '🗼 Torre Glòries', fn: () => Landmark.show(1) },
+  'c': { label: '🏛 Arc de Triomf', fn: () => Landmark.show(2) },
+  'v': { label: '🏟 Camp Nou', fn: () => Landmark.show(3) },
+  'b': { label: '🏭 Tres Xemeneies', fn: () => Landmark.show(4) },
+  'n': { label: '🌇 Siguiente escenario', fn: () => changeScenario() },
 };
 
 // Función auxiliar: dispara cualquier efecto de caja por nombre sin pasar por el RNG
@@ -5412,7 +5427,7 @@ function triggerDebugEffect(effectName) {
 document.addEventListener('keydown', (e) => {
   // Solo durante partida activa
   if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
-  const entry = DEBUG_EFFECT_KEYS[e.key];
+  const entry = DEBUG_EFFECT_KEYS[e.key.toLowerCase()];
   if (entry) {
     e.preventDefault();
     entry.fn();
