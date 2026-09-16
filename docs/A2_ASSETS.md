@@ -151,6 +151,7 @@ Estados:
 | 15 | Arc de Triomf | Landmark (carrusel, 3.º) | Sketchfab — SC-03 | CC-BY 4.0 | **INTEGRADO** | `assets/models/sketchfab/arc-de-triomf.glb` (160 KB, 8,5k tris; blockout, un color ladrillo con `flatten-glb.mjs` + `optimize-glb.sh`). Descartado "Butterfly Arc De Triomf" (xurrc): sin descarga, 95,8k tris, 6 texturas. |
 | 16 | Tres Xemeneies (Sant Adrià) | Landmark (carrusel, 4.º) | Sketchfab — novusod | CC-BY 4.0 | **INTEGRADO** | `assets/models/sketchfab/tres-xemeneies.glb` (244 KB, 7k tris desde 30k; 7 texturas quitadas → 3 colores planos con `flatten-glb.mjs BUCKETS`, `weld --tolerance 0.003` + `simplify --ratio 0.3 --error 0.03` + `optimize-glb.sh`). |
 | 17 | Hotel W (vela) | Landmark (carrusel, 5.º, bioma costa) | Sketchfab — sgallartm | CC-BY-SA 4.0 | **INTEGRADO** | `assets/models/sketchfab/hotel-w.glb` (300 KB, 9,5k tris desde 105k; `DROP_NODES` quita Desigual/suelos/escaleras, `BUCKETS` 7 colores, `weld --tolerance 0.002` + `simplify --ratio 0.25 --error 0.02` + `optimize-glb.sh`). Único W descargable en Sketchfab. |
+| 18 | Props de playa y mar (sombrillas, toallas, tumbonas, pelota, torre socorrista, velero, crucero) | Bioma costa | Sketchfab — EdwiixGG, Sololopenko, Kenepin, sec20ad002 | CC-BY 4.0 | **INTEGRADO** | `assets/models/sketchfab/costa/*.glb` (336 KB en total; `KEEP_NODES` para extraer objetos del pack, `KEEP_COLORS`, weld+simplify en el velero 4,6k→2,2k). Descartados: Beachhouse (diorama inseparable), gaviota animada (esqueleto, no instanciable → gaviotas procedurales). |
 | 14 | Casa Batlló | BIOMA_EIXAMPLE | — | — | PENDIENTE | Sketchfab manual con criterio visual (sesión final, junto al usuario). |
 | 15 | Edificio modernista 1 | BIOMA_EIXAMPLE | `Q-Build` (1ª) | CC0 | CANDIDATO | Base genérica; se "modernizará" con texturas custom (balcones, ocres) en A3. |
 | 16 | Edificio modernista 2 | BIOMA_EIXAMPLE | `Q-Build` | CC0 | CANDIDATO | Idem. |
@@ -252,3 +253,7 @@ Se compararon 4 candidatos Sketchfab (filtro CC-BY + CC0 + Downloadable):
 - **SC-03** — Arc de Triomf ("CGT 116 - Week 2 - Environment Blockout") — https://sketchfab.com/3d-models/cgt-116-week-2-environment-blockout-579b55312c2248ea82d4af0c457dee08 — CC-BY (Attribution).
 - **novusod** — Tres Xemeneies — https://sketchfab.com/3d-models/tres-xemeneies-bb89e193d1644f909c09effeef2e469d — CC-BY (Attribution).
 - **sgallartm** — Hotel W ("W_vela_Hotel_Barcelona") — https://sketchfab.com/3d-models/w-vela-hotel-barcelona-34845e13867547d788956bf4828141b6 — CC-BY-SA (Attribution-ShareAlike; el GLB reducido se publica bajo la misma licencia).
+- **EdwiixGG** — Low Poly Beach Assets (sombrillas, toallas, tumbonas, pelota) — https://sketchfab.com/3d-models/low-poly-beach-assets-66c18ecd7a834d4a99dabc46b5ee6e4a — CC-BY.
+- **Sololopenko** — Lifeguard Tower — https://sketchfab.com/3d-models/lifeguard-tower-2f147eeb428847f7b06244026db6c07e — CC-BY.
+- **Kenepin** — Low-Poly Sailboat — https://sketchfab.com/3d-models/low-poly-sailboat-fdf38588937242f5b85efc87e028a876 — CC-BY.
+- **sec20ad002** — Cruise Ship - toofan — https://sketchfab.com/3d-models/cruise-ship-toofan-bc1d588ba585448a9f30c04569490bf1 — CC-BY.
