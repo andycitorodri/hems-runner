@@ -6980,6 +6980,44 @@ function createRoad() {
   rightEdge.position.x = LANE_WIDTH * 1.5 + 0.12;
   scene.add(rightEdge);
   sceneObjects.push({ mesh: rightEdge, type: 'edge' });
+
+  // Aceras con panot de Barcelona (la baldosa de la flor): textura canvas
+  // repetida; estáticas como la carretera (no se mueven ni se reciclan).
+  const panot = makePanotTexture();
+  panot.repeat.set(9, ROAD_LENGTH / 0.5);
+  for (const side of [-1, 1]) {
+    const sw = new THREE.Mesh(new THREE.PlaneGeometry(4.5, ROAD_LENGTH), new THREE.MeshLambertMaterial({ map: panot, color: 0xcfcfcf }));
+    sw.rotation.x = -Math.PI / 2;
+    sw.position.set(side * (LANE_WIDTH * 1.5 + 0.25 + 2.25), 0.012, -ROAD_LENGTH / 2 + 10);
+    sw.receiveShadow = true;
+    scene.add(sw);
+    sceneObjects.push({ mesh: sw, type: 'road' });
+  }
+}
+
+// Baldosa panot (64 px = 0,5 m): fondo gris, flor de 4 pétalos más clara.
+function makePanotTexture() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#9d9d9d'; g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = '#8a8a8a'; g.lineWidth = 2; g.strokeRect(1, 1, 62, 62);
+  g.fillStyle = '#b4b4b4';
+  for (const [x, y] of [[32, 16], [48, 32], [32, 48], [16, 32]]) { g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#c6c6c6'; g.beginPath(); g.arc(32, 32, 9, 0, Math.PI * 2); g.fill();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+// Senyera colgada de un balcón (64×48 px): 9 franjas, 5 amarillas y 4 rojas.
+function makeSenyeraTexture() {
+  const cv = document.createElement('canvas'); cv.width = 64; cv.height = 48;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#fcdd09'; g.fillRect(0, 0, 64, 48);
+  g.fillStyle = '#da121a';
+  for (let i = 1; i < 9; i += 2) g.fillRect(0, Math.round(i * 48 / 9), 64, Math.round(48 / 9));
+  return new THREE.CanvasTexture(cv);
 }
 
 const groundLeft = new THREE.Mesh(
@@ -7022,6 +7060,9 @@ const Props = (() => {
     pole:     { geometry: () => new THREE.CylinderGeometry(0.08, 0.1, 4, 6), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
     arm:      { geometry: () => new THREE.BoxGeometry(0.08, 0.08, 1), material: () => new THREE.MeshLambertMaterial({ color: 0x2a2a30 }), recycle: { limit: 15, span: 336 } },
     bulb:     { geometry: () => new THREE.SphereGeometry(0.2, 6, 6), material: () => new THREE.MeshBasicMaterial({ color: 0xffe8a0 }), recycle: { limit: 15, span: 336 } },
+    // Senyeres colgadas de los balcones del Eixample (van con los edificios:
+    // el prefijo bld_ hace que las oculte la misma máscara)
+    bld_flag: { geometry: () => new THREE.PlaneGeometry(0.9, 0.62), material: () => new THREE.MeshLambertMaterial({ map: makeSenyeraTexture() }), recycle: { limit: 20, span: 400 } },
     // Bioma costa (solo visibles con Props.setBiome('costa'); ver Landmark · Hotel W)
     sea:      { geometry: () => new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), material: () => new THREE.MeshLambertMaterial({ color: 0x2b6f9c }), recycle: { limit: 140, span: 520 }, biome: 'costa' },
     sand:     { geometry: () => new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), material: () => new THREE.MeshLambertMaterial({ color: 0xd9c898 }), receive: true, recycle: { limit: 140, span: 520 }, biome: 'costa' },
@@ -7163,6 +7204,8 @@ function populateEnvironment() {
       const x = side * (LANE_WIDTH * 1.5 + 6 + Math.random() * 4);
       const k = gltfBuildings[Math.floor(Math.random() * gltfBuildings.length)];
       Props.add(k, { x, y: 0, z, ry: side < 0 ? Math.PI / 2 : -Math.PI / 2, color: EIXAMPLE_TINTS[Math.floor(Math.random() * EIXAMPLE_TINTS.length)] });
+      // Senyera en algún balcón (fachada a 2,8 del centro del bloque)
+      if (Math.random() < 0.45) Props.add('bld_flag', { x: x - side * 2.9, y: 2.2 + Math.floor(Math.random() * 2) * 1.5, z: z + (Math.random() - 0.5) * 3, ry: side < 0 ? Math.PI / 2 : -Math.PI / 2 });
     }
   }
 
