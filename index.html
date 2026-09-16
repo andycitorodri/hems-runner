@@ -3493,7 +3493,7 @@ const Landmark = (() => {
   group.scale.setScalar(1.0);
   scene.add(group);
 
-  const stone = new THREE.Color(0xb59a70);  // piedra arenisca de Montjuïc
+  const stone = new THREE.Color(0xa88a62);  // piedra arenisca de Montjuïc (referencia foto)
   const mats = [mat];
 
   // Modelo real (Sketchfab, wareFLO): sustituye a las torres procedurales.
@@ -3504,21 +3504,21 @@ const Landmark = (() => {
     mats.length = 0;
     model.traverse(c => {
       if (!c.isMesh) return;
-      c.material = new THREE.MeshLambertMaterial({ color: 0xb59a70, fog: false });
+      c.material = new THREE.MeshLambertMaterial({ color: 0xa88a62, fog: false });
       c.frustumCulled = false;
       mats.push(c.material);
     });
     group.remove(shafts, spires);
     group.add(model);
     group.scale.setScalar(1);
-    model.rotation.y = -0.35;  // fachada ligeramente girada hacia la calle
+    model.rotation.y = 0.35;  // fachada ligeramente girada hacia la calle
   }
 
   // Distancia fija por delante de la cámara, desplazada a la izquierda de la
   // carretera; la x se mueve poco con el carril (parallax lejano)
   function update() {
-    group.position.set(camera.position.x * 0.2 - 50, -1, camera.position.z - 260);
-    const c = stone.clone().lerp(scene.fog.color, 0.22);
+    group.position.set(camera.position.x * 0.2 + 52, -1, camera.position.z - 260);  // a la derecha: en vertical el HUD ocupa el centro-izquierda
+    const c = stone.clone().lerp(scene.fog.color, 0.12);
     for (const m of mats) m.color.copy(c);
   }
   return { update, useGltf, group };
@@ -9575,6 +9575,10 @@ function update(dt) {
   // Mover el mundo
   const moveZ = STATE.speed * dt;
   for (const o of sceneObjects) {
+    // La carretera y sus bordes son uniformes a lo largo: se quedan fijos.
+    // (Antes se movían sin reciclarse y a partir de ~110 m quedaban detrás
+    // de la cámara; de noche el hueco parecía asfalto, de día era cielo.)
+    if (o.type === 'road' || o.type === 'edge') continue;
     o.mesh.position.z += moveZ;
     if (o.type === 'dash' && o.mesh.position.z > 10) o.mesh.position.z -= 180;
   }
