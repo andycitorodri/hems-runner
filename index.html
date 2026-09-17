@@ -3276,7 +3276,7 @@ const LightPool = (() => {
 scene.background = new THREE.Color(0x1a2838);
 scene.fog = new THREE.Fog(0x1a2838, 45, 200);
 
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1400);  // far 1400: los relieves (Collserola a −865, Montserrat a −590) quedaban recortados por el plano lejano a 400
 camera.position.set(0, 5, 9);
 camera.lookAt(0, 1, -10);
 
@@ -3784,7 +3784,7 @@ const Landmark = (() => {
       if (backdropReal) backdrop.position.set(camera.position.x * 0.2 - 225, -20, camera.position.z - 865);
       else backdrop.position.set(camera.position.x * 0.2 - 60, -1, camera.position.z - 345);
       // Bruma de distancia: el color se apaga y el emisivo añade el tono del horizonte
-      for (const m of backMats) { m.color.copy(m.userData.base).multiplyScalar(0.22); m.emissive.copy(scene.fog.color).multiplyScalar(0.8); }
+      for (const m of backMats) { m.color.copy(m.userData.base).multiplyScalar(0.38); m.emissive.copy(scene.fog.color).multiplyScalar(0.62); }
       backdrop.visible = !cur || cur.name !== 'montserrat';  // mirando a Montserrat (oeste) Collserola queda fuera de plano
     }
     if (!cur) return;
