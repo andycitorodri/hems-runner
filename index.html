@@ -5688,8 +5688,29 @@ function triggerDebugEffect(effectName) {
   applySurpriseBoxEffect(effectName, null);
 }
 
+// Activación "master": las teclas de prueba solo funcionan tras teclear
+// Q Q W W seguidas (en cualquier pantalla, no en un campo de texto). Sale la
+// palabra MASTER y aparece el panel de teclas. Dura hasta recargar la página.
+let masterMode = false;
+const masterBuf = [];
+function unlockMaster() {
+  masterMode = true;
+  const dbg = document.getElementById('debug-indicator');
+  if (dbg) { dbg.textContent = 'MASTER'; dbg.classList.add('active'); clearTimeout(dbg._timeout); dbg._timeout = setTimeout(() => dbg.classList.remove('active'), 2500); }
+  const panel = document.getElementById('debug-panel');
+  if (panel && STATE.mode === 'playing') panel.classList.add('active');
+}
 document.addEventListener('keydown', (e) => {
-  // Solo durante partida activa
+  if (masterMode) return;
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  masterBuf.push({ k: e.key.toLowerCase(), t: performance.now() });
+  while (masterBuf.length > 4) masterBuf.shift();
+  if (masterBuf.length === 4 && masterBuf.map(x => x.k).join('') === 'qqww' && masterBuf[3].t - masterBuf[0].t < 3000) unlockMaster();
+});
+
+document.addEventListener('keydown', (e) => {
+  // Solo con modo master y durante partida activa
+  if (!masterMode) return;
   if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
   const entry = DEBUG_EFFECT_KEYS[e.key.toLowerCase()];
   if (entry) {
@@ -9331,6 +9352,7 @@ function quitToMenu() {
 }
 
 function triggerGameOver(kind) {
+  Analytics.end();
   STATE.mode = 'gameover';
   STATE.running = false;
   hidePowerupUI();
@@ -10439,6 +10461,7 @@ const Tutorial = (() => {
 })();
 
 function startGame() {
+  Analytics.play();
   // Limpiar
   for (const o of activeObstacles) { scene.remove(o.mesh); disposeObj(o.mesh); }
   activeObstacles.length = 0;
@@ -10545,7 +10568,7 @@ function startGame() {
 
   // DEBUG: mostrar panel de teclas al iniciar
   const debugPanel = document.getElementById('debug-panel');
-  if (debugPanel) debugPanel.classList.add('active');
+  if (debugPanel && masterMode) debugPanel.classList.add('active');
 
   showOverlay(null);
   hud.style.display = 'flex';
@@ -10557,6 +10580,28 @@ function startGame() {
 
   Tutorial.maybeShow();  // solo la primera partida
 }
+
+/* ================================================================
+   ANALÍTICA mínima (sin cookies ni terceros): open / play / end → /api/hit.
+   País y dispositivo los deduce el Worker; aquí solo va id de dispositivo,
+   sesión, idioma, tamaño de pantalla y, al acabar, puntos/distancia/duración.
+   ================================================================ */
+const Analytics = (() => {
+  const session = Math.random().toString(36).slice(2, 12);
+  let playStart = 0;
+  function send(kind, extra = {}) {
+    const body = JSON.stringify({ kind, device: deviceId(), session, lang: I18N.lang, screen: `${innerWidth}x${innerHeight}`, ref: document.referrer || '', ...extra });
+    try {
+      if (navigator.sendBeacon) navigator.sendBeacon('/api/hit', body);
+      else fetch('/api/hit', { method: 'POST', body, keepalive: true });
+    } catch {}
+  }
+  return {
+    open: () => send('open'),
+    play: () => { playStart = Date.now(); send('play'); },
+    end: () => send('end', { score: STATE.score, distance: Math.round(STATE.distance || 0), duration: Math.round((Date.now() - playStart) / 1000) }),
+  };
+})();
 
 /* ================================================================
    LEADERBOARD — en servidor (Worker + D1, ver worker/index.js) con copia
@@ -10869,6 +10914,7 @@ function warmUpRenderer() {
 }
 
 Promise.all([assetsReady, minSplash]).then(() => {
+  Analytics.open();
   refreshAmbulanceModel();
   refreshHelicopterModel();
   Landmark.init();
