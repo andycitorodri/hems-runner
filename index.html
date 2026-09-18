@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>HEMS Runner · Jornada de Trauma 2026</title>
+<title>HEMS Runner · I Jornada IMPACTE 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1889,6 +1889,20 @@
     color: var(--bone-faint); text-transform: uppercase;
     font-size: 10px; letter-spacing: 0.2em;
   }
+  .score-form__input:invalid { border-color: rgba(244, 239, 230, 0.2); }
+  .score-form__hint {
+    margin: -2px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: 0.06em; line-height: 1.5; color: var(--bone-faint);
+  }
+  .score-form__error {
+    margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; color: #ff6b5c;
+  }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+  .leaderboard__rankline {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--amber); text-align: center; margin: 0 0 12px;
+  }
 
   .btn-row {
     display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
@@ -2310,7 +2324,7 @@
     </div>
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
-      <span class="overlay__eyebrow-text" data-i18n="menu.eyebrow">Jornada de Trauma · Edició 01</span>
+      <span class="overlay__eyebrow-text" data-i18n="menu.eyebrow">I Jornada IMPACTE · 2026</span>
     </div>
     <h1 class="overlay__title">HEMS <em>Runner</em></h1>
     <p class="overlay__subtitle" data-i18n="menu.subtitle">Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.</p>
@@ -2452,8 +2466,10 @@
     </div>
 
     <div class="score-form">
-      <input type="text" id="player-name" class="score-form__input" placeholder="Tu nombre (máx 16)" data-i18n-placeholder="gameover.name_ph" maxlength="16" autocomplete="off">
-      <input type="email" id="player-email" class="score-form__input" placeholder="Email (opcional, para el premio)" data-i18n-placeholder="gameover.email_ph" autocomplete="off">
+      <input type="text" id="player-name" class="score-form__input" placeholder="Tu nombre o iniciales (obligatorio)" data-i18n-placeholder="gameover.name_ph" maxlength="16" autocomplete="off" required>
+      <input type="email" id="player-email" class="score-form__input" placeholder="Email (opcional)" data-i18n-placeholder="gameover.email_ph" autocomplete="off">
+      <p class="score-form__hint" data-i18n="gameover.email_hint">Deja el correo solo si quieres optar al top 5 (inscripciones gratuitas a la Jornada). No se usa para nada más.</p>
+      <p class="score-form__error" id="score-form-error" hidden></p>
       <button id="btn-save" class="btn" data-i18n="gameover.save">Guardar en ranking</button>
     </div>
 
@@ -2470,7 +2486,7 @@
       <span class="overlay__eyebrow-text" data-i18n="lb.eyebrow">Top jugadores</span>
     </div>
     <h1 class="overlay__title" data-i18n-html="lb.title">Ranking <em>global</em></h1>
-    <p class="overlay__subtitle" data-i18n="lb.subtitle">Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 27 de octubre de 2026.</p>
+    <p class="overlay__subtitle" data-i18n="lb.subtitle">Los 5 primeros del ranking recibirán inscripciones gratuitas a la I Jornada IMPACTE, el 27 de octubre de 2026.</p>
 
     <div id="leaderboard-content" class="leaderboard"></div>
 
@@ -2503,7 +2519,7 @@ const ADS = [
 
 const I18N_STRINGS = {
   es: {
-    'meta.title': 'HEMS Runner · Jornada de Trauma 2026',
+    'meta.title': 'HEMS Runner · I Jornada IMPACTE 2026',
     'loading.models': 'Cargando modelos · {done}/{total}',
     'btn.back_menu': '← Menú',
     'btn.menu': 'Menú',
@@ -2596,7 +2612,7 @@ const I18N_STRINGS = {
     'powerup.x2': 'Doble puntos',
 
     // Menú
-    'menu.eyebrow': 'Jornada de Trauma · Edició 01',
+    'menu.eyebrow': 'I Jornada IMPACTE · 2026',
     'menu.subtitle': 'Conduce la ambulancia. Recoge monedas, salva pacientes, atrapa power-ups y esquiva obstáculos. Tu mejor puntuación te acerca a la jornada.',
     'menu.fomo': 'Premios a los Top del Ranking · 27 · 10 · 2026',
     'menu.controls': 'Controles',
@@ -2657,8 +2673,12 @@ const I18N_STRINGS = {
     'gameover.mult_up': '¡Multiplicador <span id="mu-new-value">×2</span>!',
     'gameover.mult_up_sub': 'Todas tus puntuaciones × <span id="mu-new-value-sub">2</span> a partir de ahora',
     'gameover.progress_today': 'Progreso de hoy',
-    'gameover.name_ph': 'Tu nombre (máx 16)',
-    'gameover.email_ph': 'Email (opcional, para el premio)',
+    'gameover.name_ph': 'Tu nombre o iniciales (obligatorio)',
+    'gameover.email_ph': 'Email (opcional)',
+    'gameover.email_hint': 'Deja el correo solo si quieres optar al top 5 (inscripciones gratuitas a la Jornada). No se usa para nada más.',
+    'gameover.name_required': 'Escribe tu nombre o iniciales para guardar la puntuación.',
+    'gameover.email_invalid': 'Ese correo no parece válido (o déjalo vacío).',
+    'gameover.saving': 'Guardando…',
     'gameover.save': 'Guardar en ranking',
     'gameover.retry': 'Reintentar',
     'gameover.record': ' · ¡Nuevo récord personal!',
@@ -2682,9 +2702,12 @@ const I18N_STRINGS = {
     // Ranking
     'lb.eyebrow': 'Top jugadores',
     'lb.title': 'Ranking <em>global</em>',
-    'lb.subtitle': 'Los Top del Ranking recibirán premios el día de la I Jornada de Trauma, el 27 de octubre de 2026.',
+    'lb.subtitle': 'Los 5 primeros del ranking recibirán inscripciones gratuitas a la I Jornada IMPACTE, el 27 de octubre de 2026.',
     'lb.empty': 'Aún no hay scores. Sé el primero.',
     'lb.anon': 'Anónimo',
+    'lb.rank_line': 'Tu posición: #{n} de {total}',
+    'lb.offline': 'Sin conexión: la puntuación se ha guardado solo en este dispositivo.',
+    'lb.loading': 'Cargando ranking…',
 
     // Rangos (por puntuación)
     'rank.0': 'Primer interviniente',
@@ -2830,7 +2853,7 @@ const I18N_STRINGS = {
   },
 
   ca: {
-    'meta.title': 'HEMS Runner · Jornada de Trauma 2026',
+    'meta.title': 'HEMS Runner · I Jornada IMPACTE 2026',
     'loading.models': 'Carregant models · {done}/{total}',
     'btn.back_menu': '← Menú',
     'btn.menu': 'Menú',
@@ -2917,7 +2940,7 @@ const I18N_STRINGS = {
     'powerup.shield': 'Escut',
     'powerup.x2': 'Punts dobles',
 
-    'menu.eyebrow': 'Jornada de Trauma · Edició 01',
+    'menu.eyebrow': 'I Jornada IMPACTE · 2026',
     'menu.subtitle': 'Condueix l\'ambulància. Recull monedes, salva pacients, atrapa power-ups i esquiva obstacles. La teva millor puntuació t\'acosta a la jornada.',
     'menu.fomo': 'Premis per als Top del Rànquing · 27 · 10 · 2026',
     'menu.controls': 'Controls',
@@ -2976,8 +2999,12 @@ const I18N_STRINGS = {
     'gameover.mult_up': 'Multiplicador <span id="mu-new-value">×2</span>!',
     'gameover.mult_up_sub': 'Totes les teves puntuacions × <span id="mu-new-value-sub">2</span> a partir d\'ara',
     'gameover.progress_today': 'Progrés d\'avui',
-    'gameover.name_ph': 'El teu nom (màx 16)',
-    'gameover.email_ph': 'Email (opcional, per al premi)',
+    'gameover.name_ph': 'El teu nom o inicials (obligatori)',
+    'gameover.email_ph': 'Email (opcional)',
+    'gameover.email_hint': 'Deixa el correu només si vols optar al top 5 (inscripcions gratuïtes a la Jornada). No es fa servir per a res més.',
+    'gameover.name_required': 'Escriu el teu nom o inicials per desar la puntuació.',
+    'gameover.email_invalid': 'Aquest correu no sembla vàlid (o deixa\'l buit).',
+    'gameover.saving': 'Desant…',
     'gameover.save': 'Desar al rànquing',
     'gameover.retry': 'Tornar-hi',
     'gameover.record': ' · Nou rècord personal!',
@@ -3000,9 +3027,12 @@ const I18N_STRINGS = {
 
     'lb.eyebrow': 'Top jugadors',
     'lb.title': 'Rànquing <em>global</em>',
-    'lb.subtitle': 'Els Top del Rànquing rebran premis el dia de la I Jornada de Trauma, el 27 d\'octubre de 2026.',
+    'lb.subtitle': 'Els 5 primers del rànquing rebran inscripcions gratuïtes a la I Jornada IMPACTE, el 27 d\'octubre de 2026.',
     'lb.empty': 'Encara no hi ha puntuacions. Sigues el primer.',
     'lb.anon': 'Anònim',
+    'lb.rank_line': 'La teva posició: #{n} de {total}',
+    'lb.offline': 'Sense connexió: la puntuació s\'ha desat només en aquest dispositiu.',
+    'lb.loading': 'Carregant rànquing…',
 
     'rank.0': 'Primer intervinent',
     'rank.1': 'SVB',
@@ -9370,6 +9400,7 @@ function triggerGameOver(kind) {
   shakeCamera(2);
 
   setTimeout(() => {
+    prefillScoreForm();
     showOverlay(gameoverOverlay);
 
     if (STATE.revivesUsed < STATE.maxRevives) {
@@ -10528,35 +10559,67 @@ function startGame() {
 }
 
 /* ================================================================
-   LEADERBOARD (localStorage)
+   LEADERBOARD — en servidor (Worker + D1, ver worker/index.js) con copia
+   local de respaldo. El nombre es obligatorio; el correo, opcional (solo
+   para contactar a los 5 primeros). Nombre y correo se recuerdan en el
+   dispositivo para que la siguiente vez baste con pulsar "Guardar".
    ================================================================ */
-const LB_KEY = 'hems_runner_v4_lb';
+const LB_KEY = 'hems_runner_v4_lb', PLAYER_KEY = 'hems_runner_player', DEVICE_KEY = 'hems_runner_device';
 function loadLB() { try { return JSON.parse(localStorage.getItem(LB_KEY) || '[]'); } catch { return []; } }
 function saveLB(lb) { try { localStorage.setItem(LB_KEY, JSON.stringify(lb)); } catch {} }
-
-function addLB(name, email, score, coins, patients) {
-  const lb = loadLB();
-  const entry = { name: name.substring(0, 16), email: email.substring(0, 80), score, coins, patients, ts: Date.now() };
-  lb.push(entry); lb.sort((a, b) => b.score - a.score);
-  saveLB(lb.slice(0, 50));
-  STATE.lastSaved = entry;
+function loadPlayer() { try { return JSON.parse(localStorage.getItem(PLAYER_KEY) || '{}'); } catch { return {}; } }
+function savePlayer(p) { try { localStorage.setItem(PLAYER_KEY, JSON.stringify(p)); } catch {} }
+function deviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem(DEVICE_KEY, id); }
+    return id;
+  } catch { return 'nolocal'; }
 }
 
-function renderLB() {
+// Copia local (respaldo sin conexión)
+function addLocalLB(entry) {
   const lb = loadLB();
+  lb.push(entry); lb.sort((a, b) => b.score - a.score);
+  saveLB(lb.slice(0, 50));
+}
+
+// Envía la partida al servidor; devuelve {ok, rank, top} o null si falla
+async function submitScore(entry) {
+  try {
+    const r = await fetch('/api/score', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(entry) });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+let lbCache = null;  // último top recibido del servidor
+async function fetchTop() {
+  try {
+    const r = await fetch('/api/top?n=10', { cache: 'no-store' });
+    if (!r.ok) return null;
+    lbCache = (await r.json()).top;
+    return lbCache;
+  } catch { return null; }
+}
+
+function renderLB(rows, opts = {}) {
   const c = document.getElementById('leaderboard-content');
-  if (lb.length === 0) {
-    c.innerHTML = `<div class="leaderboard__empty">${t('lb.empty')}</div>`;
+  let html = '';
+  if (opts.rank) html += `<p class="leaderboard__rankline">${t('lb.rank_line', { n: opts.rank, total: opts.total || '?' })}</p>`;
+  if (opts.offline) html += `<p class="leaderboard__rankline" style="color:#ff6b5c">${t('lb.offline')}</p>`;
+  if (!rows || rows.length === 0) {
+    c.innerHTML = html + `<div class="leaderboard__empty">${opts.loading ? t('lb.loading') : t('lb.empty')}</div>`;
     return;
   }
-  let html = `<div class="leaderboard__row leaderboard__row--header">
+  html += `<div class="leaderboard__row leaderboard__row--header">
     <span>#</span><span>Jugador</span><span style="text-align:right">Score</span>
   </div>`;
-  lb.slice(0, 10).forEach((e, i) => {
-    const isMine = STATE.lastSaved && e.ts === STATE.lastSaved.ts;
+  rows.slice(0, 10).forEach((e, i) => {
+    const mine = STATE.lastSaved && ((e.id && e.id === STATE.lastSaved.id) || (e.ts && e.ts === STATE.lastSaved.ts));
     const cls = ['leaderboard__row'];
     if (i < 3) cls.push('leaderboard__row--top');
-    if (isMine) cls.push('leaderboard__row--mine');
+    if (mine) cls.push('leaderboard__row--mine');
     html += `<div class="${cls.join(' ')}">
       <span class="leaderboard__rank">${i + 1}</span>
       <span class="leaderboard__name">${escapeHtml(e.name)}</span>
@@ -10566,14 +10629,38 @@ function renderLB() {
   c.innerHTML = html;
 }
 
+// Ranking global: pinta lo que haya (caché o local) y actualiza al llegar el servidor
+async function showLeaderboard(opts = {}) {
+  renderLB(lbCache || loadLB(), { ...opts, loading: !lbCache });
+  const top = await fetchTop();
+  if (top) renderLB(top, opts); else if (!lbCache) renderLB(loadLB(), { ...opts, offline: true });
+}
+
+// Formulario de fin de partida: nombre obligatorio, correo opcional, recordados
+function prefillScoreForm() {
+  const p = loadPlayer();
+  const nameEl = document.getElementById('player-name'), emailEl = document.getElementById('player-email');
+  if (p.name && !nameEl.value) nameEl.value = p.name;
+  if (p.email && !emailEl.value) emailEl.value = p.email;
+  document.getElementById('score-form-error').hidden = true;
+  const btn = document.getElementById('btn-save');
+  btn.disabled = false; btn.textContent = t('gameover.save');
+  validateScoreForm();
+}
+function validateScoreForm() {
+  const ok = document.getElementById('player-name').value.trim().length > 0;
+  document.getElementById('btn-save').disabled = !ok;
+  return ok;
+}
+document.getElementById('player-name').addEventListener('input', () => { validateScoreForm(); document.getElementById('score-form-error').hidden = true; });
+
 function escapeHtml(s) {
   return String(s).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 const BAD_WORDS = ['puta','puto','mierda','coño','cabron','cabrón','fuck','shit','bitch','nazi'];
 function sanitizeName(name) {
-  let clean = name.trim();
-  if (!clean) return t('lb.anon');
+  const clean = name.trim();
   const lower = clean.toLowerCase();
   for (const w of BAD_WORDS) if (lower.includes(w)) return t('lb.anon');
   return clean;
@@ -10593,7 +10680,7 @@ document.getElementById('btn-quit').addEventListener('click', quitToMenu);
 QualityOverride.init();
 
 document.getElementById('btn-leaderboard').addEventListener('click', () => {
-  renderLB();
+  showLeaderboard();
   showOverlay(leaderboardOverlay);
   backBtn.classList.remove('hidden');
 });
@@ -10607,14 +10694,22 @@ document.getElementById('btn-lb-back').addEventListener('click', () => {
 
 document.getElementById('btn-lb-play').addEventListener('click', startGame);
 
-document.getElementById('btn-save').addEventListener('click', () => {
-  const n = sanitizeName(document.getElementById('player-name').value);
-  const em = document.getElementById('player-email').value.trim();
-  addLB(n, em, STATE.score, STATE.coins, STATE.patients);
-  document.getElementById('player-name').value = '';
-  document.getElementById('player-email').value = '';
-  renderLB();
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const errEl = document.getElementById('score-form-error'), btn = document.getElementById('btn-save');
+  const rawName = document.getElementById('player-name').value, em = document.getElementById('player-email').value.trim();
+  if (!rawName.trim()) { errEl.textContent = t('gameover.name_required'); errEl.hidden = false; return; }
+  if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { errEl.textContent = t('gameover.email_invalid'); errEl.hidden = false; return; }
+  const n = sanitizeName(rawName);
+  savePlayer({ name: rawName.trim().slice(0, 16), email: em.slice(0, 80) });  // recordar para la próxima partida
+  const entry = { name: n, email: em, score: STATE.score, coins: STATE.coins, patients: STATE.patients, distance: Math.round(STATE.distance || 0), device: deviceId(), lang: I18N.lang, ts: Date.now() };
+  btn.disabled = true; btn.textContent = t('gameover.saving');
+  const res = await submitScore(entry);
+  btn.disabled = false; btn.textContent = t('gameover.save');
+  addLocalLB(entry);
+  STATE.lastSaved = res && res.ok ? { ...entry, id: res.id } : entry;
   showOverlay(leaderboardOverlay);
+  if (res && res.ok) { lbCache = res.top; renderLB(res.top, { rank: res.rank, total: res.total }); }
+  else renderLB(loadLB(), { offline: true });
 });
 
 document.getElementById('btn-menu').addEventListener('click', () => {

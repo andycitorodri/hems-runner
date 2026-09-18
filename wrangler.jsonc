@@ -11,7 +11,14 @@
   "routes": [
     { "pattern": "hems.jornadaimpacte.com", "custom_domain": true }
   ],
+  // Ranking en servidor: worker/index.js atiende /api/* y /admin; el resto son assets.
+  "main": "worker/index.js",
   "assets": {
-    "directory": "./"
-  }
+    "directory": "./",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "hems-leaderboard", "database_id": "60648bad-da4b-4c23-b71d-215aef5de7f9" }
+  ]
+  // Secreto ADMIN_TOKEN (panel /admin?token=...): `npx wrangler secret put ADMIN_TOKEN`
 }

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hems-runner",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1"],
+      "port": 8765
+    },
+    {
+      "name": "hems-worker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler@4", "dev", "--port", "8787", "--var", "ADMIN_TOKEN:devtoken"],
+      "port": 8787
+    }
+  ]
+}
