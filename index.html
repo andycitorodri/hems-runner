@@ -10856,7 +10856,8 @@ function warmUpRenderer() {
   const t0 = performance.now();
   const progs0 = renderer.info.programs.length;
   const group = new THREE.Group();
-  const add = (fn, label) => { try { group.add(fn()); } catch (e) { console.warn('[warmup]', label, e); } };
+  // Las factorías instanciadas (cono, valla, patinete…) devuelven null: se saltan sin ruido
+  const add = (fn, label) => { try { const o = fn(); if (o) group.add(o); } catch (e) { console.warn('[warmup]', label, e); } };
   for (const key of [...Assets.CAR_KEYS, ...Assets.TRUCK_KEYS]) add(() => Assets.clone(key), key);
   add(makeBarrier, 'barrier'); add(makeScooter, 'scooter'); add(makeCone, 'cone');
   add(makePatient, 'patient'); add(makeSurpriseBox, 'surprise'); add(() => makeLetter('A'), 'letter');
