@@ -281,6 +281,17 @@ Antes el "rànquing global" era `localStorage`: cada dispositivo veía solo sus 
 - **Runbook**: `docs/DEPLOY_RUNBOOK.md` · Caso 9 (admin, token, borrar partidas, dev local).
 - Pendiente/ideas: aviso de privacidad más formal si Legal lo pide; bloquear puntuaciones absurdas por tiempo de partida (la API guarda `distance` y `ts`, se puede filtrar en el admin).
 
+## Sonido (18 septiembre 2026, `2bfd1f6`)
+
+Muestras reales, nada sintetizado (el usuario lo pidió expresamente: "que se oiga profesional"). Fuentes en `assets/audio/License.txt`.
+
+- **Efectos** (`assets/audio/sfx`, 21 MP3 mono 96 kbps, 228 KB): Kenney Interface/Digital/Impact Sounds y Music Jingles (CC0) + sirena de Freesound (trp, CC0, recortada a 4,5 s). Decodificados con Web Audio al primer gesto (`Sound.ensure()` en `startGame`), variantes al azar y ±4 % de tono (`SOUND_FILES`, `SOUND_GAIN` en index.html). Ganchos: moneda, paciente, letra, salto y aterrizaje, power-up, caja sorpresa, hito (`changeScenario`), récord personal, choque (metal + cristal + jingle a 0,6 s), revive (+ sirena), clic/atrás. Sirena breve al empezar cada partida.
+- **Música** (`assets/audio/music`, 3 MP3 estéreo 112 kbps ~3 MB cada uno, normalizados a −16 LUFS): Kevin MacLeod CC-BY — Pixelland, Cipher, Rhinoceros. `<audio loop>`; solo se descarga la pista elegida, al pulsar Jugar. Selector en el menú (`[data-music]`, suena al elegir para comparar; "Sin música"), atenuación en el game over (`musicDuck`). Recordado en `hems_runner_music` (por defecto Pixelland — **pendiente que el usuario elija la definitiva**).
+- **Silencio**: botón 🔊/🔇 en el HUD (junto a pausa, `.pause-btn.visible + .sound-btn`) y en el menú; `hems_runner_sound`. En iOS el interruptor físico de silencio también apaga el Web Audio.
+- Créditos del menú: música (Kevin MacLeod) y sonidos (Kenney, trp) añadidos a `renderCredits()`.
+- `Sound.debug()` en consola: estado del contexto, muestras cargadas, pista.
+- Nota dev: `wrangler dev` se quedaba colgado recargando al añadir los 26 ficheros de audio; para probar el frontend basta el servidor python (`hems-runner` en launch.json); las llamadas a `/api/*` dan 501 y el juego cae al modo local.
+
 ## Idiomas (15 septiembre 2026)
 
 **Català por defecto, castellano seleccionable** (commit `b380617`). Selector `CAT · ESP` en la cabecera del menú; la elección se guarda en `localStorage` (`hems_runner_lang`).
