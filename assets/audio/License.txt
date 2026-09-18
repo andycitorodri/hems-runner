@@ -1,0 +1,17 @@
+Audio de HEMS Runner
+
+sfx/ — Kenney (https://kenney.nl), licencia CC0 (dominio público):
+  coin1-3 = Interface Sounds glass_001-003 · patient = confirmation_002 · letter1-2 = pluck_001-002
+  click = click_001 · back = back_001 · powerup = Digital Audio powerUp5 · surprise = powerUp8
+  jump = phaseJump2 · land1-2 = Impact Sounds impactSoft_medium_000/001
+  crash1-2 = impactMetal_heavy_000/003 · crash_glass = impactGlass_heavy_001
+  milestone = Music Jingles jingles_STEEL07 · record = jingles_STEEL01 · gameover = jingles_SAX07 · revive = jingles_PIZZI07
+  Convertidos a MP3 mono 96 kbps.
+
+sfx/siren.mp3 — "220331 siren ambulence short distant pass stops city" by trp, Freesound #717560, CC0.
+  Recortado a 4,5 s con fundido.
+
+music/ — Kevin MacLeod (https://incompetech.com), licencia CC BY 4.0
+  (https://creativecommons.org/licenses/by/4.0/). Atribución en los créditos del menú.
+  pixelland.mp3 = "Pixelland" · cipher.mp3 = "Cipher" · rhinoceros.mp3 = "Rhinoceros"
+  Normalizados a −16 LUFS, MP3 112 kbps.

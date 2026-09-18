@@ -1121,6 +1121,9 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
   .pause-btn.visible { display: flex; }
+  .sound-btn { right: 68px; font-size: 15px; }
+  .pause-btn.visible + .sound-btn { display: flex; }  /* sigue al botón de pausa */
+  .music-switch { margin-top: -6px; flex-wrap: wrap; }
   .pause-btn:hover, .pause-btn:active {
     background: var(--amber);
     color: var(--black);
@@ -2064,6 +2067,7 @@
 
   <!-- Botón pausa -->
   <button id="pause-btn" class="pause-btn" aria-label="Pausar">⏸</button>
+  <button id="sound-btn" class="pause-btn sound-btn" data-sound-toggle aria-label="Sonido">🔊</button>
 
   <!-- Overlay de pausa -->
   <!-- Tutorial de la primera partida -->
@@ -2321,6 +2325,15 @@
       <button class="lang-switch__btn" data-lang="ca">CAT</button>
       <span class="lang-switch__sep">·</span>
       <button class="lang-switch__btn" data-lang="es">ESP</button>
+      <span class="lang-switch__sep">·</span>
+      <button class="lang-switch__btn" data-sound-toggle aria-label="Sonido">🔊</button>
+    </div>
+    <div class="lang-switch music-switch" id="music-switch" aria-label="Música">
+      <span class="lang-switch__sep" data-i18n="menu.music">Música</span>
+      <button class="lang-switch__btn" data-music="pixelland">Pixelland</button>
+      <button class="lang-switch__btn" data-music="cipher">Cipher</button>
+      <button class="lang-switch__btn" data-music="rhinoceros">Rhinoceros</button>
+      <button class="lang-switch__btn" data-music="off" data-i18n="menu.music_off">Sin música</button>
     </div>
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
@@ -2534,6 +2547,8 @@ const I18N_STRINGS = {
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
     'credit.hotelw': 'Hotel W',
+    'credit.music': 'Música',
+    'credit.sfx': 'Sonidos',
     'credit.beach': 'Playa (sombrillas, toallas)',
     'credit.lifeguard': 'Torre de socorrista',
     'credit.sailboat': 'Velero',
@@ -2633,6 +2648,8 @@ const I18N_STRINGS = {
     'menu.start': 'Empezar misión',
     'menu.ranking': 'Ranking',
     'menu.sponsors': 'Con el apoyo de',
+    'menu.music': 'Música',
+    'menu.music_off': 'Sin música',
     'menu.day': 'día',
     'menu.days': 'días',
 
@@ -2868,6 +2885,8 @@ const I18N_STRINGS = {
     'credit.arc': 'Arc de Triomf',
     'credit.xemeneies': 'Tres Xemeneies',
     'credit.hotelw': 'Hotel W',
+    'credit.music': 'Música',
+    'credit.sfx': 'Sons',
     'credit.beach': 'Platja (para-sols, tovalloles)',
     'credit.lifeguard': 'Torre de socorrista',
     'credit.sailboat': 'Veler',
@@ -2961,6 +2980,8 @@ const I18N_STRINGS = {
     'menu.start': 'Començar missió',
     'menu.ranking': 'Rànquing',
     'menu.sponsors': 'Amb el suport de',
+    'menu.music': 'Música',
+    'menu.music_off': 'Sense música',
     'menu.day': 'dia',
     'menu.days': 'dies',
 
@@ -7555,6 +7576,7 @@ function populateEnvironment() {
 }
 
 function changeScenario() {
+  Sound.play('milestone');
   // Cambiar colores
   STATE.scenarioIndex++;
   const sc = SCENARIOS[STATE.scenarioIndex % SCENARIOS.length];
@@ -8008,6 +8030,7 @@ function handleInput() {
   if (INPUT.leftOnce && player.targetLane > 0) player.targetLane--;
   if (INPUT.rightOnce && player.targetLane < 2) player.targetLane++;
   if (INPUT.jumpOnce && !player.jumping) {
+    Sound.play('jump');
     player.jumping = true;
     player.vy = 13;
   }
@@ -8234,6 +8257,7 @@ function collectItem(it) {
   const worldPos = { x: it.mesh.position.x, y: it.mesh.position.y, z: it.mesh.position.z };
 
   if (it.kind === 'coin') {
+    Sound.play('coin');
     STATE.coins++;
     addScore(10);
     STATE.combo++;
@@ -8262,6 +8286,7 @@ function collectItem(it) {
     if (STATE.jetpack) bumpHemsCounter(10 * 3, worldPos);  // x3 en HEMS
   }
   else if (it.kind === 'patient') {
+    Sound.play('patient');
     STATE.patients++;
     const earned = addScore(100);
     showToast(t('toast.patient'), '+' + earned, 0xe63946);
@@ -8274,6 +8299,7 @@ function collectItem(it) {
     if (STATE.jetpack) bumpHemsCounter(200, worldPos);  // bonus por powerup atraído
   }
   else if (it.kind === 'letter') {
+    Sound.play('letter');
     const char = it.char;
     const collected = collectLetter(char);
     if (collected) {
@@ -8336,6 +8362,7 @@ function openSurpriseBox(position) {
 // Aplica un efecto de caja sorpresa (usado por openSurpriseBox y por triggerDebugEffect).
 // Fuente única de verdad para los 6 efectos — si lo cambias aquí, se refleja en ambos sitios.
 function applySurpriseBoxEffect(effect, position) {
+  Sound.play('surprise');
   // Si no hay posición (modo debug sin caja), usar delante del jugador
   if (!position) {
     position = {
@@ -8435,6 +8462,7 @@ function applySurpriseBoxEffect(effect, position) {
 }
 
 function activatePowerup(kind, position) {
+  Sound.play('powerup');
   if (kind === 'magnet') {
     STATE.magnet = true;
     STATE.magnetTimer = 600;
@@ -9334,6 +9362,8 @@ function resumeGame() {
 }
 
 function quitToMenu() {
+  Sound.play('back');
+  Sound.musicDuck(false);
   STATE.paused = false;
   STATE.running = false;
   STATE.mode = 'menu';
@@ -9353,6 +9383,9 @@ function quitToMenu() {
 
 function triggerGameOver(kind) {
   Analytics.end();
+  Sound.play('crash'); Sound.play('crash_glass', { delay: 0.05 });
+  Sound.play('gameover', { delay: 0.6 });
+  Sound.musicDuck(true);
   STATE.mode = 'gameover';
   STATE.running = false;
   hidePowerupUI();
@@ -9373,6 +9406,7 @@ function triggerGameOver(kind) {
   let recordMsg = '';
   if (STATE.score > personalBest && STATE.score > 100) {
     localStorage.setItem('hems_runner_pb', STATE.score);
+    Sound.play('record', { delay: 1.4 });
     recordMsg = t('gameover.record');
   }
   if (recordMsg) {
@@ -9455,6 +9489,9 @@ function startReviveCountdown() {
 }
 
 function doRevive() {
+  Sound.play('revive');
+  Sound.play('siren', { delay: 0.4 });
+  Sound.musicDuck(false);
   if (reviveInterval) { clearInterval(reviveInterval); reviveInterval = null; }
   STATE.revivesUsed++;
   STATE.runStats.usedRevive = true;
@@ -10078,6 +10115,7 @@ function update(dt) {
     if (player.jumpY <= 0) {
       player.jumpY = 0;
       player.vy = 0;
+      Sound.play('land');
       player.jumping = false;
     }
   } else if (player.jumpY > 0) {
@@ -10462,6 +10500,11 @@ const Tutorial = (() => {
 
 function startGame() {
   Analytics.play();
+  Sound.ensure();  // primer gesto del usuario: crear el contexto de audio
+  Sound.play('click');
+  Sound.play('siren', { delay: 0.3 });
+  Sound.musicStart();
+  Sound.musicDuck(false);
   // Limpiar
   for (const o of activeObstacles) { scene.remove(o.mesh); disposeObj(o.mesh); }
   activeObstacles.length = 0;
@@ -10580,6 +10623,95 @@ function startGame() {
 
   Tutorial.maybeShow();  // solo la primera partida
 }
+
+/* ================================================================
+   SONIDO — muestras reales (assets/audio, ver License.txt): efectos
+   Kenney (CC0) por Web Audio (decodificados en memoria, sin latencia) y
+   música de Kevin MacLeod (CC-BY) por <audio> en bucle, cargada solo
+   cuando se elige. El contexto de audio se crea en el primer gesto
+   (requisito de los móviles). Botón de silencio (HUD y menú) y selector
+   de música en el menú, ambos recordados en localStorage.
+   ================================================================ */
+const SOUND_FILES = {
+  coin: ['coin1', 'coin2', 'coin3'], patient: ['patient'], letter: ['letter1', 'letter2'],
+  powerup: ['powerup'], surprise: ['surprise'], jump: ['jump'], land: ['land1', 'land2'],
+  crash: ['crash1', 'crash2'], crash_glass: ['crash_glass'],
+  milestone: ['milestone'], record: ['record'], gameover: ['gameover'], revive: ['revive'],
+  click: ['click'], back: ['back'], siren: ['siren'],
+};
+const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45 };
+const MUSIC_TRACKS = [
+  { id: 'pixelland', name: 'Pixelland' }, { id: 'cipher', name: 'Cipher' }, { id: 'rhinoceros', name: 'Rhinoceros' },
+];
+const Sound = (() => {
+  const KEY = 'hems_runner_sound', MKEY = 'hems_runner_music';
+  let ctx = null, master = null, muted = false, buffers = {}, loading = false;
+  let musicId = 'pixelland', musicEl = null, musicWanted = false;
+  try { muted = localStorage.getItem(KEY) === 'off'; const m = localStorage.getItem(MKEY); if (m) musicId = m; } catch {}
+
+  function ensure() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return true; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(ctx.destination);
+    loadAll();
+    return true;
+  }
+  // Carga y decodifica todas las muestras (228 KB en total) en paralelo
+  function loadAll() {
+    if (loading) return; loading = true;
+    for (const [name, files] of Object.entries(SOUND_FILES)) {
+      files.forEach((file, i) => {
+        fetch(`assets/audio/sfx/${file}.mp3`).then(r => r.arrayBuffer()).then(ab => ctx.decodeAudioData(ab)).then(buf => { (buffers[name] = buffers[name] || [])[i] = buf; }).catch(e => console.warn('[sound]', file, e));
+      });
+    }
+  }
+  // Reproduce una variante al azar del efecto, con ligera variación de tono
+  function play(name, { gain = 1, rate = 1, delay = 0 } = {}) {
+    if (!ensure() || muted) return;
+    const list = (buffers[name] || []).filter(Boolean);
+    if (!list.length) return;
+    const src = ctx.createBufferSource(); src.buffer = list[Math.floor(Math.random() * list.length)];
+    src.playbackRate.value = rate * (0.96 + Math.random() * 0.08);
+    const g = ctx.createGain(); g.gain.value = (SOUND_GAIN[name] ?? 0.6) * gain;
+    src.connect(g); g.connect(master); src.start(ctx.currentTime + delay);
+  }
+
+  // ---- música (elemento <audio>, en bucle; se carga al elegirla) ----
+  function musicSrc() { return `assets/audio/music/${musicId}.mp3`; }
+  function musicStart() {
+    musicWanted = true;
+    if (musicId === 'off' || muted) return;
+    if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; musicEl.preload = 'auto'; musicEl.volume = 0.35; }
+    if (!musicEl.src.endsWith(musicSrc())) { musicEl.src = musicSrc(); musicEl.load(); }
+    musicEl.play().catch(() => {});
+  }
+  function musicDuck(on) { if (musicEl) musicEl.volume = on ? 0.16 : 0.35; }
+  function musicStop() { musicWanted = false; if (musicEl) { musicEl.pause(); } }
+  function setMusic(id) {
+    musicId = id;
+    try { localStorage.setItem(MKEY, id); } catch {}
+    document.querySelectorAll('[data-music]').forEach(b => b.classList.toggle('active', b.dataset.music === id));
+    if (id === 'off') { if (musicEl) musicEl.pause(); return; }
+    if (musicEl) { musicEl.pause(); musicEl.src = musicSrc(); musicEl.load(); }
+    if (musicWanted) musicStart();
+  }
+
+  function setMuted(m) {
+    muted = m;
+    try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch {}
+    if (master) master.gain.setTargetAtTime(m ? 0 : 0.8, ctx.currentTime, 0.05);
+    if (m && musicEl) musicEl.pause(); else if (!m && musicWanted) musicStart();
+    document.querySelectorAll('[data-sound-toggle]').forEach(b => { b.textContent = m ? '🔇' : '🔊'; b.setAttribute('aria-pressed', String(m)); });
+  }
+  function toggle() { ensure(); setMuted(!muted); if (!muted) play('click'); }
+  document.addEventListener('visibilitychange', () => { if (document.hidden && musicEl) musicEl.pause(); else if (!document.hidden && musicWanted && !muted && musicId !== 'off' && musicEl) musicEl.play().catch(() => {}); });
+  function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, ready: musicEl.readyState } : null, muted, musicId }; }
+  return { play, ensure, toggle, setMuted, setMusic, musicStart, musicStop, musicDuck, debug, get muted() { return muted; }, get musicId() { return musicId; } };
+})();
+Sound.setMuted(Sound.muted);   // pinta los botones con el estado guardado
+Sound.setMusic(Sound.musicId);
 
 /* ================================================================
    ANALÍTICA mínima (sin cookies ni terceros): open / play / end → /api/hit.
@@ -10715,6 +10847,9 @@ function sanitizeName(name) {
    EVENT LISTENERS
    ================================================================ */
 document.getElementById('btn-play').addEventListener('click', startGame);
+document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); Sound.toggle(); }));
+// Selector de música: al elegir en el menú suena ya (es un gesto del usuario), para poder comparar
+document.querySelectorAll('[data-music]').forEach(b => b.addEventListener('click', () => { Sound.ensure(); Sound.setMusic(b.dataset.music); if (b.dataset.music !== 'off') Sound.musicStart(); }));
 document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-revive').addEventListener('click', doRevive);
 
@@ -10813,7 +10948,7 @@ function renderCredits() {
     const a = document.createElement('a');
     a.href = c.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = c.author;
     return `${c.what.join(', ')}: ${a.outerHTML} · ${c.license}`;
-  }).join('<br>');
+  }).join('<br>') + `<br>${t('credit.music')}: <a href="https://incompetech.com" target="_blank" rel="noopener">Kevin MacLeod</a> · CC-BY 4.0<br>${t('credit.sfx')}: <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> · CC0 · <a href="https://freesound.org/people/trp/sounds/717560/" target="_blank" rel="noopener">trp</a> · CC0`;
 }
 I18N.onChange(renderCredits);
 renderCredits();
