@@ -183,6 +183,18 @@ Cloudflare creó el registro DNS y el certificado solos en el `wrangler deploy`.
 
 ---
 
+## Caso 9: Ranking en servidor (desde el 18 de septiembre de 2026)
+
+El ranking ya no vive en el navegador de cada jugador: lo guarda el Worker en una base de datos **Cloudflare D1** (`hems-leaderboard`, gratis). Código en `worker/index.js`; esquema en `worker/schema.sql`.
+
+- **Ver el ranking con correos (admin)**: `https://hems.jornadaimpacte.com/admin?token=TU_TOKEN`. Muestra la mejor partida por persona (top 5 en naranja), las últimas 50 partidas, botón "Borrar" por partida (nombres ofensivos) y **"Descargar todo en CSV"** (abre en Excel/Numbers, con correos).
+- **El token** está guardado como secreto del Worker (`ADMIN_TOKEN`). No está en el repo ni en los docs. Si lo pierdes o quieres cambiarlo: `npx wrangler@4 secret put ADMIN_TOKEN` (te pide el valor nuevo) y listo.
+- **Sin token** (`/admin` a secas) responde "Acceso denegado". El top público (`/api/top`) nunca incluye correos.
+- **Borrar todas las partidas** (p. ej. antes de la jornada, para empezar de cero): `npx wrangler@4 d1 execute hems-leaderboard --remote --command "DELETE FROM scores"`.
+- **Consultas sueltas**: `npx wrangler@4 d1 execute hems-leaderboard --remote --command "SELECT name, email, score FROM scores ORDER BY score DESC LIMIT 20"`.
+- **Deploy**: igual que siempre (`npx wrangler@4 deploy`); sube el Worker y los assets a la vez. Para probar en local con base de datos local: `npx wrangler@4 dev --port 8787 --var ADMIN_TOKEN:devtoken` (la primera vez: `npx wrangler@4 d1 execute hems-leaderboard --local --file worker/schema.sql`).
+- **Si el servidor falla** (sin conexión, Worker caído), el juego guarda la partida solo en el dispositivo y lo avisa en el rànquing; no se pierde la jugabilidad.
+
 ## Estructura mental: ¿Qué hago si X?
 
 | Problema | Acción inmediata |

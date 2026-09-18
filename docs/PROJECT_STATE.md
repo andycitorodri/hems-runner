@@ -270,6 +270,15 @@ Tras integrar el tráfico el usuario notó micro-tirones. Medido con un probe de
 
 ---
 
+## Ranking en servidor (18 septiembre 2026, `c2cbe52`)
+
+Antes el "rànquing global" era `localStorage`: cada dispositivo veía solo sus partidas. Ahora:
+
+- **Backend**: `worker/index.js` (Cloudflare Worker, `main` en `wrangler.jsonc`; los assets siguen sirviéndose vía binding `ASSETS`) + **D1** `hems-leaderboard` (tabla `scores`: name, email, score, coins, patients, distance, device, lang, ua, ip, ts). `POST /api/score` valida (nombre 1-16 sin `<>`, correo opcional con formato, topes numéricos) y devuelve `{id, rank, total, top}`; `GET /api/top?n=` devuelve la mejor partida por jugador (`device` + nombre en minúsculas) sin correos; `/admin?token=` (secreto `ADMIN_TOKEN`) lista mejor partida por persona (por correo si lo dejó, si no por device+nombre), últimas 50, borrar y CSV. Sin anti-trampas más allá de topes: el juego es cliente puro.
+- **Juego**: nombre **obligatorio** (botón desactivado hasta escribirlo; mensaje si se intenta), correo **opcional** con explicación (solo para el top 5, inscripciones gratuitas); nombre y correo se guardan en `hems_runner_player` y se rellenan solos en la siguiente partida (`prefillScoreForm()` al mostrar el game over). `deviceId()` aleatorio por navegador. Tras guardar: "La teva posició: #n de N" + top 10 del servidor; si falla la red, copia local (`hems_runner_v4_lb`) y aviso.
+- **Runbook**: `docs/DEPLOY_RUNBOOK.md` · Caso 9 (admin, token, borrar partidas, dev local).
+- Pendiente/ideas: aviso de privacidad más formal si Legal lo pide; bloquear puntuaciones absurdas por tiempo de partida (la API guarda `distance` y `ts`, se puede filtrar en el admin).
+
 ## Idiomas (15 septiembre 2026)
 
 **Català por defecto, castellano seleccionable** (commit `b380617`). Selector `CAT · ESP` en la cabecera del menú; la elección se guarda en `localStorage` (`hems_runner_lang`).
