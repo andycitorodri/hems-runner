@@ -1123,7 +1123,6 @@
   .pause-btn.visible { display: flex; }
   .sound-btn { right: 68px; font-size: 15px; }
   .pause-btn.visible + .sound-btn { display: flex; }  /* sigue al botón de pausa */
-  .music-switch { margin-top: -6px; flex-wrap: wrap; }
   .pause-btn:hover, .pause-btn:active {
     background: var(--amber);
     color: var(--black);
@@ -2328,13 +2327,7 @@
       <span class="lang-switch__sep">·</span>
       <button class="lang-switch__btn" data-sound-toggle aria-label="Sonido">🔊</button>
     </div>
-    <div class="lang-switch music-switch" id="music-switch" aria-label="Música">
-      <span class="lang-switch__sep" data-i18n="menu.music">Música</span>
-      <button class="lang-switch__btn" data-music="pixelland">Pixelland</button>
-      <button class="lang-switch__btn" data-music="cipher">Cipher</button>
-      <button class="lang-switch__btn" data-music="rhinoceros">Rhinoceros</button>
-      <button class="lang-switch__btn" data-music="off" data-i18n="menu.music_off">Sin música</button>
-    </div>
+
     <div class="overlay__eyebrow">
       <span class="overlay__eyebrow-line"></span>
       <span class="overlay__eyebrow-text" data-i18n="menu.eyebrow">I Jornada IMPACTE · 2026</span>
@@ -2648,8 +2641,6 @@ const I18N_STRINGS = {
     'menu.start': 'Empezar misión',
     'menu.ranking': 'Ranking',
     'menu.sponsors': 'Con el apoyo de',
-    'menu.music': 'Música',
-    'menu.music_off': 'Sin música',
     'menu.day': 'día',
     'menu.days': 'días',
 
@@ -2980,8 +2971,6 @@ const I18N_STRINGS = {
     'menu.start': 'Començar missió',
     'menu.ranking': 'Rànquing',
     'menu.sponsors': 'Amb el suport de',
-    'menu.music': 'Música',
-    'menu.music_off': 'Sense música',
     'menu.day': 'dia',
     'menu.days': 'dies',
 
@@ -8287,6 +8276,7 @@ function collectItem(it) {
   }
   else if (it.kind === 'patient') {
     Sound.play('patient');
+    Sound.play('siren', { delay: 0.15 });
     STATE.patients++;
     const earned = addScore(100);
     showToast(t('toast.patient'), '+' + earned, 0xe63946);
@@ -9317,6 +9307,7 @@ const resumeCountdownNumber = document.getElementById('resume-countdown-number')
 let resumeInterval = null;
 
 function pauseGame() {
+  Sound.loops({ heli: false, power: false });
   if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
   STATE.paused = true;
   STATE.running = false;
@@ -9363,6 +9354,7 @@ function resumeGame() {
 
 function quitToMenu() {
   Sound.play('back');
+  Sound.loops({ heli: false, power: false });
   Sound.musicDuck(false);
   STATE.paused = false;
   STATE.running = false;
@@ -9386,6 +9378,7 @@ function triggerGameOver(kind) {
   Sound.play('crash'); Sound.play('crash_glass', { delay: 0.05 });
   Sound.play('gameover', { delay: 0.6 });
   Sound.musicDuck(true);
+  Sound.loops({ heli: false, power: false });
   STATE.mode = 'gameover';
   STATE.running = false;
   hidePowerupUI();
@@ -10073,6 +10066,10 @@ function animate() {
   Ambience.update();
   Landmark.update(dt);
   Gulls.update(dt);
+  Sound.loops({
+    heli: !!STATE.jetpack,
+    power: !STATE.jetpack && !!(STATE.fever || STATE.rayo || STATE.vortex || STATE.sva || STATE.mastery || STATE.codigoRojo || STATE.magnet || STATE.x2Timer > 0),
+  });
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
@@ -10638,16 +10635,15 @@ const SOUND_FILES = {
   crash: ['crash1', 'crash2'], crash_glass: ['crash_glass'],
   milestone: ['milestone'], record: ['record'], gameover: ['gameover'], revive: ['revive'],
   click: ['click'], back: ['back'], siren: ['siren'],
+  heli: ['heli'], power: ['power'],  // bucles
 };
-const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45 };
-const MUSIC_TRACKS = [
-  { id: 'pixelland', name: 'Pixelland' }, { id: 'cipher', name: 'Cipher' }, { id: 'rhinoceros', name: 'Rhinoceros' },
-];
+const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.22, power: 0.14 };
 const Sound = (() => {
-  const KEY = 'hems_runner_sound', MKEY = 'hems_runner_music';
+  const KEY = 'hems_runner_sound';
   let ctx = null, master = null, muted = false, buffers = {}, loading = false;
-  let musicId = 'pixelland', musicEl = null, musicWanted = false;
-  try { muted = localStorage.getItem(KEY) === 'off'; const m = localStorage.getItem(MKEY); if (m) musicId = m; } catch {}
+  const musicId = 'pixelland';  // única pista (Kevin MacLeod, "Pixelland")
+  let musicEl = null, musicWanted = false;
+  try { muted = localStorage.getItem(KEY) === 'off'; } catch {}
 
   function ensure() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return true; }
@@ -10678,25 +10674,38 @@ const Sound = (() => {
     src.connect(g); g.connect(master); src.start(ctx.currentTime + delay);
   }
 
+  // ---- bucles mientras dura un poder: rotor del helicóptero (modo HEMS) y
+  // campo de fuerza (resto de poderes). Se enciende/apaga desde el bucle del
+  // juego según el estado (Sound.loops({heli, power})), con fundido.
+  const active = {};
+  function loopStart(name) {
+    if (active[name] || !ensure() || muted) return;
+    const list = (buffers[name] || []).filter(Boolean); if (!list.length) return;
+    const src = ctx.createBufferSource(); src.buffer = list[0]; src.loop = true;
+    src.loopStart = 0.06; src.loopEnd = list[0].duration - 0.06;  // recorta el silencio de cabecera del MP3
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(SOUND_GAIN[name] ?? 0.3, ctx.currentTime + 0.4);
+    src.connect(g); g.connect(master); src.start();
+    active[name] = { src, g };
+  }
+  function loopStop(name) {
+    const a = active[name]; if (!a) return; delete active[name];
+    a.g.gain.cancelScheduledValues(ctx.currentTime); a.g.gain.setValueAtTime(a.g.gain.value, ctx.currentTime); a.g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+    setTimeout(() => { try { a.src.stop(); } catch {} }, 500);
+  }
+  function loops(want) { for (const name in want) (want[name] ? loopStart : loopStop)(name); }
+  function stopAllLoops() { for (const name in active) loopStop(name); }
+
   // ---- música (elemento <audio>, en bucle; se carga al elegirla) ----
   function musicSrc() { return `assets/audio/music/${musicId}.mp3`; }
   function musicStart() {
     musicWanted = true;
-    if (musicId === 'off' || muted) return;
+    if (muted) return;
     if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; musicEl.preload = 'auto'; musicEl.volume = 0.35; }
     if (!musicEl.src.endsWith(musicSrc())) { musicEl.src = musicSrc(); musicEl.load(); }
     musicEl.play().catch(() => {});
   }
   function musicDuck(on) { if (musicEl) musicEl.volume = on ? 0.16 : 0.35; }
   function musicStop() { musicWanted = false; if (musicEl) { musicEl.pause(); } }
-  function setMusic(id) {
-    musicId = id;
-    try { localStorage.setItem(MKEY, id); } catch {}
-    document.querySelectorAll('[data-music]').forEach(b => b.classList.toggle('active', b.dataset.music === id));
-    if (id === 'off') { if (musicEl) musicEl.pause(); return; }
-    if (musicEl) { musicEl.pause(); musicEl.src = musicSrc(); musicEl.load(); }
-    if (musicWanted) musicStart();
-  }
 
   function setMuted(m) {
     muted = m;
@@ -10706,12 +10715,11 @@ const Sound = (() => {
     document.querySelectorAll('[data-sound-toggle]').forEach(b => { b.textContent = m ? '🔇' : '🔊'; b.setAttribute('aria-pressed', String(m)); });
   }
   function toggle() { ensure(); setMuted(!muted); if (!muted) play('click'); }
-  document.addEventListener('visibilitychange', () => { if (document.hidden && musicEl) musicEl.pause(); else if (!document.hidden && musicWanted && !muted && musicId !== 'off' && musicEl) musicEl.play().catch(() => {}); });
-  function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, ready: musicEl.readyState } : null, muted, musicId }; }
-  return { play, ensure, toggle, setMuted, setMusic, musicStart, musicStop, musicDuck, debug, get muted() { return muted; }, get musicId() { return musicId; } };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (musicEl) musicEl.pause(); stopAllLoops(); } else if (musicWanted && !muted && musicEl) musicEl.play().catch(() => {}); });
+  function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, loops: Object.keys(active), music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, ready: musicEl.readyState } : null, muted }; }
+  return { play, ensure, toggle, setMuted, musicStart, musicStop, musicDuck, loops, debug, get muted() { return muted; } };
 })();
 Sound.setMuted(Sound.muted);   // pinta los botones con el estado guardado
-Sound.setMusic(Sound.musicId);
 
 /* ================================================================
    ANALÍTICA mínima (sin cookies ni terceros): open / play / end → /api/hit.
@@ -10848,8 +10856,6 @@ function sanitizeName(name) {
    ================================================================ */
 document.getElementById('btn-play').addEventListener('click', startGame);
 document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); Sound.toggle(); }));
-// Selector de música: al elegir en el menú suena ya (es un gesto del usuario), para poder comparar
-document.querySelectorAll('[data-music]').forEach(b => b.addEventListener('click', () => { Sound.ensure(); Sound.setMusic(b.dataset.music); if (b.dataset.music !== 'off') Sound.musicStart(); }));
 document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-revive').addEventListener('click', doRevive);
 
