@@ -4522,7 +4522,8 @@ const STATE = {
   paused: false,
   invincible: false,
   invincibleTimer: 0,
-  powerSoundAt: 0,  // momento (performance.now) a partir del cual suena el tema del poder
+  powerSoundAt: 0,   // momento (performance.now) a partir del cual suena el tema del poder (caja sorpresa)
+  surpriseUntil: 0,  // hasta cuándo, como mínimo, dura ese tema
   magnet: false,
   magnetTimer: 0,
   x2Score: false,
@@ -8353,8 +8354,12 @@ function openSurpriseBox(position) {
 // Aplica un efecto de caja sorpresa (usado por openSurpriseBox y por triggerDebugEffect).
 // Fuente única de verdad para los 6 efectos — si lo cambias aquí, se refleja en ambos sitios.
 function applySurpriseBoxEffect(effect, position) {
-  Sound.play('surprise');                       // "has cogido algo" (subida de 1,2 s)
-  STATE.powerSoundAt = performance.now() + 1000;  // …y al segundo entra el tema del poder
+  // Sonido: "has cogido algo" (subida de 1,2 s) y, al segundo, el tema del
+  // poder mientras dure: los efectos con estado (HEMS, SVA, rayo, vórtice)
+  // lo mantienen por su bandera; lluvia de monedas y pacientes, 8 s.
+  Sound.play('surprise');
+  STATE.powerSoundAt = performance.now() + 1000;
+  STATE.surpriseUntil = performance.now() + 9000;
   // Si no hay posición (modo debug sin caja), usar delante del jugador
   if (!position) {
     position = {
@@ -8455,7 +8460,6 @@ function applySurpriseBoxEffect(effect, position) {
 
 function activatePowerup(kind, position) {
   Sound.play('powerup');
-  STATE.powerSoundAt = performance.now() + 500;
   if (kind === 'magnet') {
     STATE.magnet = true;
     STATE.magnetTimer = 600;
@@ -10069,8 +10073,10 @@ function animate() {
   Ambience.update();
   Landmark.update(dt);
   Gulls.update(dt);
-  const powerOn = !!(STATE.jetpack || STATE.fever || STATE.rayo || STATE.vortex || STATE.sva || STATE.mastery || STATE.codigoRojo || STATE.magnet || STATE.x2Timer > 0);
-  Sound.loops({ heli: !!STATE.jetpack, powertheme: powerOn && performance.now() > STATE.powerSoundAt });
+  // Tema del poder: solo tras la caja sorpresa (regalo blanco), mientras dure su efecto
+  const nowMs = performance.now();
+  const surpriseOn = nowMs > STATE.powerSoundAt && STATE.powerSoundAt > 0 && (nowMs < STATE.surpriseUntil || STATE.jetpack || STATE.sva || STATE.rayo || STATE.vortex);
+  Sound.loops({ heli: !!STATE.jetpack, powertheme: surpriseOn });
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
@@ -10534,6 +10540,7 @@ function startGame() {
   STATE.vortex = false;
   STATE.rayo = false;
   STATE.invincibleTimer = 0;
+  STATE.powerSoundAt = 0; STATE.surpriseUntil = 0;
   STATE.magnetTimer = 0;
   STATE.x2Timer = 0;
   STATE.codigoRojoTimer = 0;

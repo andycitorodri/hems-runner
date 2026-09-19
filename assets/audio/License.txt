@@ -12,7 +12,7 @@ sfx/ — Kenney (https://kenney.nl), licencia CC0 (dominio público):
 sfx/siren.mp3 — "220331 siren ambulence short distant pass stops city" by trp, Freesound #717560, CC0.
   Recortado a 4,5 s con fundido.
 
-sfx/powertheme.mp3 — fragmento (0:15-0:45, ×1,12) de "Cipher" de Kevin MacLeod (CC BY 4.0), tema en bucle mientras dura un poder.
+sfx/powertheme.mp3 — fragmento (0:30-0:46, ×1,25) de "Pixelland" de Kevin MacLeod (CC BY 4.0), tema en bucle mientras dura el poder de la caja sorpresa.
 
 music/ — Kevin MacLeod (https://incompetech.com), licencia CC BY 4.0
   (https://creativecommons.org/licenses/by/4.0/). Atribución en los créditos del menú.
