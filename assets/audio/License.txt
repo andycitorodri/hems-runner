@@ -14,5 +14,5 @@ sfx/siren.mp3 — "220331 siren ambulence short distant pass stops city" by trp,
 
 music/ — Kevin MacLeod (https://incompetech.com), licencia CC BY 4.0
   (https://creativecommons.org/licenses/by/4.0/). Atribución en los créditos del menú.
-  pixelland.mp3 = "Pixelland"
+  pixelland.mp3 = "Pixelland" (partida) · wallpaper.mp3 = "Wallpaper" (menú, 96 kbps, −18 LUFS)
   Normalizados a −16 LUFS, MP3 112 kbps.

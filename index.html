@@ -9361,7 +9361,8 @@ function resumeGame() {
 
 function quitToMenu() {
   Sound.play('back');
-  Sound.musicStop();
+  STATE.powerSoundAt = 0; STATE.surpriseUntil = 0;
+  Sound.menuMusic();
   Sound.loops({ heli: false }); Sound.musicRate(1);
   Sound.musicDuck(false);
   STATE.paused = false;
@@ -9383,6 +9384,7 @@ function quitToMenu() {
 
 function triggerGameOver(kind) {
   Analytics.end();
+  STATE.powerSoundAt = 0; STATE.surpriseUntil = 0;
   Sound.play('crash'); Sound.play('crash_glass', { delay: 0.05 });
   Sound.play('gameover', { delay: 0.6 });
   Sound.musicDuck(true);
@@ -10076,7 +10078,7 @@ function animate() {
   Gulls.update(dt);
   // Tema del poder: solo tras la caja sorpresa (regalo blanco), mientras dure su efecto
   const nowMs = performance.now();
-  const surpriseOn = nowMs > STATE.powerSoundAt && STATE.powerSoundAt > 0 && (nowMs < STATE.surpriseUntil || STATE.jetpack || STATE.sva || STATE.rayo || STATE.vortex);
+  const surpriseOn = STATE.mode === 'playing' && STATE.running && nowMs > STATE.powerSoundAt && STATE.powerSoundAt > 0 && (nowMs < STATE.surpriseUntil || STATE.jetpack || STATE.sva || STATE.rayo || STATE.vortex);
   Sound.loops({ heli: !!STATE.jetpack });
   Sound.musicRate(surpriseOn ? 1.3 : 1);
   layoutModeBanners();
@@ -10651,8 +10653,8 @@ const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surpris
 const Sound = (() => {
   const KEY = 'hems_runner_sound';
   let ctx = null, master = null, muted = false, buffers = {}, loading = false;
-  const musicId = 'pixelland';  // única pista (Kevin MacLeod, "Pixelland")
-  let musicEl = null, musicWanted = false;
+  // Dos pistas (Kevin MacLeod): "Pixelland" en partida, "Wallpaper" en el menú
+  let musicId = 'pixelland', musicVol = 0.35, musicEl = null, musicWanted = false;
   try { muted = localStorage.getItem(KEY) === 'off'; } catch {}
 
   function ensure() {
@@ -10708,27 +10710,30 @@ const Sound = (() => {
 
   // ---- música (elemento <audio>, en bucle; se carga al elegirla) ----
   function musicSrc() { return `assets/audio/music/${musicId}.mp3`; }
-  function musicStart() {
-    musicWanted = true;
+  function musicPlay(id, vol) {
+    musicId = id; musicVol = vol; musicWanted = true;
     if (muted) return;
-    if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; musicEl.preload = 'auto'; musicEl.volume = 0.35; musicEl.preservesPitch = true; }
-    if (!musicEl.src.endsWith(musicSrc())) { musicEl.src = musicSrc(); musicEl.load(); }
+    if (!musicEl) { musicEl = new Audio(); musicEl.loop = true; musicEl.preload = 'auto'; musicEl.preservesPitch = true; }
+    if (!musicEl.src.endsWith(musicSrc())) { musicEl.src = musicSrc(); musicEl.load(); musicEl.playbackRate = 1; }
+    musicEl.volume = vol;
     musicEl.play().catch(() => {});
   }
-  function musicDuck(on) { if (musicEl) musicEl.volume = on ? 0.16 : 0.35; }
+  function musicStart() { musicPlay('pixelland', 0.35); }   // partida
+  function menuMusic() { musicPlay('wallpaper', 0.22); }     // menú (necesita un gesto previo del usuario)
+  function musicDuck(on) { if (musicEl) musicEl.volume = on ? musicVol * 0.45 : musicVol; }
   function musicStop() { musicWanted = false; if (musicEl) { musicEl.pause(); } }
 
   function setMuted(m) {
     muted = m;
     try { localStorage.setItem(KEY, m ? 'off' : 'on'); } catch {}
     if (master) master.gain.setTargetAtTime(m ? 0 : 0.8, ctx.currentTime, 0.05);
-    if (m && musicEl) musicEl.pause(); else if (!m && musicWanted) musicStart();
+    if (m && musicEl) musicEl.pause(); else if (!m && musicWanted) musicPlay(musicId, musicVol);
     document.querySelectorAll('[data-sound-toggle]').forEach(b => { b.textContent = m ? '🔇' : '🔊'; b.setAttribute('aria-pressed', String(m)); });
   }
   function toggle() { ensure(); setMuted(!muted); if (!muted) play('click'); }
   document.addEventListener('visibilitychange', () => { if (document.hidden) { if (musicEl) musicEl.pause(); stopAllLoops(); } else if (musicWanted && !muted && musicEl) musicEl.play().catch(() => {}); });
-  function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, loops: Object.keys(active), music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, ready: musicEl.readyState } : null, muted }; }
-  return { play, ensure, toggle, setMuted, musicStart, musicStop, musicDuck, musicRate, loops, debug, get muted() { return muted; } };
+  function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, loops: Object.keys(active), music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, rate: musicEl.playbackRate, ready: musicEl.readyState } : null, muted }; }
+  return { play, ensure, toggle, setMuted, musicStart, menuMusic, musicStop, musicDuck, musicRate, loops, debug, get muted() { return muted; } };
 })();
 Sound.setMuted(Sound.muted);   // pinta los botones con el estado guardado
 
@@ -10866,6 +10871,11 @@ function sanitizeName(name) {
    EVENT LISTENERS
    ================================================================ */
 document.getElementById('btn-play').addEventListener('click', startGame);
+// Música del menú: los navegadores no dejan sonar nada sin un gesto, así que
+// arranca con el primer toque/tecla en la pantalla del menú.
+const menuMusicOnGesture = () => { if (STATE.mode === 'menu' && !Sound.muted) { Sound.ensure(); Sound.menuMusic(); } };
+document.addEventListener('pointerdown', menuMusicOnGesture, { capture: true });
+document.addEventListener('keydown', menuMusicOnGesture, { capture: true });
 document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); Sound.toggle(); }));
 document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-revive').addEventListener('click', doRevive);
@@ -10883,7 +10893,7 @@ document.getElementById('btn-leaderboard').addEventListener('click', () => {
 });
 
 document.getElementById('btn-lb-back').addEventListener('click', () => {
-  Sound.musicStop();
+  Sound.menuMusic();
   renderMenuMissions();
   showOverlay(menuOverlay);
   backBtn.classList.add('hidden');
@@ -10911,7 +10921,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-menu').addEventListener('click', () => {
-  Sound.musicStop();
+  Sound.menuMusic();
   renderMenuMissions();
   showOverlay(menuOverlay);
   STATE.mode = 'menu';
