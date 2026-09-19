@@ -8358,7 +8358,7 @@ function applySurpriseBoxEffect(effect, position) {
   // poder mientras dure: los efectos con estado (HEMS, SVA, rayo, vórtice)
   // lo mantienen por su bandera; lluvia de monedas y pacientes, 8 s.
   Sound.play('surprise');
-  STATE.powerSoundAt = performance.now() + 1000;
+  STATE.powerSoundAt = performance.now() + 1400;  // el sonido de recogida dura 1,8 s: la aceleración entra sobre su final
   // Duración real de cada efecto (la música vuelve a su ritmo justo al acabar)
   const SURPRISE_MS = { hems: 8000, sva: 8000, lightning: 6000, wormhole: 5000, coin_rain: 3500, mega_patients: 4000 };
   STATE.surpriseUntil = performance.now() + (SURPRISE_MS[effect] || 4000);
@@ -10654,7 +10654,7 @@ const SOUND_FILES = {
   heli: ['heli'],  // bucle: rotor (modo HEMS)
   police: ['police1', 'police2'],  // ambiente: sirena lejana a ratos
 };
-const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.18, police: 0.28 };
+const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.85, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.18, police: 0.28 };
 const Sound = (() => {
   const KEY = 'hems_runner_sound';
   let ctx = null, master = null, muted = false, buffers = {}, loading = false;
