@@ -4522,6 +4522,7 @@ const STATE = {
   paused: false,
   invincible: false,
   invincibleTimer: 0,
+  powerSoundAt: 0,  // momento (performance.now) a partir del cual suena el tema del poder
   magnet: false,
   magnetTimer: 0,
   x2Score: false,
@@ -8352,7 +8353,8 @@ function openSurpriseBox(position) {
 // Aplica un efecto de caja sorpresa (usado por openSurpriseBox y por triggerDebugEffect).
 // Fuente única de verdad para los 6 efectos — si lo cambias aquí, se refleja en ambos sitios.
 function applySurpriseBoxEffect(effect, position) {
-  Sound.play('surprise');
+  Sound.play('surprise');                       // "has cogido algo" (subida de 1,2 s)
+  STATE.powerSoundAt = performance.now() + 1000;  // …y al segundo entra el tema del poder
   // Si no hay posición (modo debug sin caja), usar delante del jugador
   if (!position) {
     position = {
@@ -8453,6 +8455,7 @@ function applySurpriseBoxEffect(effect, position) {
 
 function activatePowerup(kind, position) {
   Sound.play('powerup');
+  STATE.powerSoundAt = performance.now() + 500;
   if (kind === 'magnet') {
     STATE.magnet = true;
     STATE.magnetTimer = 600;
@@ -9307,7 +9310,7 @@ const resumeCountdownNumber = document.getElementById('resume-countdown-number')
 let resumeInterval = null;
 
 function pauseGame() {
-  Sound.loops({ heli: false, power: false });
+  Sound.loops({ heli: false, powertheme: false });
   if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
   STATE.paused = true;
   STATE.running = false;
@@ -9354,7 +9357,7 @@ function resumeGame() {
 
 function quitToMenu() {
   Sound.play('back');
-  Sound.loops({ heli: false, power: false });
+  Sound.loops({ heli: false, powertheme: false });
   Sound.musicDuck(false);
   STATE.paused = false;
   STATE.running = false;
@@ -9378,7 +9381,7 @@ function triggerGameOver(kind) {
   Sound.play('crash'); Sound.play('crash_glass', { delay: 0.05 });
   Sound.play('gameover', { delay: 0.6 });
   Sound.musicDuck(true);
-  Sound.loops({ heli: false, power: false });
+  Sound.loops({ heli: false, powertheme: false });
   STATE.mode = 'gameover';
   STATE.running = false;
   hidePowerupUI();
@@ -10066,10 +10069,8 @@ function animate() {
   Ambience.update();
   Landmark.update(dt);
   Gulls.update(dt);
-  Sound.loops({
-    heli: !!STATE.jetpack,
-    power: !STATE.jetpack && !!(STATE.fever || STATE.rayo || STATE.vortex || STATE.sva || STATE.mastery || STATE.codigoRojo || STATE.magnet || STATE.x2Timer > 0),
-  });
+  const powerOn = !!(STATE.jetpack || STATE.fever || STATE.rayo || STATE.vortex || STATE.sva || STATE.mastery || STATE.codigoRojo || STATE.magnet || STATE.x2Timer > 0);
+  Sound.loops({ heli: !!STATE.jetpack, powertheme: powerOn && performance.now() > STATE.powerSoundAt });
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
@@ -10635,9 +10636,9 @@ const SOUND_FILES = {
   crash: ['crash1', 'crash2'], crash_glass: ['crash_glass'],
   milestone: ['milestone'], record: ['record'], gameover: ['gameover'], revive: ['revive'],
   click: ['click'], back: ['back'], siren: ['siren'],
-  heli: ['heli'], power: ['power'],  // bucles
+  heli: ['heli'], powertheme: ['powertheme'],  // bucles: rotor (modo HEMS) y tema musical de los poderes
 };
-const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.22, power: 0.14 };
+const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.18, powertheme: 0.55 };
 const Sound = (() => {
   const KEY = 'hems_runner_sound';
   let ctx = null, master = null, muted = false, buffers = {}, loading = false;
@@ -10674,9 +10675,10 @@ const Sound = (() => {
     src.connect(g); g.connect(master); src.start(ctx.currentTime + delay);
   }
 
-  // ---- bucles mientras dura un poder: rotor del helicóptero (modo HEMS) y
-  // campo de fuerza (resto de poderes). Se enciende/apaga desde el bucle del
-  // juego según el estado (Sound.loops({heli, power})), con fundido.
+  // ---- bucles mientras dura un poder: tema musical especial (un fragmento
+  // de "Cipher" de Kevin MacLeod acelerado, como la estrella de Mario) que
+  // sustituye a la música normal, y rotor del helicóptero en modo HEMS. Se
+  // encienden/apagan desde el bucle del juego según el estado, con fundido.
   const active = {};
   function loopStart(name) {
     if (active[name] || !ensure() || muted) return;
@@ -10692,7 +10694,10 @@ const Sound = (() => {
     a.g.gain.cancelScheduledValues(ctx.currentTime); a.g.gain.setValueAtTime(a.g.gain.value, ctx.currentTime); a.g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
     setTimeout(() => { try { a.src.stop(); } catch {} }, 500);
   }
-  function loops(want) { for (const name in want) (want[name] ? loopStart : loopStop)(name); }
+  function loops(want) {
+    for (const name in want) (want[name] ? loopStart : loopStop)(name);
+    if ('powertheme' in want) musicDuck(want.powertheme ? 'theme' : false);
+  }
   function stopAllLoops() { for (const name in active) loopStop(name); }
 
   // ---- música (elemento <audio>, en bucle; se carga al elegirla) ----
@@ -10704,7 +10709,7 @@ const Sound = (() => {
     if (!musicEl.src.endsWith(musicSrc())) { musicEl.src = musicSrc(); musicEl.load(); }
     musicEl.play().catch(() => {});
   }
-  function musicDuck(on) { if (musicEl) musicEl.volume = on ? 0.16 : 0.35; }
+  function musicDuck(on) { if (musicEl) musicEl.volume = on === 'theme' ? 0.06 : on ? 0.16 : 0.35; }
   function musicStop() { musicWanted = false; if (musicEl) { musicEl.pause(); } }
 
   function setMuted(m) {
