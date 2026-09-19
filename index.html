@@ -2479,10 +2479,9 @@
       <button id="btn-save" class="btn" data-i18n="gameover.save">Guardar en ranking</button>
     </div>
 
-    <div class="btn-row" style="margin-top:4px">
-      <button id="btn-retry" class="btn btn--ghost" data-i18n="gameover.retry">Reintentar</button>
-      <button id="btn-menu" class="btn btn--ghost" data-i18n="btn.menu">Menú</button>
-    </div>
+    <!-- Sin salida sin guardar: el nombre es obligatorio (el correo, opcional).
+         Tras guardar se pasa al rànquing, que ya tiene Jugar / Menú. -->
+    <p class="score-form__hint" style="text-align:center" data-i18n="gameover.must_save">Guarda tu puntuación para continuar.</p>
   </div>
 
   <!-- LEADERBOARD -->
@@ -2687,6 +2686,7 @@ const I18N_STRINGS = {
     'gameover.name_required': 'Escribe tu nombre o iniciales para guardar la puntuación.',
     'gameover.email_invalid': 'Ese correo no parece válido (o déjalo vacío).',
     'gameover.saving': 'Guardando…',
+    'gameover.must_save': 'Guarda tu puntuación para continuar (el correo es opcional).',
     'gameover.save': 'Guardar en ranking',
     'gameover.retry': 'Reintentar',
     'gameover.record': ' · ¡Nuevo récord personal!',
@@ -3015,6 +3015,7 @@ const I18N_STRINGS = {
     'gameover.name_required': 'Escriu el teu nom o inicials per desar la puntuació.',
     'gameover.email_invalid': 'Aquest correu no sembla vàlid (o deixa\'l buit).',
     'gameover.saving': 'Desant…',
+    'gameover.must_save': 'Desa la teva puntuació per continuar (el correu és opcional).',
     'gameover.save': 'Desar al rànquing',
     'gameover.retry': 'Tornar-hi',
     'gameover.record': ' · Nou rècord personal!',
@@ -9393,6 +9394,7 @@ function triggerGameOver(kind) {
   Sound.loops({ heli: false }); Sound.musicRate(1);
   STATE.mode = 'gameover';
   STATE.running = false;
+  backBtn.classList.add('hidden');  // sin escapatoria: hay que guardar (nombre obligatorio)
   hidePowerupUI();
   resetCombo();
 
@@ -10891,10 +10893,8 @@ document.getElementById('btn-play').addEventListener('click', startGame);
 // Música del menú: los navegadores no dejan sonar nada sin un gesto, así que
 // arranca con el primer toque/tecla en la pantalla del menú.
 const menuMusicOnGesture = () => { if (STATE.mode === 'menu' && !Sound.muted) { Sound.ensure(); Sound.menuMusic(); } };
-document.addEventListener('pointerdown', menuMusicOnGesture, { capture: true });
-document.addEventListener('keydown', menuMusicOnGesture, { capture: true });
+for (const ev of ['click', 'touchend', 'keydown']) document.addEventListener(ev, menuMusicOnGesture, { capture: true });
 document.querySelectorAll('[data-sound-toggle]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); Sound.toggle(); }));
-document.getElementById('btn-retry').addEventListener('click', startGame);
 document.getElementById('btn-revive').addEventListener('click', doRevive);
 
 // Pausa
@@ -10937,13 +10937,6 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   else renderLB(loadLB(), { offline: true });
 });
 
-document.getElementById('btn-menu').addEventListener('click', () => {
-  Sound.menuMusic();
-  renderMenuMissions();
-  showOverlay(menuOverlay);
-  STATE.mode = 'menu';
-  backBtn.classList.add('hidden');
-});
 
 backBtn.addEventListener('click', () => {
   if (STATE.mode === 'playing' || STATE.paused) {
@@ -11097,6 +11090,7 @@ function warmUpRenderer() {
 
 Promise.all([assetsReady, minSplash]).then(() => {
   Analytics.open();
+  if (!Sound.muted) Sound.menuMusic();  // si el navegador lo bloquea (sin gesto aún), arranca con el primer toque
   refreshAmbulanceModel();
   refreshHelicopterModel();
   Landmark.init();
