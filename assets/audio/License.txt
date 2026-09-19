@@ -9,6 +9,9 @@ sfx/ — Kenney (https://kenney.nl), licencia CC0 (dominio público):
   heli = Sci-Fi Sounds spaceEngineLarge_000 (bucle, modo HEMS) · surprise = Music Jingles jingles_STEEL00
   Convertidos a MP3 mono 96 kbps.
 
+sfx/police1-2.mp3 — "180527 siren police fire ambulence gets closer stops" by trp, Freesound #572410, CC0.
+  Dos fragmentos de 10 s (0:03 y 0:18) con fundidos; ambiente lejano a ratos durante la partida.
+
 sfx/siren.mp3 — "220331 siren ambulence short distant pass stops city" by trp, Freesound #717560, CC0.
   Recortado a 4,5 s con fundido.
 

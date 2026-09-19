@@ -10081,6 +10081,7 @@ function animate() {
   const surpriseOn = STATE.mode === 'playing' && STATE.running && nowMs > STATE.powerSoundAt && STATE.powerSoundAt > 0 && (nowMs < STATE.surpriseUntil || STATE.jetpack || STATE.sva || STATE.rayo || STATE.vortex);
   Sound.loops({ heli: !!STATE.jetpack });
   Sound.musicRate(surpriseOn ? 1.3 : 1);
+  if (STATE.mode === 'playing' && STATE.running && !STATE.paused) Sound.ambience(nowMs);
   layoutModeBanners();
   syncAmbulanceHeadLight();
   CoinInstancer.sync(activeItems);
@@ -10511,6 +10512,7 @@ function startGame() {
   Sound.ensure();  // primer gesto del usuario: crear el contexto de audio
   Sound.play('click');
   Sound.play('siren', { delay: 0.3 });
+  Sound.ambienceReset();
   Sound.musicStart();
   Sound.musicDuck(false);
   // Limpiar
@@ -10648,8 +10650,9 @@ const SOUND_FILES = {
   milestone: ['milestone'], record: ['record'], gameover: ['gameover'], revive: ['revive'],
   click: ['click'], back: ['back'], siren: ['siren'],
   heli: ['heli'],  // bucle: rotor (modo HEMS)
+  police: ['police1', 'police2'],  // ambiente: sirena lejana a ratos
 };
-const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.18 };
+const SOUND_GAIN = { coin: 0.5, patient: 0.8, letter: 0.6, powerup: 0.7, surprise: 0.7, jump: 0.35, land: 0.5, crash: 0.9, crash_glass: 0.6, milestone: 0.8, record: 0.8, gameover: 0.7, revive: 0.8, click: 0.5, back: 0.5, siren: 0.45, heli: 0.18, police: 0.28 };
 const Sound = (() => {
   const KEY = 'hems_runner_sound';
   let ctx = null, master = null, muted = false, buffers = {}, loading = false;
@@ -10676,15 +10679,27 @@ const Sound = (() => {
     }
   }
   // Reproduce una variante al azar del efecto, con ligera variación de tono
-  function play(name, { gain = 1, rate = 1, delay = 0 } = {}) {
+  function play(name, { gain = 1, rate = 1, delay = 0, pan = 0 } = {}) {
     if (!ensure() || muted) return;
     const list = (buffers[name] || []).filter(Boolean);
     if (!list.length) return;
     const src = ctx.createBufferSource(); src.buffer = list[Math.floor(Math.random() * list.length)];
     src.playbackRate.value = rate * (0.96 + Math.random() * 0.08);
     const g = ctx.createGain(); g.gain.value = (SOUND_GAIN[name] ?? 0.6) * gain;
-    src.connect(g); g.connect(master); src.start(ctx.currentTime + delay);
+    src.connect(g);
+    if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); p.connect(master); } else g.connect(master);
+    src.start(ctx.currentTime + delay);
   }
+
+  // Ambiente: una sirena de policía lejana, a un lado u otro, cada 40-90 s de partida
+  let nextAmbienceAt = 0;
+  function ambience(nowMs) {
+    if (!nextAmbienceAt) nextAmbienceAt = nowMs + 15000 + Math.random() * 15000;
+    if (nowMs < nextAmbienceAt) return;
+    nextAmbienceAt = nowMs + 40000 + Math.random() * 50000;
+    play('police', { pan: Math.random() < 0.5 ? -0.7 : 0.7, rate: 0.95 + Math.random() * 0.1 });
+  }
+  function ambienceReset() { nextAmbienceAt = 0; }
 
   // ---- bucles según el estado del juego (rotor del helicóptero en modo
   // HEMS), encendidos/apagados desde el bucle del juego con fundido.
@@ -10733,7 +10748,7 @@ const Sound = (() => {
   function toggle() { ensure(); setMuted(!muted); if (!muted) play('click'); }
   document.addEventListener('visibilitychange', () => { if (document.hidden) { if (musicEl) musicEl.pause(); stopAllLoops(); } else if (musicWanted && !muted && musicEl) musicEl.play().catch(() => {}); });
   function debug() { return { ctx: ctx ? ctx.state : 'none', sfx: Object.values(buffers).flat().filter(Boolean).length, loops: Object.keys(active), music: musicEl ? { src: musicEl.src.split('/').pop(), paused: musicEl.paused, t: +musicEl.currentTime.toFixed(1), vol: musicEl.volume, rate: musicEl.playbackRate, ready: musicEl.readyState } : null, muted }; }
-  return { play, ensure, toggle, setMuted, musicStart, menuMusic, musicStop, musicDuck, musicRate, loops, debug, get muted() { return muted; } };
+  return { play, ensure, toggle, setMuted, musicStart, menuMusic, musicStop, musicDuck, musicRate, loops, ambience, ambienceReset, debug, get muted() { return muted; } };
 })();
 Sound.setMuted(Sound.muted);   // pinta los botones con el estado guardado
 
