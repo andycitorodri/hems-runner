@@ -4180,6 +4180,8 @@ const MISSION_POOL = [
 ];
 
 const META_KEY = 'hems_runner_meta';
+const MISSIONS_ACTIVE = 3;    // misiones activas a la vez
+const MAX_MULTIPLIER = 5;     // tope del multiplicador diario
 
 // Devuelve fecha local como string YYYY-MM-DD
 function getTodayString() {
@@ -4243,9 +4245,11 @@ function loadMeta() {
   }
 
   return {
-    multiplier: m.multiplier || 1,
+    // Saneado: partidas anteriores pudieron guardar multiplicadores enormes o
+    // decenas de misiones activas (fallo corregido el 24-09-2026)
+    multiplier: Math.min(m.multiplier || 1, MAX_MULTIPLIER),
     missionsCompleted: m.missionsCompleted || 0,
-    activeMissionIds: m.activeMissionIds || null,
+    activeMissionIds: Array.isArray(m.activeMissionIds) ? m.activeMissionIds.slice(0, MISSIONS_ACTIVE) : null,
     lastDay: today,
     history,
   };
@@ -4328,7 +4332,7 @@ let completedThisRun = new Set();
 
 function checkMissions() {
   const newlyDone = [];
-  for (const m of getActiveMissions()) {
+  for (const m of getActiveMissions().slice(0, MISSIONS_ACTIVE)) {
     if (completedThisRun.has(m.id)) continue;
     if (isMissionComplete(m)) {
       completedThisRun.add(m.id);
@@ -4348,19 +4352,23 @@ function commitRunMissions() {
   META.missionsCompleted += completedIds.length;
   META.history.totalMissionsCompleted = (META.history.totalMissionsCompleted || 0) + completedIds.length;
 
-  // Cada 3 misiones completadas -> +1 multiplicador
+  // Cada 3 misiones completadas -> +1 multiplicador, con TOPE.
+  // Sin tope, quien jugaba muchas partidas en un día acumulaba multiplicadores
+  // enormes (medido: ×169 tras 40 partidas) y sus puntuaciones se disparaban a
+  // millones, con lo que el ranking premiaba jugar mucho, no jugar bien.
   const prevMult = META.multiplier;
-  META.multiplier = 1 + Math.floor(META.missionsCompleted / 3);
+  META.multiplier = Math.min(1 + Math.floor(META.missionsCompleted / 3), MAX_MULTIPLIER);
 
   // Actualizar récord histórico si aplica
   if (META.multiplier > META.history.maxMultiplierEver) {
     META.history.maxMultiplierEver = META.multiplier;
   }
 
-  // Reemplazar las completadas por nuevas aleatorias
-  META.activeMissionIds = META.activeMissionIds
-    .filter(id => !completedIds.includes(id))
-    .concat(pickRandomMissions(completedIds.length, META.activeMissionIds));
+  // Reemplazar las completadas por nuevas, manteniendo SIEMPRE 3 activas
+  // (antes la lista crecía sola: llegó a 19 misiones activas, y con ella el
+  // número de misiones completadas por partida).
+  const quedan = META.activeMissionIds.filter(id => !completedIds.includes(id)).slice(0, MISSIONS_ACTIVE);
+  META.activeMissionIds = quedan.concat(pickRandomMissions(MISSIONS_ACTIVE - quedan.length, quedan.concat(completedIds)));
 
   saveMeta(META);
 
