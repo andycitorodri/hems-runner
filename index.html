@@ -9321,7 +9321,7 @@ function pauseGame() {
   if (STATE.mode !== 'playing' || !STATE.running || STATE.paused) return;
   STATE.paused = true;
   STATE.running = false;
-  document.getElementById('pause-score').textContent = STATE.score;
+  document.getElementById('pause-score').textContent = fmtScore(STATE.score);
   document.getElementById('pause-distance').textContent = Math.floor(STATE.distance) + 'm';
   QualityOverride.refreshUi();
   pauseOverlay.classList.add('active');
@@ -9401,7 +9401,7 @@ function triggerGameOver(kind) {
   // Commitear misiones ANTES de mostrar resultados
   const commitResult = commitRunMissions();
 
-  document.getElementById('go-score').textContent = STATE.score;
+  document.getElementById('go-score').textContent = fmtScore(STATE.score);
   document.getElementById('go-coins').textContent = STATE.coins;
   document.getElementById('go-patients').textContent = STATE.patients;
   const deathMsg = getDeathMessage(kind);
@@ -10412,7 +10412,7 @@ function update(dt) {
 
 let missionsHudUpdateTick = 0;
 function updateHUD() {
-  document.getElementById('hud-score').textContent = STATE.score;
+  document.getElementById('hud-score').textContent = fmtScore(STATE.score);
   document.getElementById('hud-coins').textContent = STATE.coins;
   document.getElementById('hud-distance').textContent = Math.floor(STATE.distance) + ' m';
   document.getElementById('hud-patients').textContent = STATE.patients;
@@ -10843,7 +10843,7 @@ function renderLB(rows, opts = {}) {
     html += `<div class="${cls.join(' ')}">
       <span class="leaderboard__rank">${i + 1}</span>
       <span class="leaderboard__name">${escapeHtml(e.name)}</span>
-      <span class="leaderboard__score">${e.score}</span>
+      <span class="leaderboard__score">${fmtScore(e.score)}</span>
     </div>`;
   });
   c.innerHTML = html;
@@ -10873,6 +10873,9 @@ function validateScoreForm() {
   return ok;
 }
 document.getElementById('player-name').addEventListener('input', () => { validateScoreForm(); document.getElementById('score-form-error').hidden = true; });
+
+// Puntuaciones con separador de miles (ya se llega a los millones)
+function fmtScore(n) { return Number(n || 0).toLocaleString('es-ES'); }
 
 function escapeHtml(s) {
   return String(s).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));

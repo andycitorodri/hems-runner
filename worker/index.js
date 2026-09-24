@@ -7,7 +7,10 @@
 //   POST /api/hit                  analítica: {kind: open|play|end, device, session, lang, screen, ref, score, distance, duration}
 // Todo lo demás → assets (index.html, assets/…).
 
-const NAME_MAX = 16, EMAIL_MAX = 80, SCORE_MAX = 5_000_000;
+// Sin tope real de puntuación: el juego llega a millones (multiplicadores y
+// combos). El límite solo evita valores absurdos/manipulados; 1e12 cabe de
+// sobra en un INTEGER de SQLite y en un Number de JS.
+const NAME_MAX = 16, EMAIL_MAX = 80, SCORE_MAX = 1_000_000_000_000;
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra } });
 
 export default {
