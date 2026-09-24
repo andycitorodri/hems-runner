@@ -63,8 +63,16 @@ async function postScore(request, env) {
   const device = String(body.device || '').slice(0, 40), lang = String(body.lang || '').slice(0, 5);
   const ua = (request.headers.get('user-agent') || '').slice(0, 200), ip = request.headers.get('cf-connecting-ip') || '';
   const ts = Date.now();
-  const r = await env.DB.prepare('INSERT INTO scores (name, email, score, coins, patients, distance, device, lang, ua, ip, ts, suspect) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(name, email || null, score, coins, patients, distance, device, lang, ua, ip, ts, suspect).run();
+  // Auditoría: desglose de puntos que manda el juego (solo números) y multiplicador diario
+  let src = null;
+  if (body.src && typeof body.src === 'object') {
+    const clean = {};
+    for (const [k, v] of Object.entries(body.src).slice(0, 12)) if (typeof v === 'number' && isFinite(v)) clean[String(k).slice(0, 16)] = Math.round(v);
+    src = JSON.stringify(clean).slice(0, 400);
+  }
+  const mult = int(body.mult, 10000) || null;
+  const r = await env.DB.prepare('INSERT INTO scores (name, email, score, coins, patients, distance, device, lang, ua, ip, ts, suspect, src, mult) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(name, email || null, score, coins, patients, distance, device, lang, ua, ip, ts, suspect, src, mult).run();
   // Posición entre jugadores distintos (mejor partida de cada uno), como en el top público
   const above = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM scores s WHERE score > ? AND id = (SELECT id FROM scores s2 WHERE s2.device = s.device AND lower(s2.name) = lower(s.name) ORDER BY score DESC, ts ASC LIMIT 1)`).bind(score).first('n');
@@ -203,7 +211,7 @@ async function adminPage(url, env) {
   const { results: last } = await env.DB.prepare('SELECT id, name, email, score, coins, patients, distance, ts, suspect FROM scores ORDER BY ts DESC LIMIT 50').all();
   const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails, SUM(suspect) AS suspects FROM scores').first();
   const st = await stats(env);
-  const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts, suspect FROM scores WHERE suspect > 0 ORDER BY score DESC LIMIT 30').all();
+  const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts, suspect, src, mult FROM scores WHERE suspect > 0 ORDER BY score DESC LIMIT 30').all();
   // Una fila por persona (por correo si lo dejó; si no, por dispositivo+nombre)
   const { results: players } = await env.DB.prepare(
     `SELECT MAX(name) AS name, MAX(email) AS email, COUNT(*) AS games, MAX(score) AS best, ROUND(AVG(score)) AS avg,
@@ -244,7 +252,7 @@ ${barChart({ labels: st.byHour.map((_, h) => `${h}h`), series: [{ name: 'Visitas
 <div class="kpi"><div><b>${total.n}</b>partidas guardadas</div><div><b>${total.players}</b>jugadores distintos</div><div><b>${total.emails}</b>con correo</div></div>
 ${suspects.length ? `<div class="note"><h3>⚠ ${suspects.length} partida${suspects.length > 1 ? 's' : ''} para revisar antes de dar premios</h3>
 <p class="muted" style="margin:0">Puntuación imposible para los metros recorridos (más de 400 puntos/metro) o partida jugada con las teclas de prueba. Medido con un bot dentro del juego: una partida normal da ~1,5 puntos/metro y ~7 con el mejor power-up siempre activo.</p>
-<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m)${e.suspect === 2 ? ' · <b>jugada con las teclas de prueba</b>' : ''} · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
+<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m)${e.suspect === 2 ? ' · <b>jugada con las teclas de prueba</b>' : ''}${e.src ? ` · desglose: ${esc(e.src)}${e.mult ? ' (mult. ×' + e.mult + ')' : ''}` : ''} · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
 <div class="tools">
   <input id="q" type="search" placeholder="Buscar por nombre o correo…" oninput="filtra(this.value)" autocomplete="off">
   <span class="muted" id="qinfo"></span>

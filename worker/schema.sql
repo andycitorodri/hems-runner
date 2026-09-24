@@ -42,3 +42,7 @@ CREATE INDEX IF NOT EXISTS events_device ON events(device);
 
 -- Marca de "puntuación poco creíble" (ver plausibility() en worker/index.js)
 ALTER TABLE scores ADD COLUMN suspect INTEGER NOT NULL DEFAULT 0;
+
+-- Auditoría de puntuación: de dónde salieron los puntos y multiplicador diario
+ALTER TABLE scores ADD COLUMN src TEXT;
+ALTER TABLE scores ADD COLUMN mult INTEGER;

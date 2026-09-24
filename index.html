@@ -4299,7 +4299,7 @@ function isMissionComplete(mission) {
 
 // Helper único que suma al score aplicando multiplicadores
 // base: puntos base. Aplica x2Score, Código Rojo x3, Fever x3, Modo HEMS x3, Rayo x5, META.multiplier
-function addScore(base) {
+function addScore(base, src) {
   const x2 = STATE.x2Score ? 2 : 1;
   const rojo = STATE.codigoRojo ? 3 : 1;
   const fever = STATE.fever ? 3 : 1;
@@ -4311,6 +4311,10 @@ function addScore(base) {
   const efimero = Math.max(x2, rojo, fever, hems, rayo, mastery, sva);
   const final = Math.round(base * efimero * META.multiplier);
   STATE.score += final;
+  // Auditoría: de dónde salen los puntos (se envía con la puntuación; así una
+  // partida imposible se explica sola en el panel: o las partes suman el total
+  // y hay un fallo en el juego, o no suman y el número se envió a mano).
+  if (src) STATE.scoreSrc[src] = (STATE.scoreSrc[src] || 0) + final;
   // Si estamos en Mastery, registrar los puntos para el bonus final x2
   if (STATE.mastery) {
     STATE.masteryPointsEarned += final;
@@ -4533,6 +4537,7 @@ const STATE = {
   paused: false,
   invincible: false,
   invincibleTimer: 0,
+  scoreSrc: {},      // auditoría: puntos por origen (monedas, pacientes…)
   powerSoundAt: 0,   // momento (performance.now) a partir del cual suena el tema del poder (caja sorpresa)
   surpriseUntil: 0,  // hasta cuándo, como mínimo, dura ese tema
   magnet: false,
@@ -4911,7 +4916,7 @@ function completeWordHunt() {
   STATE.wordHunt.completed = true;
   const word = STATE.wordHunt.word;
   const bonus = 500;
-  const earned = addScore(bonus);
+  const earned = addScore(bonus, 'palabras');
   STATE.runStats.wordsCompleted++;
   // Identificar qué código activa esta palabra
   const codKey = WORD_TO_CODIGO[word];
@@ -8097,7 +8102,7 @@ function checkCollisions() {
       // Marcar como "saltado con éxito" y dar puntos si está cerca
       if (!o.jumped && Math.abs(o.mesh.position.z - pBox.z) < 3) {
         o.jumped = true;
-        addScore(30);
+        addScore(30, 'salto');
         STATE.runStats.obstaclesJumped++;
         showToast(t('toast.jump'), '+' + Math.round(30 * (STATE.x2Score ? 2 : 1) * META.multiplier), 0xf5a623);
       }
@@ -8262,7 +8267,7 @@ function collectItem(it) {
   if (it.kind === 'coin') {
     Sound.play('coin');
     STATE.coins++;
-    addScore(10);
+    addScore(10, 'monedas');
     STATE.combo++;
     STATE.comboTimer = 240;  // 4 segundos sin moneda y se resetea el combo (antes 1s)
     if (STATE.combo > STATE.runStats.maxCombo) STATE.runStats.maxCombo = STATE.combo;
@@ -8292,7 +8297,7 @@ function collectItem(it) {
     Sound.play('patient');
     Sound.play('siren', { delay: 0.15 });
     STATE.patients++;
-    const earned = addScore(100);
+    const earned = addScore(100, 'pacientes');
     showToast(t('toast.patient'), '+' + earned, 0xe63946);
     spawnCollectParticles(it.mesh.position, 0xe63946, 40);
     spawnCollectParticles(it.mesh.position, 0x4ade80, 25);
@@ -8307,7 +8312,7 @@ function collectItem(it) {
     const char = it.char;
     const collected = collectLetter(char);
     if (collected) {
-      addScore(50);
+      addScore(50, 'letras');
       spawnCollectParticles(it.mesh.position, 0x4ade80, 18);
       spawnCollectParticles(it.mesh.position, 0xffd54f, 10);
       if (STATE.jetpack) bumpHemsCounter(50 * 3, worldPos);
@@ -8325,7 +8330,7 @@ function collectItem(it) {
   else if (it.kind === 'trauma_item') {
     // Item de material prehospitalario (de caja CÓDIGO TRAUMA)
     const item = it.traumaItem;
-    const earned = addScore(item.points);
+    const earned = addScore(item.points, 'material');
     // Partículas del color del item
     spawnCollectParticles(it.mesh.position, item.color, 14);
     spawnCollectParticles(it.mesh.position, item.glow, 8);
@@ -8764,7 +8769,7 @@ function updateMasteryAura(dt) {
 // Pantalla de liquidación al terminar Mastery naturalmente
 function showMasteryLiquidation(earnedDuringMastery) {
   const bonus = earnedDuringMastery;  // el bonus es igual a lo ganado (multiplicador ×2 total)
-  addScore(bonus);
+  addScore(bonus, 'mastery');
 
   const el = document.getElementById('mastery-liquidation');
   const earnedEl = document.getElementById('mastery-liq-earned');
@@ -10543,6 +10548,7 @@ function startGame() {
   STATE.running = true;
   STATE.paused = false;
   STATE.score = 0;
+  STATE.scoreSrc = {};
   STATE.coins = 0;
   STATE.patients = 0;
   STATE.distance = 0;
@@ -10941,7 +10947,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { errEl.textContent = t('gameover.email_invalid'); errEl.hidden = false; return; }
   const n = sanitizeName(rawName);
   savePlayer({ name: rawName.trim().slice(0, 16), email: em.slice(0, 80) });  // recordar para la próxima partida
-  const entry = { name: n, email: em, score: STATE.score, coins: STATE.coins, patients: STATE.patients, distance: Math.round(STATE.distance || 0), device: deviceId(), lang: I18N.lang, debug: masterMode || undefined, ts: Date.now() };
+  const entry = { name: n, email: em, score: STATE.score, coins: STATE.coins, patients: STATE.patients, distance: Math.round(STATE.distance || 0), device: deviceId(), lang: I18N.lang, debug: masterMode || undefined, mult: META.multiplier, src: STATE.scoreSrc, ts: Date.now() };
   btn.disabled = true; btn.textContent = t('gameover.saving');
   const res = await submitScore(entry);
   btn.disabled = false; btn.textContent = t('gameover.save');
