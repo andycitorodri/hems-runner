@@ -46,3 +46,8 @@ ALTER TABLE scores ADD COLUMN suspect INTEGER NOT NULL DEFAULT 0;
 -- Auditoría de puntuación: de dónde salieron los puntos y multiplicador diario
 ALTER TABLE scores ADD COLUMN src TEXT;
 ALTER TABLE scores ADD COLUMN mult INTEGER;
+
+-- Puntuación original de las partidas de la beta (multiplicador diario roto),
+-- convertidas a 'equivalente' el 25-09-2026:
+--   score = (coins*10 + patients*100 + distance/2) * 3
+ALTER TABLE scores ADD COLUMN score_raw INTEGER;
