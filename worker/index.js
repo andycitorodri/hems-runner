@@ -200,10 +200,22 @@ async function adminPage(url, env) {
   const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails, SUM(suspect) AS suspects FROM scores').first();
   const st = await stats(env);
   const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts FROM scores WHERE suspect = 1 ORDER BY score DESC LIMIT 30').all();
-  const row = (e, i) => `<tr class="${e.suspect ? 'warn' : ''}"><td>${i + 1}</td><td>${e.suspect ? '<span title="Puntuación muy alta para la distancia recorrida">⚠ </span>' : ''}${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
+  // Una fila por persona (por correo si lo dejó; si no, por dispositivo+nombre)
+  const { results: players } = await env.DB.prepare(
+    `SELECT MAX(name) AS name, MAX(email) AS email, COUNT(*) AS games, MAX(score) AS best, ROUND(AVG(score)) AS avg,
+            MAX(distance) AS bestDist, MAX(ts) AS last, MIN(ts) AS first, SUM(suspect) AS suspects
+     FROM scores GROUP BY COALESCE(email, device || '|' || lower(name)) ORDER BY best DESC LIMIT 300`).all();
+  const emails = [...new Set(players.filter(p => p.email).map(p => p.email))];
+  const row = (e, i) => `<tr class="${e.suspect ? 'warn' : ''}" data-s="${esc((e.name + ' ' + (e.email || '')).toLowerCase())}"><td>${i + 1}</td><td>${e.suspect ? '<span title="Puntuación muy alta para la distancia recorrida">⚠ </span>' : ''}${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
   const html = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>HEMS Runner · Admin ranking</title>
-<style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;background:#111;color:#eee}h1{font-size:20px}h2{font-size:16px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid #333;text-align:left;white-space:nowrap}th{color:#aaa;font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:#666}.best tr:nth-child(-n+6) td:first-child{color:#f5a623;font-weight:700}tr.warn td{background:rgba(245,166,35,0.07)}.note{border:1px solid #4a4632;background:#1c1a12;border-radius:8px;padding:12px 14px;margin:14px 0}.note h3{margin:0 0 6px;color:#f5a623}.note ul{margin:6px 0 0;padding-left:18px}.note li{margin:2px 0}a{color:#7ab}button{background:#333;color:#eee;border:0;border-radius:4px;padding:3px 8px;cursor:pointer}.wrap{overflow-x:auto}.kpi{display:flex;gap:24px;margin:12px 0 20px;flex-wrap:wrap}.kpi b{font-size:22px;display:block}.kpi div{color:#898781;font-size:12px}.kpi b{color:#fff}h3{font-size:13px;color:#c3c2b7;margin:22px 0 6px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px 32px}</style>
+<style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;background:#111;color:#eee}h1{font-size:20px}h2{font-size:16px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid #333;text-align:left;white-space:nowrap}th{color:#aaa;font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:#666}.best tr:nth-child(-n+6) td:first-child{color:#f5a623;font-weight:700}tr.warn td{background:rgba(245,166,35,0.07)}.note{border:1px solid #4a4632;background:#1c1a12;border-radius:8px;padding:12px 14px;margin:14px 0}.note h3{margin:0 0 6px;color:#f5a623}.note ul{margin:6px 0 0;padding-left:18px}.note li{margin:2px 0}a{color:#7ab}button{background:#333;color:#eee;border:0;border-radius:4px;padding:3px 8px;cursor:pointer}.wrap{overflow-x:auto}.kpi{display:flex;gap:24px;margin:12px 0 20px;flex-wrap:wrap}.kpi b{font-size:22px;display:block}.kpi div{color:#898781;font-size:12px}.kpi b{color:#fff}h3{font-size:13px;color:#c3c2b7;margin:22px 0 6px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px 32px}
+.tools{position:sticky;top:0;z-index:5;background:#111;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #333;margin-top:28px}
+#q{background:#1b1b1b;border:1px solid #3a3a3a;border-radius:6px;color:#eee;padding:8px 10px;font:14px system-ui;min-width:260px}
+#q:focus{outline:none;border-color:#f5a623}
+.tools .btn{background:#333;color:#eee;border-radius:4px;padding:5px 10px;text-decoration:none}
+table.sortable th{cursor:pointer;user-select:none}table.sortable th:hover{color:#f5a623}
+tr.hide{display:none}</style>
 <h1>HEMS Runner · Admin</h1>
 <h2 style="margin-top:8px">Visitas y partidas</h2>
 <div class="kpi">${kpi(st.tot.opens || 0, 'visitas totales')}${kpi(st.devicesEver, 'dispositivos distintos')}${kpi(st.returning, 'repetidores (≥ 2 días)')}${kpi(st.tot.plays || 0, 'partidas empezadas')}${kpi(st.tot.ends || 0, 'partidas acabadas')}${kpi(st.today.opens, 'visitas hoy')}${kpi(st.today.devices, 'dispositivos hoy')}${kpi(st.today.plays, 'partidas hoy')}</div>
@@ -229,12 +241,48 @@ ${barChart({ labels: st.byHour.map((_, h) => `${h}h`), series: [{ name: 'Visitas
 ${suspects.length ? `<div class="note"><h3>⚠ ${suspects.length} partida${suspects.length > 1 ? 's' : ''} para revisar antes de dar premios</h3>
 <p class="muted" style="margin:0">Puntuación muy alta para los metros recorridos (más de 3.000 puntos/metro; en la beta el máximo real fue ~1.030). No significa que sea trampa, pero conviene mirarla.</p>
 <ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m) · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
-<p><a href="/api/admin/export.csv?token=${esc(token)}">Descargar todo en CSV</a> (para Excel/Numbers; con correos)</p>
+<div class="tools">
+  <input id="q" type="search" placeholder="Buscar por nombre o correo…" oninput="filtra(this.value)" autocomplete="off">
+  <span class="muted" id="qinfo"></span>
+  <button onclick="copiaCorreos()">Copiar los ${emails.length} correos</button>
+  <a class="btn" href="/api/admin/export.csv?token=${esc(token)}">Descargar CSV (con correos)</a>
+</div>
+
+<h2>Jugadores (${players.length})</h2>
+<p class="muted">Una fila por persona. Pulsa en una columna para ordenar.</p>
+<div class="wrap"><table class="sortable"><thead><tr><th>#</th><th>Nombre</th><th>Correo</th><th class="num">Mejor</th><th class="num">Media</th><th class="num">Partidas</th><th class="num">Mejor dist.</th><th>Última partida</th></tr></thead><tbody>
+${players.map((p, i) => `<tr data-s="${esc((p.name + ' ' + (p.email || '')).toLowerCase())}"><td>${i + 1}</td><td>${p.suspects ? '<span title="Tiene alguna partida marcada para revisar">⚠ </span>' : ''}${esc(p.name)}</td><td>${p.email ? `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${p.best.toLocaleString('es-ES')}</td><td class="num">${Number(p.avg).toLocaleString('es-ES')}</td><td class="num">${p.games}</td><td class="num">${p.bestDist} m</td><td>${fmtDate(p.last)}</td></tr>`).join('')}
+</tbody></table></div>
+
 <h2>Top 100 · mejor partida por persona (top 5 en naranja)</h2>
 <div class="wrap"><table class="best"><tr><th>#</th><th>Nombre</th><th>Correo</th><th>Puntos</th><th>Monedas</th><th>Pacientes</th><th>Distancia</th><th>Fecha</th><th></th></tr>${best.map(row).join('')}</table></div>
 <h2>Últimas 50 partidas</h2>
 <div class="wrap"><table><tr><th>#</th><th>Nombre</th><th>Correo</th><th>Puntos</th><th>Monedas</th><th>Pacientes</th><th>Distancia</th><th>Fecha</th><th></th></tr>${last.map(row).join('')}</table></div>
-<script>async function del(id){ if(!confirm('¿Borrar la partida '+id+'?')) return; const r=await fetch('/api/admin/delete?token=${esc(token)}&id='+id,{method:'POST'}); if(r.ok) location.reload(); else alert('Error'); }</script></html>`;
+<script>
+const EMAILS = ${JSON.stringify(emails)};
+function filtra(q){
+  q = q.trim().toLowerCase();
+  let n = 0;
+  document.querySelectorAll('tr[data-s]').forEach(tr => {
+    const ok = !q || tr.dataset.s.includes(q);
+    tr.classList.toggle('hide', !ok);
+    if (ok) n++;
+  });
+  document.getElementById('qinfo').textContent = q ? n + ' filas coinciden' : '';
+}
+// Ordenar por columna (numérico si la celda lo es; segunda pulsación invierte)
+document.addEventListener('click', e => {
+  const th = e.target.closest('table.sortable th'); if (!th) return;
+  const table = th.closest('table'), i = [...th.parentNode.children].indexOf(th);
+  const asc = !(th.dataset.asc === 'true'); th.dataset.asc = asc;
+  const val = tr => { const t = tr.children[i].textContent.replace(/[.\s]/g, '').replace(',', '.').replace(/[^0-9.\-]/g, ''); const n = parseFloat(t); return isNaN(n) || !t ? tr.children[i].textContent.trim().toLowerCase() : n; };
+  const rows = [...table.tBodies[0].rows].sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y))) * (asc ? 1 : -1); });
+  rows.forEach(r => table.tBodies[0].appendChild(r));
+});
+function copiaCorreos(){
+  navigator.clipboard.writeText(EMAILS.join(', ')).then(() => alert(EMAILS.length + ' correos copiados al portapapeles'), () => alert('No se ha podido copiar; usa el CSV'));
+}
+async function del(id){ if(!confirm('¿Borrar la partida '+id+'?')) return; const r=await fetch('/api/admin/delete?token=${esc(token)}&id='+id,{method:'POST'}); if(r.ok) location.reload(); else alert('Error'); }</script></html>`;
   return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
