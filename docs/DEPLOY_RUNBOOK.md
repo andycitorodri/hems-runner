@@ -187,7 +187,7 @@ Cloudflare creó el registro DNS y el certificado solos en el `wrangler deploy`.
 
 El ranking ya no vive en el navegador de cada jugador: lo guarda el Worker en una base de datos **Cloudflare D1** (`hems-leaderboard`, gratis). Código en `worker/index.js`; esquema en `worker/schema.sql`.
 
-- **Ver el ranking con correos (admin)**: `https://hems.jornadaimpacte.com/admin?token=TU_TOKEN`. Muestra la mejor partida por persona (top 5 en naranja), las últimas 50 partidas, botón "Borrar" por partida (nombres ofensivos) y **"Descargar todo en CSV"** (abre en Excel/Numbers, con correos).
+- **Ver el ranking con correos (admin)**: `https://hems.jornadaimpacte.com/admin?token=TU_TOKEN`. (Ojo: `/api/top` es el JSON en crudo que usa el juego, no el panel.) Contiene: estadísticas de visitas con gráficas; aviso de partidas a revisar; **buscador** por nombre o correo; **tabla de jugadores** (una fila por persona, con columnas ordenables al pulsar la cabecera); top 100 por persona (top 5 en naranja); últimas 50 partidas; botón **Borrar** en cada partida; **Copiar los N correos** al portapapeles y **Descargar CSV** (Excel/Numbers, con correos).
 - **El token** está guardado como secreto del Worker (`ADMIN_TOKEN`). No está en el repo ni en los docs. Si lo pierdes o quieres cambiarlo: `npx wrangler@4 secret put ADMIN_TOKEN` (te pide el valor nuevo) y listo.
 - **Estadísticas de visitas**: en la misma página `/admin`, arriba del rànquing (visitas por día y hora, dispositivos, repetidores, países, etc.). Para vaciarlas: `npx wrangler@4 d1 execute hems-leaderboard --remote --command "DELETE FROM events"`.
 - **Teclas de prueba**: bloqueadas para el público; se activan tecleando **Q Q W W** seguidas durante el juego (sale "MASTER").
