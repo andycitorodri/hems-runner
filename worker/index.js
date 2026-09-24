@@ -87,7 +87,7 @@ async function postScore(request, env) {
   const above = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM scores s WHERE score > ? AND id = (SELECT id FROM scores s2 WHERE s2.device = s.device AND lower(s2.name) = lower(s.name) ORDER BY score DESC, ts ASC LIMIT 1)`).bind(score).first('n');
   const total = await env.DB.prepare('SELECT COUNT(DISTINCT device || lower(name)) AS n FROM scores').first('n');
-  const top = await topRows(env, 10);
+  const top = await topRows(env, 50);
   return json({ ok: true, id: r.meta.last_row_id, rank: (above || 0) + 1, total, top });
 }
 
@@ -102,7 +102,7 @@ async function topRows(env, n) {
 }
 
 async function getTop(url, env) {
-  const n = int(url.searchParams.get('n') || 10, 100) || 10;
+  const n = int(url.searchParams.get('n') || 50, 200) || 50;
   const top = await topRows(env, n);
   return json({ top }, 200, { 'cache-control': 'public, max-age=10' });
 }
@@ -215,10 +215,10 @@ async function adminPage(url, env) {
   const token = url.searchParams.get('token');
   // Mejor puntuación por persona: por correo si lo dejó; si no, por dispositivo+nombre
   const { results: best } = await env.DB.prepare(
-    `SELECT id, name, email, score, coins, patients, distance, ts, device, suspect FROM scores s
+    `SELECT id, name, email, score, score_raw, coins, patients, distance, ts, device, suspect FROM scores s
      WHERE id = (SELECT id FROM scores s2 WHERE COALESCE(s2.email, s2.device || '|' || lower(s2.name)) = COALESCE(s.email, s.device || '|' || lower(s.name)) ORDER BY score DESC, ts ASC LIMIT 1)
      ORDER BY score DESC, ts ASC LIMIT 100`).all();
-  const { results: last } = await env.DB.prepare('SELECT id, name, email, score, coins, patients, distance, ts, suspect FROM scores ORDER BY ts DESC LIMIT 50').all();
+  const { results: last } = await env.DB.prepare('SELECT id, name, email, score, score_raw, coins, patients, distance, ts, suspect FROM scores ORDER BY ts DESC LIMIT 50').all();
   const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails, SUM(suspect) AS suspects FROM scores').first();
   const st = await stats(env);
   const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts, suspect, src, mult FROM scores WHERE suspect > 0 ORDER BY score DESC LIMIT 30').all();
@@ -228,7 +228,7 @@ async function adminPage(url, env) {
             MAX(distance) AS bestDist, MAX(ts) AS last, MIN(ts) AS first, SUM(suspect) AS suspects
      FROM scores GROUP BY COALESCE(email, device || '|' || lower(name)) ORDER BY best DESC LIMIT 300`).all();
   const emails = [...new Set(players.filter(p => p.email).map(p => p.email))];
-  const row = (e, i) => `<tr class="${e.suspect ? 'warn' : ''}" data-s="${esc((e.name + ' ' + (e.email || '')).toLowerCase())}"><td>${i + 1}</td><td>${e.suspect ? '<span title="Puntuación muy alta para la distancia recorrida">⚠ </span>' : ''}${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
+  const row = (e, i) => `<tr class="${e.suspect ? 'warn' : ''}" data-s="${esc((e.name + ' ' + (e.email || '')).toLowerCase())}"><td>${i + 1}</td><td>${e.suspect ? '<span title="Puntuación muy alta para la distancia recorrida">⚠ </span>' : ''}${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}${e.score_raw ? `<br><span class="muted" style="font-size:11px" title="Puntuación original, antes de convertir a equivalente (multiplicador diario roto)">antes ${e.score_raw.toLocaleString('es-ES')}</span>` : ''}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
   const html = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>HEMS Runner · Admin ranking</title>
 <style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;background:#111;color:#eee}h1{font-size:20px}h2{font-size:16px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid #333;text-align:left;white-space:nowrap}th{color:#aaa;font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:#666}.best tr:nth-child(-n+6) td:first-child{color:#f5a623;font-weight:700}tr.warn td{background:rgba(245,166,35,0.07)}.note{border:1px solid #4a4632;background:#1c1a12;border-radius:8px;padding:12px 14px;margin:14px 0}.note h3{margin:0 0 6px;color:#f5a623}.note ul{margin:6px 0 0;padding-left:18px}.note li{margin:2px 0}a{color:#7ab}button{background:#333;color:#eee;border:0;border-radius:4px;padding:3px 8px;cursor:pointer}.wrap{overflow-x:auto}.kpi{display:flex;gap:24px;margin:12px 0 20px;flex-wrap:wrap}.kpi b{font-size:22px;display:block}.kpi div{color:#898781;font-size:12px}.kpi b{color:#fff}h3{font-size:13px;color:#c3c2b7;margin:22px 0 6px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px 32px}

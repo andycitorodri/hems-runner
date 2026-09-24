@@ -1912,8 +1912,13 @@
 
   .leaderboard {
     width: 100%; max-width: 520px; margin-bottom: 24px;
-    max-height: 42vh; overflow-y: auto;
+    max-height: 52vh; overflow-y: auto;
+    /* 50 puestos: se desplaza dentro de la caja, con la cabecera siempre visible */
+    scrollbar-width: thin; scrollbar-color: rgba(244,239,230,0.25) transparent;
   }
+  .leaderboard::-webkit-scrollbar { width: 6px; }
+  .leaderboard::-webkit-scrollbar-thumb { background: rgba(244,239,230,0.25); border-radius: 3px; }
+  .leaderboard__row--header { position: sticky; top: 0; background: #14110e; z-index: 2; }
   .leaderboard__row {
     display: grid; grid-template-columns: 36px 1fr 72px;
     gap: 12px; align-items: center;
@@ -10849,7 +10854,7 @@ async function submitScore(entry) {
 let lbCache = null;  // último top recibido del servidor
 async function fetchTop() {
   try {
-    const r = await fetch('/api/top?n=10', { cache: 'no-store' });
+    const r = await fetch('/api/top?n=50', { cache: 'no-store' });
     if (!r.ok) return null;
     lbCache = (await r.json()).top;
     return lbCache;
@@ -10868,7 +10873,7 @@ function renderLB(rows, opts = {}) {
   html += `<div class="leaderboard__row leaderboard__row--header">
     <span>#</span><span>Jugador</span><span style="text-align:right">Score</span>
   </div>`;
-  rows.slice(0, 10).forEach((e, i) => {
+  rows.slice(0, 50).forEach((e, i) => {
     const mine = STATE.lastSaved && ((e.id && e.id === STATE.lastSaved.id) || (e.ts && e.ts === STATE.lastSaved.ts));
     const cls = ['leaderboard__row'];
     if (i < 3) cls.push('leaderboard__row--top');
