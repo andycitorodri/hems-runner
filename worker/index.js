@@ -39,6 +39,14 @@ function cleanEmail(s) {
 }
 const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 
+// Coherencia de la puntuación. Referencia real (156 partidas de la beta): el
+// máximo fueron ~1.030 puntos por metro, la media 112. Aquí solo se actúa
+// contra lo descabellado, no contra una buena partida:
+//   · más de 30.000 puntos/metro  → imposible: se rechaza (sale un aviso al jugador)
+//   · más de  3.000 puntos/metro  → se guarda, pero marcado con ⚠ en el panel
+const ABSURD = (d) => 500_000 + d * 30_000;
+const SUSPECT = (d) => 100_000 + d * 3_000;
+
 async function postScore(request, env) {
   let body; try { body = await request.json(); } catch { return json({ error: 'bad json' }, 400); }
   const name = cleanName(body.name);
@@ -46,11 +54,13 @@ async function postScore(request, env) {
   const email = cleanEmail(body.email);
   if (body.email && String(body.email).trim() && !email) return json({ error: 'bad email' }, 400);
   const score = int(body.score, SCORE_MAX), coins = int(body.coins, 100000), patients = int(body.patients, 100000), distance = int(body.distance, 1000000);
+  if (score > ABSURD(distance)) return json({ error: 'implausible' }, 422);
+  const suspect = score > SUSPECT(distance) ? 1 : 0;
   const device = String(body.device || '').slice(0, 40), lang = String(body.lang || '').slice(0, 5);
   const ua = (request.headers.get('user-agent') || '').slice(0, 200), ip = request.headers.get('cf-connecting-ip') || '';
   const ts = Date.now();
-  const r = await env.DB.prepare('INSERT INTO scores (name, email, score, coins, patients, distance, device, lang, ua, ip, ts) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-    .bind(name, email || null, score, coins, patients, distance, device, lang, ua, ip, ts).run();
+  const r = await env.DB.prepare('INSERT INTO scores (name, email, score, coins, patients, distance, device, lang, ua, ip, ts, suspect) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+    .bind(name, email || null, score, coins, patients, distance, device, lang, ua, ip, ts, suspect).run();
   // Posición entre jugadores distintos (mejor partida de cada uno), como en el top público
   const above = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM scores s WHERE score > ? AND id = (SELECT id FROM scores s2 WHERE s2.device = s.device AND lower(s2.name) = lower(s.name) ORDER BY score DESC, ts ASC LIMIT 1)`).bind(score).first('n');
@@ -183,16 +193,16 @@ async function adminPage(url, env) {
   const token = url.searchParams.get('token');
   // Mejor puntuación por persona: por correo si lo dejó; si no, por dispositivo+nombre
   const { results: best } = await env.DB.prepare(
-    `SELECT id, name, email, score, coins, patients, distance, ts, device FROM scores s
+    `SELECT id, name, email, score, coins, patients, distance, ts, device, suspect FROM scores s
      WHERE id = (SELECT id FROM scores s2 WHERE COALESCE(s2.email, s2.device || '|' || lower(s2.name)) = COALESCE(s.email, s.device || '|' || lower(s.name)) ORDER BY score DESC, ts ASC LIMIT 1)
      ORDER BY score DESC, ts ASC LIMIT 100`).all();
-  const { results: last } = await env.DB.prepare('SELECT id, name, email, score, coins, patients, distance, ts FROM scores ORDER BY ts DESC LIMIT 50').all();
-  const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails FROM scores').first();
+  const { results: last } = await env.DB.prepare('SELECT id, name, email, score, coins, patients, distance, ts, suspect FROM scores ORDER BY ts DESC LIMIT 50').all();
+  const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails, SUM(suspect) AS suspects FROM scores').first();
   const st = await stats(env);
-  const row = (e, i) => `<tr><td>${i + 1}</td><td>${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
+  const row = (e, i) => `<tr class="${e.suspect ? 'warn' : ''}"><td>${i + 1}</td><td>${e.suspect ? '<span title="Puntuación muy alta para la distancia recorrida: revísala antes de dar un premio">⚠ </span>' : ''}${esc(e.name)}</td><td>${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : '<span class="muted">—</span>'}</td><td class="num">${e.score.toLocaleString('es-ES')}</td><td class="num">${e.coins}</td><td class="num">${e.patients}</td><td class="num">${e.distance} m</td><td>${fmtDate(e.ts)}</td><td><button onclick="del(${e.id})">Borrar</button></td></tr>`;
   const html = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>HEMS Runner · Admin ranking</title>
-<style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;background:#111;color:#eee}h1{font-size:20px}h2{font-size:16px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid #333;text-align:left;white-space:nowrap}th{color:#aaa;font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:#666}.best tr:nth-child(-n+6) td:first-child{color:#f5a623;font-weight:700}a{color:#7ab}button{background:#333;color:#eee;border:0;border-radius:4px;padding:3px 8px;cursor:pointer}.wrap{overflow-x:auto}.kpi{display:flex;gap:24px;margin:12px 0 20px;flex-wrap:wrap}.kpi b{font-size:22px;display:block}.kpi div{color:#898781;font-size:12px}.kpi b{color:#fff}h3{font-size:13px;color:#c3c2b7;margin:22px 0 6px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px 32px}</style>
+<style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;background:#111;color:#eee}h1{font-size:20px}h2{font-size:16px;margin-top:32px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid #333;text-align:left;white-space:nowrap}th{color:#aaa;font-weight:600}.num{text-align:right;font-variant-numeric:tabular-nums}.muted{color:#666}.best tr:nth-child(-n+6) td:first-child{color:#f5a623;font-weight:700}tr.warn td{background:rgba(227,73,72,0.12)}a{color:#7ab}button{background:#333;color:#eee;border:0;border-radius:4px;padding:3px 8px;cursor:pointer}.wrap{overflow-x:auto}.kpi{display:flex;gap:24px;margin:12px 0 20px;flex-wrap:wrap}.kpi b{font-size:22px;display:block}.kpi div{color:#898781;font-size:12px}.kpi b{color:#fff}h3{font-size:13px;color:#c3c2b7;margin:22px 0 6px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px 32px}</style>
 <h1>HEMS Runner · Admin</h1>
 <h2 style="margin-top:8px">Visitas y partidas</h2>
 <div class="kpi">${kpi(st.tot.opens || 0, 'visitas totales')}${kpi(st.devicesEver, 'dispositivos distintos')}${kpi(st.returning, 'repetidores (≥ 2 días)')}${kpi(st.tot.plays || 0, 'partidas empezadas')}${kpi(st.tot.ends || 0, 'partidas acabadas')}${kpi(st.today.opens, 'visitas hoy')}${kpi(st.today.devices, 'dispositivos hoy')}${kpi(st.today.plays, 'partidas hoy')}</div>
@@ -214,7 +224,8 @@ ${barChart({ labels: st.byHour.map((_, h) => `${h}h`), series: [{ name: 'Visitas
   <div><h3>Partidas por dispositivo</h3>${hBars(st.buckets, { color: C.aqua })}</div>
 </div>
 <h2>Rànquing</h2>
-<div class="kpi"><div><b>${total.n}</b>partidas guardadas</div><div><b>${total.players}</b>jugadores distintos</div><div><b>${total.emails}</b>con correo</div></div>
+<div class="kpi"><div><b>${total.n}</b>partidas guardadas</div><div><b>${total.players}</b>jugadores distintos</div><div><b>${total.emails}</b>con correo</div><div><b>${total.suspects || 0}</b>⚠ para revisar</div></div>
+<p class="muted" style="margin-top:-8px">⚠ = puntuación muy alta para los metros recorridos (más de 3.000 puntos/metro; en la beta el máximo real fue ~1.030). No significa trampa: conviene mirarla antes de dar un premio.</p>
 <p><a href="/api/admin/export.csv?token=${esc(token)}">Descargar todo en CSV</a> (para Excel/Numbers; con correos)</p>
 <h2>Top 100 · mejor partida por persona (top 5 en naranja)</h2>
 <div class="wrap"><table class="best"><tr><th>#</th><th>Nombre</th><th>Correo</th><th>Puntos</th><th>Monedas</th><th>Pacientes</th><th>Distancia</th><th>Fecha</th><th></th></tr>${best.map(row).join('')}</table></div>

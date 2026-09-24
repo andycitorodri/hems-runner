@@ -39,3 +39,6 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS events_ts ON events(ts);
 CREATE INDEX IF NOT EXISTS events_device ON events(device);
+
+-- Marca de "puntuación poco creíble" (ver plausibility() en worker/index.js)
+ALTER TABLE scores ADD COLUMN suspect INTEGER NOT NULL DEFAULT 0;

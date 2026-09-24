@@ -2687,6 +2687,7 @@ const I18N_STRINGS = {
     'gameover.email_invalid': 'Ese correo no parece válido (o déjalo vacío).',
     'gameover.saving': 'Guardando…',
     'gameover.must_save': 'Guarda tu puntuación para continuar (el correo es opcional).',
+    'gameover.rejected': 'No se ha podido guardar: la puntuación no cuadra con la partida.',
     'gameover.save': 'Guardar en ranking',
     'gameover.retry': 'Reintentar',
     'gameover.record': ' · ¡Nuevo récord personal!',
@@ -3016,6 +3017,7 @@ const I18N_STRINGS = {
     'gameover.email_invalid': 'Aquest correu no sembla vàlid (o deixa\'l buit).',
     'gameover.saving': 'Desant…',
     'gameover.must_save': 'Desa la teva puntuació per continuar (el correu és opcional).',
+    'gameover.rejected': 'No s\'ha pogut desar: la puntuació no quadra amb la partida.',
     'gameover.save': 'Desar al rànquing',
     'gameover.retry': 'Tornar-hi',
     'gameover.record': ' · Nou rècord personal!',
@@ -10808,6 +10810,7 @@ function addLocalLB(entry) {
 async function submitScore(entry) {
   try {
     const r = await fetch('/api/score', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(entry) });
+    if (r.status === 422) return { rejected: true };   // puntuación incoherente (ver worker: ABSURD)
     if (!r.ok) return null;
     return await r.json();
   } catch { return null; }
@@ -10933,6 +10936,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = t('gameover.saving');
   const res = await submitScore(entry);
   btn.disabled = false; btn.textContent = t('gameover.save');
+  if (res && res.rejected) { errEl.textContent = t('gameover.rejected'); errEl.hidden = false; return; }
   addLocalLB(entry);
   STATE.lastSaved = res && res.ok ? { ...entry, id: res.id } : entry;
   showOverlay(leaderboardOverlay);
