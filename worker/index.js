@@ -42,9 +42,11 @@ const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 // Coherencia de la puntuación. Referencia real (156 partidas de la beta): el
 // máximo fueron ~1.030 puntos por metro, la media 112. Aquí solo se actúa
 // contra lo descabellado, no contra una buena partida:
-//   · más de 30.000 puntos/metro  → imposible: se rechaza (sale un aviso al jugador)
-//   · más de  3.000 puntos/metro  → se guarda, pero marcado con ⚠ en el panel
-const ABSURD = (d) => 500_000 + d * 30_000;
+//   · más de 100.000 puntos/metro → imposible: se rechaza (sale un aviso al jugador)
+//   · más de   3.000 puntos/metro → se guarda, pero marcado con ⚠ en el panel
+// El rechazo es solo una red contra valores rotos: rechazar una partida buena
+// de verdad es peor que dejar pasar una sospechosa, porque la marca ⚠ ya avisa.
+const ABSURD = (d) => 2_000_000 + d * 100_000;
 const SUSPECT = (d) => 100_000 + d * 3_000;
 
 async function postScore(request, env) {
