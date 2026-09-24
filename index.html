@@ -4181,7 +4181,14 @@ const MISSION_POOL = [
 
 const META_KEY = 'hems_runner_meta';
 const MISSIONS_ACTIVE = 3;    // misiones activas a la vez
-const MAX_MULTIPLIER = 5;     // tope del multiplicador diario
+const MAX_MULTIPLIER = 20;    // freno de seguridad (con la curva de abajo hace falta jugar muchísimo)
+
+// Multiplicador diario: sube rápido al principio y se va frenando solo, para
+// que siga enganchando ("hoy llevo ×7") sin dispararse como antes (llegó a ×169).
+//   3 misiones → ×3 · 9 → ×5 · 20 → ×6 · 50 → ×9 · 100 → ×13
+function multiplierFor(missions) {
+  return Math.min(1 + Math.round(1.2 * Math.sqrt(Math.max(0, missions))), MAX_MULTIPLIER);
+}
 
 // Devuelve fecha local como string YYYY-MM-DD
 function getTodayString() {
@@ -4247,7 +4254,7 @@ function loadMeta() {
   return {
     // Saneado: partidas anteriores pudieron guardar multiplicadores enormes o
     // decenas de misiones activas (fallo corregido el 24-09-2026)
-    multiplier: Math.min(m.multiplier || 1, MAX_MULTIPLIER),
+    multiplier: multiplierFor(m.missionsCompleted || 0),
     missionsCompleted: m.missionsCompleted || 0,
     activeMissionIds: Array.isArray(m.activeMissionIds) ? m.activeMissionIds.slice(0, MISSIONS_ACTIVE) : null,
     lastDay: today,
@@ -4357,7 +4364,7 @@ function commitRunMissions() {
   // enormes (medido: ×169 tras 40 partidas) y sus puntuaciones se disparaban a
   // millones, con lo que el ranking premiaba jugar mucho, no jugar bien.
   const prevMult = META.multiplier;
-  META.multiplier = Math.min(1 + Math.floor(META.missionsCompleted / 3), MAX_MULTIPLIER);
+  META.multiplier = multiplierFor(META.missionsCompleted);
 
   // Actualizar récord histórico si aplica
   if (META.multiplier > META.history.maxMultiplierEver) {
