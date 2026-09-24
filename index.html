@@ -4121,17 +4121,25 @@ const LANES = [-LANE_WIDTH, 0, LANE_WIDTH];
 const ROAD_LENGTH = 220;
 const TILE_LENGTH = 30;
 
-// Velocidad continua: curva logarítmica suave para jugar cómodo
+// Velocidad continua: curva logarítmica suave para jugar cómodo…
 // speed = BASE_SPEED + log(1 + distance/SPEED_SCALE) * SPEED_FACTOR
 // Diseño: ~22s para 500m (90km/h), ~75s para 2km (113km/h), ~3min para 5500m (133km/h)
-// Tope teórico de 194 km/h muy lejos (no es alcanzable normalmente)
+// …y a partir de RAMP_FROM, además, una subida lineal: el logaritmo solo
+// sumaba ~20 km/h entre los 8 y los 20 km, así que un buen jugador se quedaba
+// en una meseta y podía alargar la partida indefinidamente. Con la rampa la
+// cosa se vuelve materialmente imposible hacia los 18-20 km.
 const BASE_SPEED = 20;
 const SPEED_SCALE = 350;
 const SPEED_FACTOR = 6.0;
-const MAX_SPEED = 54;
+const MAX_SPEED = 54;          // referencia para barras y efectos visuales
+const RAMP_FROM = 8000;        // m a partir de los que empieza la rampa
+const RAMP_PER_KM = 1.9;       // m/s por km extra (≈ 7 km/h por km)
+const HARD_CAP = 95;           // 342 km/h: frontera dura, inalcanzable jugando
 
 function computeSpeedAt(distance) {
-  return Math.min(BASE_SPEED + Math.log(1 + distance / SPEED_SCALE) * SPEED_FACTOR, MAX_SPEED);
+  const log = Math.min(BASE_SPEED + Math.log(1 + distance / SPEED_SCALE) * SPEED_FACTOR, MAX_SPEED);
+  const ramp = distance > RAMP_FROM ? ((distance - RAMP_FROM) / 1000) * RAMP_PER_KM : 0;
+  return Math.min(log + ramp, HARD_CAP);
 }
 
 // Hitos narrativos (notificación cuando los cruzas)
@@ -7768,10 +7776,11 @@ function selectTilePattern() {
   else if (d < 3500)  { maxDiff = 3; minDiff = 1; }   // normal
   else if (d < 5500)  { maxDiff = 4; minDiff = 2; }   // desafiante
   else if (d < 8000)  { maxDiff = 5; minDiff = 3; }   // muy duro
-  else                { maxDiff = 6; minDiff = 4; }   // brutal (>8km, top players)
+  else if (d < 12000) { maxDiff = 6; minDiff = 4; }   // brutal
+  else                { maxDiff = 6; minDiff = 5; }   // solo lo peor (>12 km)
 
-  // Power-up cada ~6-8 tiles (menos frecuente a alta dificultad)
-  const powerupChance = d < 3500 ? 0.3 : 0.18;
+  // Power-up cada ~6-8 tiles (más raro cuanto más lejos: sin respiro al final)
+  const powerupChance = d < 3500 ? 0.3 : d < 8000 ? 0.18 : d < 12000 ? 0.12 : 0.07;
   if (tilesSinceLastPowerup > 6 && Math.random() < powerupChance) {
     tilesSinceLastPowerup = 0;
     const powerupTiles = TILE_PATTERNS.filter(t => t.powerup);

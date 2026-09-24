@@ -42,11 +42,10 @@ const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 // Coherencia de la puntuación. Referencia real (156 partidas de la beta): el
 // máximo fueron ~1.030 puntos por metro, la media 112. Aquí solo se actúa
 // contra lo descabellado, no contra una buena partida:
-//   · más de 100.000 puntos/metro → imposible: se rechaza (sale un aviso al jugador)
-//   · más de   3.000 puntos/metro → se guarda, pero marcado con ⚠ en el panel
-// El rechazo es solo una red contra valores rotos: rechazar una partida buena
-// de verdad es peor que dejar pasar una sospechosa, porque la marca ⚠ ya avisa.
-const ABSURD = (d) => 2_000_000 + d * 100_000;
+//   · más de 3.000 puntos/metro → se guarda igual, pero marcado con ⚠ en el panel
+// Nada se rechaza por la puntuación: solo el tope técnico SCORE_MAX (números
+// exactos en JS). Rechazar una partida real sería peor que dejar pasar una
+// sospechosa, porque la marca ⚠ ya avisa en /admin.
 const SUSPECT = (d) => 100_000 + d * 3_000;
 
 async function postScore(request, env) {
@@ -56,7 +55,6 @@ async function postScore(request, env) {
   const email = cleanEmail(body.email);
   if (body.email && String(body.email).trim() && !email) return json({ error: 'bad email' }, 400);
   const score = int(body.score, SCORE_MAX), coins = int(body.coins, 100000), patients = int(body.patients, 100000), distance = int(body.distance, 1000000);
-  if (score > ABSURD(distance)) return json({ error: 'implausible' }, 422);
   const suspect = score > SUSPECT(distance) ? 1 : 0;
   const device = String(body.device || '').slice(0, 40), lang = String(body.lang || '').slice(0, 5);
   const ua = (request.headers.get('user-agent') || '').slice(0, 200), ip = request.headers.get('cf-connecting-ip') || '';
