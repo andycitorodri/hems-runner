@@ -59,7 +59,17 @@ async function postScore(request, env) {
   const email = cleanEmail(body.email);
   if (body.email && String(body.email).trim() && !email) return json({ error: 'bad email' }, 400);
   const score = int(body.score, SCORE_MAX), coins = int(body.coins, 100000), patients = int(body.patients, 100000), distance = int(body.distance, 1000000);
-  const suspect = body.debug ? 2 : score > SUSPECT(distance) ? 1 : 0;  // 2 = teclas de prueba
+  // Marcas (solo avisan en /admin, nunca rechazan ni salen en el ranking público):
+  //   1 = puntos/metro imposibles · 2 = teclas de prueba
+  //   3 = el desglose no suma el total (el número no lo produjo el juego)
+  //   4 = sin desglose (cliente viejo o petición hecha a mano)
+  let suspect = 0;
+  const sum = body.src && typeof body.src === 'object'
+    ? Object.values(body.src).reduce((a, v) => a + (typeof v === 'number' && isFinite(v) ? v : 0), 0) : null;
+  if (score > SUSPECT(distance)) suspect = 1;
+  if (sum === null) { if (score > 1000) suspect = 4; }
+  else if (Math.abs(sum - score) > Math.max(100, score * 0.02)) suspect = 3;
+  if (body.debug) suspect = 2;
   const device = String(body.device || '').slice(0, 40), lang = String(body.lang || '').slice(0, 5);
   const ua = (request.headers.get('user-agent') || '').slice(0, 200), ip = request.headers.get('cf-connecting-ip') || '';
   const ts = Date.now();
@@ -251,8 +261,8 @@ ${barChart({ labels: st.byHour.map((_, h) => `${h}h`), series: [{ name: 'Visitas
 <h2>Rànquing</h2>
 <div class="kpi"><div><b>${total.n}</b>partidas guardadas</div><div><b>${total.players}</b>jugadores distintos</div><div><b>${total.emails}</b>con correo</div></div>
 ${suspects.length ? `<div class="note"><h3>⚠ ${suspects.length} partida${suspects.length > 1 ? 's' : ''} para revisar antes de dar premios</h3>
-<p class="muted" style="margin:0">Puntuación imposible para los metros recorridos (más de 400 puntos/metro) o partida jugada con las teclas de prueba. Medido con un bot dentro del juego: una partida normal da ~1,5 puntos/metro y ~7 con el mejor power-up siempre activo.</p>
-<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m)${e.suspect === 2 ? ' · <b>jugada con las teclas de prueba</b>' : ''}${e.src ? ` · desglose: ${esc(e.src)}${e.mult ? ' (mult. ×' + e.mult + ')' : ''}` : ''} · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
+<p class="muted" style="margin:0">Motivos: puntos/metro imposibles (más de 400; medido con un bot, una partida normal da ~1,5 y ~7 con el mejor power-up siempre activo), partida jugada con las teclas de prueba, <b>el desglose de puntos no suma el total</b> (el número no lo produjo el juego) o partida sin desglose.</p>
+<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m)${{2: ' · <b>jugada con las teclas de prueba</b>', 3: ' · <b>el desglose no suma el total</b>', 4: ' · <b>sin desglose</b>'}[e.suspect] || ''}${e.src ? ` · desglose: ${esc(e.src)}${e.mult ? ' (mult. ×' + e.mult + ')' : ''}` : ''} · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
 <div class="tools">
   <input id="q" type="search" placeholder="Buscar por nombre o correo…" oninput="filtra(this.value)" autocomplete="off">
   <span class="muted" id="qinfo"></span>
