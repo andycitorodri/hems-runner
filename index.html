@@ -10941,7 +10941,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { errEl.textContent = t('gameover.email_invalid'); errEl.hidden = false; return; }
   const n = sanitizeName(rawName);
   savePlayer({ name: rawName.trim().slice(0, 16), email: em.slice(0, 80) });  // recordar para la próxima partida
-  const entry = { name: n, email: em, score: STATE.score, coins: STATE.coins, patients: STATE.patients, distance: Math.round(STATE.distance || 0), device: deviceId(), lang: I18N.lang, ts: Date.now() };
+  const entry = { name: n, email: em, score: STATE.score, coins: STATE.coins, patients: STATE.patients, distance: Math.round(STATE.distance || 0), device: deviceId(), lang: I18N.lang, debug: masterMode || undefined, ts: Date.now() };
   btn.disabled = true; btn.textContent = t('gameover.saving');
   const res = await submitScore(entry);
   btn.disabled = false; btn.textContent = t('gameover.save');

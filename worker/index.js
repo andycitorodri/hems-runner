@@ -42,11 +42,15 @@ const int = (v, max) => Math.max(0, Math.min(max, Math.floor(Number(v) || 0)));
 // Coherencia de la puntuación. Referencia real (156 partidas de la beta): el
 // máximo fueron ~1.030 puntos por metro, la media 112. Aquí solo se actúa
 // contra lo descabellado, no contra una buena partida:
-//   · más de 3.000 puntos/metro → se guarda igual, pero marcado con ⚠ en el panel
+//   · más de 400 puntos/metro → se guarda igual, pero marcado con ⚠ en el panel
+//     (medido con un bot dentro del propio juego: una partida normal da ~1,5
+//      puntos/metro; con el mejor power-up permanente, ~7; abusando de las
+//      teclas de prueba, ~240. Por encima de 400 no sale de jugar.)
+//   · partida con las teclas de prueba activadas (debug) → también marcada
 // Nada se rechaza por la puntuación: solo el tope técnico SCORE_MAX (números
 // exactos en JS). Rechazar una partida real sería peor que dejar pasar una
 // sospechosa, porque la marca ⚠ ya avisa en /admin.
-const SUSPECT = (d) => 100_000 + d * 3_000;
+const SUSPECT = (d) => 20_000 + d * 400;
 
 async function postScore(request, env) {
   let body; try { body = await request.json(); } catch { return json({ error: 'bad json' }, 400); }
@@ -55,7 +59,7 @@ async function postScore(request, env) {
   const email = cleanEmail(body.email);
   if (body.email && String(body.email).trim() && !email) return json({ error: 'bad email' }, 400);
   const score = int(body.score, SCORE_MAX), coins = int(body.coins, 100000), patients = int(body.patients, 100000), distance = int(body.distance, 1000000);
-  const suspect = score > SUSPECT(distance) ? 1 : 0;
+  const suspect = body.debug ? 2 : score > SUSPECT(distance) ? 1 : 0;  // 2 = teclas de prueba
   const device = String(body.device || '').slice(0, 40), lang = String(body.lang || '').slice(0, 5);
   const ua = (request.headers.get('user-agent') || '').slice(0, 200), ip = request.headers.get('cf-connecting-ip') || '';
   const ts = Date.now();
@@ -199,7 +203,7 @@ async function adminPage(url, env) {
   const { results: last } = await env.DB.prepare('SELECT id, name, email, score, coins, patients, distance, ts, suspect FROM scores ORDER BY ts DESC LIMIT 50').all();
   const total = await env.DB.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT COALESCE(email, device)) AS players, COUNT(DISTINCT email) AS emails, SUM(suspect) AS suspects FROM scores').first();
   const st = await stats(env);
-  const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts FROM scores WHERE suspect = 1 ORDER BY score DESC LIMIT 30').all();
+  const { results: suspects } = await env.DB.prepare('SELECT id, name, score, distance, ts, suspect FROM scores WHERE suspect > 0 ORDER BY score DESC LIMIT 30').all();
   // Una fila por persona (por correo si lo dejó; si no, por dispositivo+nombre)
   const { results: players } = await env.DB.prepare(
     `SELECT MAX(name) AS name, MAX(email) AS email, COUNT(*) AS games, MAX(score) AS best, ROUND(AVG(score)) AS avg,
@@ -239,8 +243,8 @@ ${barChart({ labels: st.byHour.map((_, h) => `${h}h`), series: [{ name: 'Visitas
 <h2>Rànquing</h2>
 <div class="kpi"><div><b>${total.n}</b>partidas guardadas</div><div><b>${total.players}</b>jugadores distintos</div><div><b>${total.emails}</b>con correo</div></div>
 ${suspects.length ? `<div class="note"><h3>⚠ ${suspects.length} partida${suspects.length > 1 ? 's' : ''} para revisar antes de dar premios</h3>
-<p class="muted" style="margin:0">Puntuación muy alta para los metros recorridos (más de 3.000 puntos/metro; en la beta el máximo real fue ~1.030). No significa que sea trampa, pero conviene mirarla.</p>
-<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m) · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
+<p class="muted" style="margin:0">Puntuación imposible para los metros recorridos (más de 400 puntos/metro) o partida jugada con las teclas de prueba. Medido con un bot dentro del juego: una partida normal da ~1,5 puntos/metro y ~7 con el mejor power-up siempre activo.</p>
+<ul>${suspects.map(e => `<li>${esc(e.name)} — <b>${e.score.toLocaleString('es-ES')}</b> puntos en ${e.distance} m (${Math.round(e.score / Math.max(1, e.distance)).toLocaleString('es-ES')} p/m)${e.suspect === 2 ? ' · <b>jugada con las teclas de prueba</b>' : ''} · ${fmtDate(e.ts)} · <button onclick="del(${e.id})">Borrar</button></li>`).join('')}</ul></div>` : ''}
 <div class="tools">
   <input id="q" type="search" placeholder="Buscar por nombre o correo…" oninput="filtra(this.value)" autocomplete="off">
   <span class="muted" id="qinfo"></span>
