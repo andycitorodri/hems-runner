@@ -51,3 +51,22 @@ ALTER TABLE scores ADD COLUMN mult INTEGER;
 -- convertidas a 'equivalente' el 25-09-2026:
 --   score = (coins*10 + patients*100 + distance/2) * 3
 ALTER TABLE scores ADD COLUMN score_raw INTEGER;
+
+-- Inscripciones a la Jornada (formulario propio que se vuelca al del hospital)
+CREATE TABLE IF NOT EXISTS inscripcions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts INTEGER NOT NULL,
+  mode TEXT NOT NULL DEFAULT 'prova',   -- prova | real
+  nom TEXT, cognom1 TEXT, cognom2 TEXT,
+  dia TEXT, mes TEXT, any TEXT,
+  tel TEXT, movil TEXT, mail TEXT,
+  domicili TEXT, cpostal TEXT, localitat TEXT, nif TEXT,
+  professio TEXT, modalitat TEXT, centre TEXT,
+  gdpr INTEGER NOT NULL DEFAULT 0,
+  enviat INTEGER NOT NULL DEFAULT 0,    -- 1 = volcada al formulario del hospital
+  enviat_ts INTEGER,
+  resposta TEXT,                        -- qué contestó el servidor del hospital
+  ip TEXT, ua TEXT
+);
+CREATE INDEX IF NOT EXISTS inscripcions_ts ON inscripcions(ts DESC);
+CREATE INDEX IF NOT EXISTS inscripcions_mail ON inscripcions(mail);

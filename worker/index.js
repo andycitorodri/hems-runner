@@ -10,6 +10,8 @@
 // Sin tope real de puntuación: el juego llega a millones (multiplicadores y
 // combos). El límite solo evita valores absurdos/manipulados; 1e12 cabe de
 // sobra en un INTEGER de SQLite y en un Number de JS.
+import { handleInscripcio, reenviaInscripcio, adminInscripcions, exportInscripcionsCsv, inscripcioPage } from './inscripcio.js';
+
 const NAME_MAX = 16, EMAIL_MAX = 80, SCORE_MAX = 1_000_000_000_000;
 const json = (data, status = 200, extra = {}) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...extra } });
 
@@ -21,6 +23,24 @@ export default {
       if (url.pathname === '/api/top') return getTop(url, env);
       if (url.pathname === '/api/hit' && request.method === 'POST') return postHit(request, env);
       if (url.pathname === '/admin') return adminPage(url, env);
+      // Inscripciones. En pruebas el formulario solo se abre con el token de admin.
+      if (url.pathname === '/inscripcio') {
+        const real = env.INSCRIPCIONS_MODE === 'real';
+        if (!real && !authed(url, env)) return new Response('Aquesta pàgina encara no està oberta.', { status: 403, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+        return new Response(inscripcioPage(env.INSCRIPCIONS_MODE), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+      }
+      if (url.pathname === '/api/inscripcio' && request.method === 'POST') {
+        if (env.INSCRIPCIONS_MODE !== 'real' && !authed(url, env)) return json({ error: 'tancat' }, 403);
+        return handleInscripcio(request, env);
+      }
+      if (url.pathname === '/api/admin/inscripcio/reenvia' && request.method === 'POST') {
+        if (!authed(url, env)) return json({ error: 'forbidden' }, 403);
+        return reenviaInscripcio(url, env);
+      }
+      if (url.pathname === '/api/admin/inscripcions.csv') {
+        if (!authed(url, env)) return new Response('Acceso denegado', { status: 403 });
+        return exportInscripcionsCsv(env);
+      }
       if (url.pathname === '/api/admin/export.csv') return adminExport(url, env);
       if (url.pathname === '/api/admin/delete' && request.method === 'POST') return adminDelete(url, env);
       if (url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404);
@@ -239,6 +259,7 @@ async function adminPage(url, env) {
 table.sortable th{cursor:pointer;user-select:none}table.sortable th:hover{color:#f5a623}
 tr.hide{display:none}</style>
 <h1>HEMS Runner · Admin</h1>
+${await adminInscripcions(env, token)}
 <h2 style="margin-top:8px">Visitas y partidas</h2>
 <div class="kpi">${kpi(st.tot.opens || 0, 'visitas totales')}${kpi(st.devicesEver, 'dispositivos distintos')}${kpi(st.returning, 'repetidores (≥ 2 días)')}${kpi(st.tot.plays || 0, 'partidas empezadas')}${kpi(st.tot.ends || 0, 'partidas acabadas')}${kpi(st.today.opens, 'visitas hoy')}${kpi(st.today.devices, 'dispositivos hoy')}${kpi(st.today.plays, 'partidas hoy')}</div>
 <div class="kpi">${kpi(st.end.avgDist + ' m', 'distancia media (30 días)')}${kpi(fmtDur(st.end.avgDur), 'duración media')}${kpi(st.end.avgScore, 'puntuación media')}${kpi(st.end.best, 'mejor puntuación (30 días)')}${kpi(st.tot.first ? fmtDate(st.tot.first).split(',')[0] : '—', 'primera visita registrada')}</div>
