@@ -21,10 +21,14 @@ export const CURS = {
 // Modalidades de inscripción. Se envían al hospital dentro de "Professió/Servei"
 // (p. ej. "Metge/essa - modalitat: Streaming") porque su formulario no tiene ese campo.
 export const MODALITATS = [
-  { id: 'presencial', label: 'Presencial' },
-  { id: 'streaming', label: 'Streaming (en línia)' },
-  { id: 'presencial-taller', label: 'Presencial + taller pràctic' },
-  { id: 'resident', label: 'Resident / estudiant (presencial)' },
+  { id: 'streaming', label: 'Streaming', preu: 10, subtitol: "Des d'on vulguis",
+    inclou: ['Les quatre taules de debat del matí, en directe', 'Sense desplaçament ni aforament limitat'] },
+  { id: 'presencial-mati', label: 'Presencial · matí', preu: 20,
+    inclou: ['Assistència presencial a les quatre taules de debat', "Cafè de l'esmorzar"] },
+  { id: 'presencial-dinar', label: 'Presencial + dinar', preu: 35,
+    inclou: ['Tot el de la modalitat de matí', 'Dinar de treball'] },
+  { id: 'presencial-complet', label: 'Presencial complet', preu: 50, avis: 'Places limitades', destacat: true,
+    inclou: ["Tot l'anterior: taules, cafè i dinar", 'Dos dels quatre tallers pràctics de la tarda'] },
 ];
 
 const esc = s => String(s ?? '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -34,7 +38,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), { status
 // Texto que se manda en el campo Professió/Servei del hospital
 export function professioAmbModalitat(professio, modalitatId) {
   const m = MODALITATS.find(x => x.id === modalitatId);
-  return `${professio}${m ? ' - modalitat: ' + m.label : ''}`.slice(0, 120);
+  return `${professio}${m ? ` - modalitat: ${m.label} (${m.preu} €)` : ''}`.slice(0, 120);
 }
 
 // Construye el cuerpo exacto que espera Inscripcioef.asp
@@ -139,7 +143,7 @@ export async function adminInscripcions(env, token) {
   const { results: rows } = await env.DB.prepare('SELECT * FROM inscripcions ORDER BY ts DESC LIMIT 500').all();
   const tot = await env.DB.prepare(`SELECT COUNT(*) n, SUM(mode='real') reals, SUM(enviat=1) enviades, COUNT(DISTINCT lower(mail)) persones FROM inscripcions`).first();
   const perMod = {};
-  for (const r of rows) { const m = MODALITATS.find(x => x.id === r.modalitat); const k = m ? m.label : (r.modalitat || '—'); perMod[k] = (perMod[k] || 0) + 1; }
+  for (const r of rows) { const m = MODALITATS.find(x => x.id === r.modalitat); const k = m ? `${m.label} (${m.preu} €)` : (r.modalitat || '—'); perMod[k] = (perMod[k] || 0) + 1; }
   const fmt = ts => new Date(ts).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const fila = r => `<tr data-s="${esc((r.nom + ' ' + r.cognom1 + ' ' + (r.cognom2 || '') + ' ' + r.mail + ' ' + r.centre + ' ' + r.professio).toLowerCase())}">
     <td>${r.id}</td><td>${esc(r.nom)} ${esc(r.cognom1)} ${esc(r.cognom2 || '')}</td>
@@ -153,7 +157,7 @@ export async function adminInscripcions(env, token) {
   </tr>`;
   return `
 <h2>Inscripcions (${tot.n || 0})</h2>
-<div class="kpi"><div><b>${tot.n || 0}</b>inscripcions</div><div><b>${tot.persones || 0}</b>persones (correus únics)</div><div><b>${tot.reals || 0}</b>en mode real</div><div><b>${tot.enviades || 0}</b>volcades al Taulí</div></div>
+<div class="kpi"><div><b>${tot.n || 0}</b>inscripcions</div><div><b>${rows.reduce((a, r) => a + ((MODALITATS.find(m => m.id === r.modalitat) || {}).preu || 0), 0)} €</b>import previst (totes)</div><div><b>${tot.persones || 0}</b>persones (correus únics)</div><div><b>${tot.reals || 0}</b>en mode real</div><div><b>${tot.enviades || 0}</b>volcades al Taulí</div></div>
 <div class="kpi">${Object.entries(perMod).map(([k, v]) => `<div><b>${v}</b>${esc(k)}</div>`).join('') || '<div class="muted">Encara no hi ha inscripcions</div>'}</div>
 <div class="tools">
   <input id="qi" type="search" placeholder="Buscar per nom, correu, centre o professió…" oninput="filtraIns(this.value)" autocomplete="off">
@@ -205,9 +209,21 @@ export function inscripcioPage(mode) {
  input:focus,select:focus{outline:none;border-color:var(--amber)}
  .row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 200px}
  .data{display:flex;gap:8px;max-width:260px}.data input{text-align:center}
- .mods{display:grid;gap:8px}
- .mod{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:12px;cursor:pointer}
- .mod:hover{border-color:var(--amber)} .mod input{width:auto;flex:0 0 auto}
+ .mods{display:grid;gap:10px}
+ .mod{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s}
+ .mod:hover{border-color:var(--amber)} .mod input{width:auto;flex:0 0 auto;margin-top:3px}
+ .mod:has(input:checked){border-color:var(--amber);background:rgba(245,166,35,.07)}
+ .mod.destacat{border-left:3px solid var(--amber)}
+ .mod__body{flex:1} .mod__head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+ .mod__head b{font-size:16px} .mod__preu{color:var(--amber);font-weight:700;font-size:17px;white-space:nowrap}
+ .mod__sub,.mod__avis{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+ .mod__avis{color:var(--amber)}
+ .mod__inclou{display:block;margin-top:8px}
+ .mod__inclou span{display:block;font-size:13px;color:var(--muted);padding-left:14px;position:relative;margin-top:3px}
+ .mod__inclou span::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--amber);opacity:.8}
+ .hint{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.5}
+ .avis-mail{color:#e0b062}
+ .pagament{border:1px solid #6b5a1f;background:#241f10;color:#f5d98a;border-radius:8px;padding:11px 13px;margin:14px 0 0;font-size:13.5px;line-height:1.6}
  .gdpr{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-top:8px}.gdpr input{width:auto;margin-top:3px}
  .legal{font-size:12px;color:var(--muted);line-height:1.6;border:1px solid var(--line);border-radius:8px;padding:12px;max-height:180px;overflow:auto}
  button.send{width:100%;background:var(--amber);color:#14110e;border:0;border-radius:8px;padding:15px;font:600 16px system-ui;cursor:pointer;margin-top:8px}
@@ -231,7 +247,8 @@ export function inscripcioPage(mode) {
       <input id="any" name="any" inputmode="numeric" maxlength="4" placeholder="aaaa" aria-label="any"></div>
     <div class="row">
       <div><label for="nif">NIF *</label><input id="nif" name="nif" autocomplete="off"></div>
-      <div><label for="mail">Correu electrònic *</label><input id="mail" name="mail" type="email" inputmode="email" autocomplete="email"></div>
+      <div><label for="mail">Correu electrònic *</label><input id="mail" name="mail" type="email" inputmode="email" autocomplete="email">
+        <p class="hint avis-mail">És molt important que l'e-mail que ens indiqui estigui actiu, ja que l'utilitzarem per contactar amb vostè.</p></div>
     </div>
     <div class="row">
       <div><label for="tel">Telèfon *</label><input id="tel" name="tel" inputmode="tel" autocomplete="tel"></div>
@@ -252,9 +269,19 @@ export function inscripcioPage(mode) {
   </fieldset>
 
   <fieldset><legend>Modalitat d'inscripció *</legend>
+    <p class="hint" style="margin-top:0">Tria com vols viure la jornada.</p>
     <div class="mods">
-      ${MODALITATS.map((m, i) => `<label class="mod"><input type="radio" name="modalitat" value="${m.id}"${i === 0 ? ' checked' : ''}><span>${esc(m.label)}</span></label>`).join('')}
+      ${MODALITATS.map((m, i) => `<label class="mod${m.destacat ? ' destacat' : ''}">
+        <input type="radio" name="modalitat" value="${m.id}"${i === 0 ? ' checked' : ''}>
+        <span class="mod__body">
+          <span class="mod__head"><b>${esc(m.label)}</b><span class="mod__preu">${m.preu} €</span></span>
+          ${m.subtitol ? `<span class="mod__sub">${esc(m.subtitol)}</span>` : ''}
+          ${m.avis ? `<span class="mod__avis">${esc(m.avis)}</span>` : ''}
+          <span class="mod__inclou">${m.inclou.map(x => `<span>${esc(x)}</span>`).join('')}</span>
+        </span>
+      </label>`).join('')}
     </div>
+    <p class="pagament"><b>No facis cap transferència encara.</b> Quan rebis el correu de confirmació de la secretaria de la Jornada, amb les instruccions de pagament, podràs fer l'ingrés. Fins llavors, no cal que paguis res.</p>
   </fieldset>
 
   <fieldset><legend>Protecció de dades</legend>
@@ -285,7 +312,7 @@ f.addEventListener('submit', async e => {
     if (!r.ok) { err.textContent = j.falten ? 'Falten camps: ' + j.falten.join(', ') : (j.error || 'Error en enviar'); err.hidden = false; btn.disabled = false; btn.textContent = 'Enviar la inscripció'; return; }
     f.hidden = true;
     const ok = document.getElementById('ok');
-    ok.innerHTML = '<h2 style="margin:0 0 8px">Inscripció rebuda</h2><p style="margin:0">Gràcies, ' + (d.nom || '') + '. Rebràs la confirmació a <b>' + (d.mail || '') + '</b>.</p>' + (j.mode !== 'real' ? '<p style="color:#f5d98a;margin:10px 0 0"><b>Mode de proves:</b> desada a la nostra base de dades, no enviada al Taulí (id ' + j.id + ').</p>' : '');
+    ok.innerHTML = '<h2 style="margin:0 0 8px">Inscripció rebuda</h2><p style="margin:0">Gràcies, ' + (d.nom || '') + '. Rebràs la confirmació a <b>' + (d.mail || '') + '</b>.</p><p style="margin:10px 0 0">No facis cap transferència encara: la secretaria de la Jornada enviarà un correu amb les instruccions de pagament.</p>' + (j.mode !== 'real' ? '<p style="color:#f5d98a;margin:10px 0 0"><b>Mode de proves:</b> desada a la nostra base de dades, no enviada al Taulí (id ' + j.id + ').</p>' : '');
     ok.hidden = false; window.scrollTo(0, 0);
   } catch (e2) {
     err.textContent = 'No s\\'ha pogut enviar: ' + e2.message; err.hidden = false;
